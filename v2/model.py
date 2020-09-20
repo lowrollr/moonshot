@@ -6,6 +6,7 @@ import random
 import plotly.graph_objs as go
 from plotly.offline import plot
 from pyti.smoothed_moving_average import smoothed_moving_average as sma
+from v2.strategy.strategy import Strategy
 from tqdm import tqdm
 
 class Trading:
