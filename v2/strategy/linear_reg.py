@@ -16,11 +16,6 @@ class linear_reg(Strategy):
         self.model = ""
 
     def train(self, data):
-        a = 2
-        pass
-
-    def process(self, data):     
-        # if data.
         data["future_val"] = data[self.target_forecast].shift(-self.predict_out)
         #data.drop(["trades", "high", "low"], axis=1)
         
@@ -33,7 +28,11 @@ class linear_reg(Strategy):
         
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
         self.model = LinearRegression(n_jobs=-1)
-        self.model.fit(X_train.reshape(-1,1), y_train)
+        self.model.fit(X_train, y_train)
+
+    def process(self, data):     
+        # if data.
+        pass
 
     def calc_entry(self, data):
         test = np.array([data])
