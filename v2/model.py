@@ -7,6 +7,7 @@ import plotly.graph_objs as go
 from plotly.offline import plot
 from pyti.smoothed_moving_average import smoothed_moving_average as sma
 from tqdm import tqdm
+from v2.strategy.strategy import Strategy
 
 class Trading:
     def __init__(self, config):
@@ -81,6 +82,7 @@ class Trading:
         filtered_dataset = time_filtered_dataset.filter(items=strategy.getIndicators() + ['time'])
         inc_fees = 0.0
         close = 0.0
+        log = []
 
         #PLOT VARIABLES
         entries = []
@@ -112,6 +114,7 @@ class Trading:
                     position_quote -= inc_fees
                     position_base = 0.0
                     exits.append([row.time, close])
+                    
 
         #plot graph
         if entries:
@@ -125,19 +128,18 @@ class Trading:
         fig = go.Figure(data=data, layout=layout)
         plot(fig, filename=name + '.html')
 
+        conv_position = position_quote
         #output final account value
         if position_base:
             conv_position = (position_base * close) * (1 - self.fees)
-            print('exit value (holding quote, inc final transaction fee): ' + str(conv_position))
-            print('delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
-            print("total trades made " + str(len(entries)))
-            print("average gain/loss per trade ")
-            print("average time hold of loss")
-            #this could give snese of vaolatility
-            print("std dev of trades")
-        else:
-            print('exit value (not holding quote): ' + str(position_quote))
-            print('delta: ' + str(position_quote - start) + ' ' + str(((position_quote / start) * 100) - 100) + '%')
+        
+        print('exit value: ' + str(conv_position))
+        print('delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
+        print("total trades made: " + str(len(entries)))
+        print("average gain/loss per trade: " + str((conv_position - start) / len(entries)))
+        print("average time hold of loss")
+        #this could give snese of vaolatility
+        print("std dev of trades")
 
     def backtest(self):
         #dynamically load strategies
