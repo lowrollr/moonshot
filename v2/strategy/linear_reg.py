@@ -31,13 +31,13 @@ class linear_reg(Strategy):
         y = np.array(data["future_val"])
         X = preprocessing.scale(X)
         
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
         self.model = LinearRegression(n_jobs=-1)
         self.model.fit(X_train.reshape(-1,1), y_train)
 
     def calc_entry(self, data):
-        test = np.array([data.close])
-        t = self.model.predict(test.reshape(-1,1))
+        test = np.array([data])
+        t = self.model.predict(test)
         if data.close < self.model.predict(np.array([data.close]).reshape(-1,1))[0] * 0.97:
             return True
         else:
