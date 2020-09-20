@@ -23,7 +23,7 @@ class Trading:
         elif len(config['timespan']) == 1:
             self.timespan = [int(config['timespan'][0]), 9999999999]
         else:
-            self.timespan = (int(x) for x in config['timespan'])
+            self.timespan = [int(x) for x in config['timespan']]
 
     def getPairDatasets(self, _base_cs, _quote_cs, freq):
         datasets = []
