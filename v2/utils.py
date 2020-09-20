@@ -1,5 +1,6 @@
 import time
 import datetime
+import numpy as np
 
 #should probs make a class but thats TODO
 def date_to_unix(date_arr):
@@ -38,3 +39,36 @@ def convert_timespan(full_arr):
         return [unix1, unix2]
     else:
         raise Exception("There is supposed to be one or two values for date")
+
+def get_log_std(logs):
+    nums = []
+    for log in logs:
+        log_arr = log.split(" ")
+        if log_arr[1] == "sold":
+            nums.append(float(log_arr[-1]))
+    return np.std(nums, dtype = np.float32)
+
+def get_log_avg_hold(logs):
+    times = []
+    i = 0
+    while i < len(logs) - 1:
+        log_arr = logs[i].split(" ")
+        if log_arr[1] == "bought":
+            next_log_arr = logs[i+1].split(" ")
+            buy_time = float(log_arr[0][:-1])
+            sell_time = float(next_log_arr[0][:-1])
+            times.append(sell_time - buy_time)
+        i += 2
+    time_mean = np.mean(times)
+    return unix_to_time(time_mean), time_mean
+
+def unix_to_time(unix_val):
+    check_int = int(unix_val)
+    full_dt = datetime.datetime.fromtimestamp(check_int)
+    period_str = str(full_dt.year - 1970) + " year(s) " + \
+                str(full_dt.month) + " month(s) " + \
+                str(full_dt.day) + " day(s) " + \
+                str(full_dt.hour) + " hour(s) " + \
+                str(full_dt.minute) + " minute(s) " + \
+                str(full_dt.second) + " second(s) "
+    return period_str

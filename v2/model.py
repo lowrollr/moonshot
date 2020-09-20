@@ -154,14 +154,16 @@ class Trading:
         #output final account value
         if position_base:
             conv_position = (position_base * close) * (1 - self.fees)
+
+        std_dev = utils.get_log_std(log)
+        str_time, avg_time = utils.get_log_avg_hold(log)
         
         print('exit value: ' + str(conv_position))
         print('delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
         print("total trades made: " + str(len(entries)))
         print("average gain/loss per trade: " + str((conv_position - start) / len(entries)))
-        print("average time hold of loss")
-        #this could give snese of vaolatility
-        print("std dev of trades")
+        print("standard deviation of the deltas (how volatile) " + str(std_dev))
+        print("average time each trade is held " + str(str_time) + "(" + str(avg_time) + ")")
 
         # log trades
         with open('logs/' + name + '.txt', 'w') as f:
