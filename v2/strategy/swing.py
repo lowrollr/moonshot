@@ -6,18 +6,25 @@ class swing(Strategy):
         self.indicators = ['close', 'sma_300']
         self.name = 'swing'
         self.is_ml = False
+        self.diff = 0.03
+
+    def get_param_ranges(self):
+        params = {}
+        params['diff'] = [0.01, 0.1, 0.01]
+        
+        return params
 
     def process(self, data):
         pass
 
     def calc_entry(self, data):
-        if data.close < (data.sma_300 * 0.97):
+        if data.close < (data.sma_300 * (1- self.diff)):
             return True
         else:
             return False
 
     def calc_exit(self, data):
-        if data.close > (data.sma_300 * 1.03):
+        if data.close > (data.sma_300 * (1 + self.diff)):
             return True
         else:
             return False
