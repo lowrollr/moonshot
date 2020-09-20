@@ -9,6 +9,7 @@ from pyti.smoothed_moving_average import smoothed_moving_average as sma
 from v2.strategy.strategy import Strategy
 from tqdm import tqdm
 from v2.strategy.strategy import Strategy
+import v2.utils as utils
 
 class Trading:
     def __init__(self, config):
@@ -22,10 +23,13 @@ class Trading:
         self.timespan = []
         if config['timespan'][0] == 'max':
             self.timespan = [0, 9999999999]
+        elif config["timespan"][0] == "date":
+            self.timespan = utils.convert_timespan(config["timespan"][1:])
         elif len(config['timespan']) == 1:
             self.timespan = [int(config['timespan'][0]), 9999999999]
         else:
             self.timespan = [int(x) for x in config['timespan']]
+        
 
     def getPairDatasets(self, _base_cs, _quote_cs, freq):
         datasets = []
