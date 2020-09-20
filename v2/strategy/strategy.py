@@ -3,6 +3,7 @@
 class Strategy:
     def __init__(self):
         self.indicators = []
+        self.is_ml = False
     def process(self, data):
         # this happens every tick
         # use this to keep track of things that need to be kept track of over multiple ticks

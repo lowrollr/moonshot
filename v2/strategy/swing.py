@@ -5,6 +5,7 @@ class swing(Strategy):
     def __init__(self):
         self.indicators = ['close', 'sma_300']
         self.name = 'swing'
+        self.is_ml = False
 
     def process(self, data):
         pass
