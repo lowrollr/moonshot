@@ -84,6 +84,7 @@ class Trading:
         inc_fees = 0.0
         close = 0.0
         log = []
+        old_quote = 0.0
 
         #PLOT VARIABLES
         entries = []
@@ -105,16 +106,21 @@ class Trading:
                     position_taken = True
                     position_base = position_quote / close
                     inc_fees = position_quote * self.fees
+                    old_quote = position_quote
                     position_quote = 0.0
                     entries.append([row.time, close])
+                    log.append(str(row.time) + ': bought at ' + str(row.close))
             else:
                 if strategy.calc_exit(row):
+                    
                     position_taken = False
                     position_quote = position_base * close
                     position_quote = position_quote * (1 - self.fees)
                     position_quote -= inc_fees
+                    delta = position_quote - old_quote
                     position_base = 0.0
                     exits.append([row.time, close])
+                    log.append(str(row.time) + ': sold at ' + str(row.close) + ' porfolio value: ' + str(position_quote) + ' delta: ' + str(delta))
                     
 
         #plot graph
@@ -127,7 +133,7 @@ class Trading:
         name = 'results-' + strategy.name + '-' + dataset_name
         layout = go.Layout(title=name)
         fig = go.Figure(data=data, layout=layout)
-        plot(fig, filename=name + '.html')
+        plot(fig, filename='plots/' + name + '.html')
 
         conv_position = position_quote
         #output final account value
@@ -141,6 +147,13 @@ class Trading:
         print("average time hold of loss")
         #this could give snese of vaolatility
         print("std dev of trades")
+
+        # log trades
+        with open('logs/' + name + '.txt', 'w') as f:
+            for line in log:
+                f.write(line + '\n')
+
+
 
     def backtest(self):
         #dynamically load strategies
