@@ -9,6 +9,7 @@ from pyti.smoothed_moving_average import smoothed_moving_average as sma
 from v2.strategy.strategy import Strategy
 from tqdm import tqdm
 from v2.strategy.strategy import Strategy
+from itertools import product
 
 class Trading:
     def __init__(self, config):
@@ -26,6 +27,12 @@ class Trading:
             self.timespan = [int(config['timespan'][0]), 9999999999]
         else:
             self.timespan = [int(x) for x in config['timespan']]
+        self.test_param_ranges = False
+        if config['test_param_ranges'][0] == 'true':
+            self.test_param_ranges = True
+        self.plot = False
+        if config['plot'][0] == 'true':
+            self.plot = True
 
     def getPairDatasets(self, _base_cs, _quote_cs, freq):
         datasets = []
@@ -68,7 +75,7 @@ class Trading:
 
 
 
-    def executeStrategy(self, strategy, my_dataset):
+    def executeStrategy(self, strategy, my_dataset, *args):
         
         # STRATEGY VARIABLES
         position_quote = 1000000.00
@@ -85,17 +92,18 @@ class Trading:
         close = 0.0
         log = []
         old_quote = 0.0
-
+        
         #PLOT VARIABLES
         entries = []
         exits = []
-        candle = go.Candlestick(x=time_filtered_dataset['time'], open=time_filtered_dataset['open'], close=time_filtered_dataset['close'], high=time_filtered_dataset['high'], low=time_filtered_dataset['low'], name='Candlesticks')
-        inds = []
-        data = []
-        for x in strategy.indicators:
-            if x != 'close':
-                rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-                inds.append(go.Scatter(x=time_filtered_dataset['time'], y=time_filtered_dataset[x], name=x, line=dict(color=(rand_color))))
+        if self.plot:
+            candle = go.Candlestick(x=time_filtered_dataset['time'], open=time_filtered_dataset['open'], close=time_filtered_dataset['close'], high=time_filtered_dataset['high'], low=time_filtered_dataset['low'], name='Candlesticks')
+            inds = []
+            data = []
+            for x in strategy.indicators:
+                if x != 'close':
+                    rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
+                    inds.append(go.Scatter(x=time_filtered_dataset['time'], y=time_filtered_dataset[x], name=x, line=dict(color=(rand_color))))
         
         #simulate backtesting
         for row in tqdm(filtered_dataset.itertuples()):
@@ -121,19 +129,23 @@ class Trading:
                     position_base = 0.0
                     exits.append([row.time, close])
                     log.append(str(row.time) + ': sold at ' + str(row.close) + ' porfolio value: ' + str(position_quote) + ' delta: ' + str(delta))
-                    
 
-        #plot graph
-        if entries:
-            ent_graph = go.Scatter(x=[item[0] for item in entries], y=[item[1] for item in entries], name='Entries', mode='markers')
-            exit_graph = go.Scatter(x=[item[0] for item in exits], y=[item[1] for item in exits], name='Exits', mode='markers')
-            data = [candle] + inds + [ent_graph, exit_graph]
-        else:
-            data = [candle] + inds
+
         name = 'results-' + strategy.name + '-' + dataset_name
-        layout = go.Layout(title=name)
-        fig = go.Figure(data=data, layout=layout)
-        plot(fig, filename='plots/' + name + '.html')
+        if args:
+            name += '-' + args[0]
+        if self.plot:
+            #plot graph
+            if entries:
+                ent_graph = go.Scatter(x=[item[0] for item in entries], y=[item[1] for item in entries], name='Entries', mode='markers')
+                exit_graph = go.Scatter(x=[item[0] for item in exits], y=[item[1] for item in exits], name='Exits', mode='markers')
+                data = [candle] + inds + [ent_graph, exit_graph]
+            else:
+                data = [candle] + inds
+            
+            layout = go.Layout(title=name)
+            fig = go.Figure(data=data, layout=layout)
+            plot(fig, filename='plots/' + name + '.html')
 
         conv_position = position_quote
         #output final account value
@@ -153,6 +165,7 @@ class Trading:
             for line in log:
                 f.write(line + '\n')
 
+        return conv_position
 
 
     def backtest(self):
@@ -175,5 +188,33 @@ class Trading:
             for d in self.dfs:
                 if x.is_ml:
                     x.train(d[0])
-                self.executeStrategy(x, d)
+                if self.test_param_ranges:
+                    params = x.get_param_ranges()
+                    param_values = []
+                    for p in params.keys():
+                        low = params[p][0]
+                        high = params[p][1]
+                        step = params[p][2]
+                        cur = low
+                        vals = []
+                        while cur < high:
+                            vals.append((cur, p))
+                            cur += step
+                        if vals[-1] != high:
+                            vals.append((high, p))
+                        param_values += [vals]
+                    param_product = list(product(*param_values))
+                    max_return = 0.0
+                    max_attrs = ''
+                    for p in param_product:
+                        for p2 in p:
+                            setattr(x, p2[1], p2[0])
+                        name = str(p2)
+                        new_return = self.executeStrategy(x, d, name)
+                        if new_return > max_return:
+                            max_return = new_return
+                            max_attrs = str(p2)
+                    print('max params: ' + max_attrs)
+                else:      
+                    self.executeStrategy(x, d)
 
