@@ -25,7 +25,13 @@ __pycache__/
 *$py.class
 *.pyc
 
+#too muuch data to store in github. Just using ggoogle drive
 historical_data/
 
+#don't store pesky html or csv files that there may be
 *.html
 *.csv
+
+#plotting and graphs
+plots/
+logs/
