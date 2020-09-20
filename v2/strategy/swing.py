@@ -4,6 +4,7 @@ from v2.strategy.strategy import Strategy
 class swing(Strategy):
     def __init__(self):
         self.indicators = ['close', 'sma_300']
+        self.name = 'swing'
 
     def process(self, data):
         pass
