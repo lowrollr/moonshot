@@ -1,0 +1,24 @@
+  # environment vars
+  .env
+  .venv
+  env/
+  venv/
+  ENV/
+  
+  # If any one of us uses Jupyter Notebook
+  .ipynb_checkpoints
+  
+  # Vim version stuff
+  *.swp
+  *.swo
+  
+  # vscode folder
+  .vscode/
+  
+  # Byte-compiled / optimized / DLL files
+  __pycache__/
+  *.py[cod]
+  *$py.class# Byte-compiled / optimized / DLL files
+  __pycache__/
+  *.py[cod]
+  *$py.class
