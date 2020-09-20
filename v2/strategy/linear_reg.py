@@ -51,3 +51,6 @@ class linear_reg(Strategy):
             return True
         else:
             return False
+
+    def get_param_ranges(self):
+        return dict()
