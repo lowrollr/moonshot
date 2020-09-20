@@ -6,9 +6,7 @@ import random
 import plotly.graph_objs as go
 from plotly.offline import plot
 from pyti.smoothed_moving_average import smoothed_moving_average as sma
-
-
-
+from tqdm import tqdm
 
 class Trading:
     def __init__(self, config):
@@ -41,8 +39,11 @@ class Trading:
     
     def importStrategy(self, strategy):
         module = importlib.import_module('v2.strategy.{0}'.format(strategy))
-        obj = getattr(module, dir(module)[-1])
-        return obj
+        for mod in dir(module):
+            obj = getattr(module, mod)
+            if inspect.isclass(obj) and issubclass(obj, Strategy) and obj != Strategy:
+                return obj
+        return None
     
     def prepareDataset(self, dataset, indicators):
         try:
@@ -93,7 +94,7 @@ class Trading:
                 inds.append(go.Scatter(x=time_filtered_dataset['time'], y=time_filtered_dataset[x], name=x, line=dict(color=(rand_color))))
         
         #simulate backtesting
-        for row in filtered_dataset.itertuples():
+        for row in tqdm(filtered_dataset.itertuples()):
             close = row.close
             strategy.process(row)
             if not position_taken:
@@ -129,12 +130,14 @@ class Trading:
             conv_position = (position_base * close) * (1 - self.fees)
             print('exit value (holding quote, inc final transaction fee): ' + str(conv_position))
             print('delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
+            print("total trades made " + str(len(entries)))
+            print("average gain/loss per trade ")
+            print("average time hold of loss")
+            #this could give snese of vaolatility
+            print("std dev of trades")
         else:
             print('exit value (not holding quote): ' + str(position_quote))
             print('delta: ' + str(position_quote - start) + ' ' + str(((position_quote / start) * 100) - 100) + '%')
-
-    
-
 
     def backtest(self):
         #dynamically load strategies
@@ -154,8 +157,7 @@ class Trading:
         #execute each strategy on each dataset
         for x in self.strategies:
             for d in self.dfs:
+                if x.is_ml:
+                    x.train(d[0])
                 self.executeStrategy(x, d)
 
-
-
-    
