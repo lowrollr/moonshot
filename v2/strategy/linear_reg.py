@@ -12,7 +12,7 @@ class linear_reg(Strategy):
         self.target_forecast = ["close"]
         #predict out is by however many your step is in df
         #TODO add processing of the config again to have same step in minutes
-        self.predict_out = 1
+        self.predict_out = 60
         self.model = ""
 
     def train(self, data):
@@ -34,14 +34,15 @@ class linear_reg(Strategy):
         print(self.model.predict([save_X]))
         pass
 
-    def process(self, data):     
-        # if data.
-        pass
+    def process(self, data, full_data):     
+        subset_data = full_data.loc[(data.close > full_data["time"]) & \
+                                (data.close < full_data["time"] - 31556926)]
+        print(subset_data)
 
     def calc_entry(self, data):
         test = np.array([data])
         t = self.model.predict(test)
-        if data.close < self.model.predict(np.array([data.close]).reshape(-1,1))[0] * 0.97:
+        if data.close < self.model.predict(np.array([data]).reshape(-1,1))[0] * 0.97:
             return True
         else:
             return False
