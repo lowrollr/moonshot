@@ -111,7 +111,10 @@ class Trading:
         #simulate backtesting
         for row in tqdm(filtered_dataset.itertuples()):
             close = row.close
-            strategy.process(row)
+            if strategy.is_ml:
+                strategy.process(row, my_dataset[0])
+            else:
+                strategy.process(row)
             if not position_taken:
                 if strategy.calc_entry(row):
                     position_taken = True
