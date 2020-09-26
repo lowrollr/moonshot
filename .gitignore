@@ -29,9 +29,10 @@ __pycache__/
 historical_data/
 
 #don't store pesky html or csv files that there may be
-*.html
+backend/*.html
 *.csv
 
 #plotting and graphs
-plots/
-logs/
+backend/plots/
+backend/logs/
+backend/slippage_logs/
