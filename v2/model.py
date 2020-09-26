@@ -57,6 +57,12 @@ class Trading:
                 return obj
         return None
     
+    def addIndicatorToDataset(self, dataset, indicator, *args):
+        if indicator == 'sma':
+            period = args[0]
+            dataset[indicator] = sma(dataset['close'].tolist(), period) 
+        return dataset
+
     def prepareDataset(self, dataset, indicators):
         try:
             for i in indicators:
@@ -75,7 +81,7 @@ class Trading:
 
         except:
             print('dataset preparation error')
-
+        
 
 
     def executeStrategy(self, strategy, my_dataset, *args):
@@ -88,9 +94,8 @@ class Trading:
         #filter by timespan
         dataset = my_dataset[0]
         dataset_name = my_dataset[1]
-        time_filtered_dataset = dataset[(dataset.time > self.timespan[0]) & (dataset.time < self.timespan[1])]
+        filtered_dataset = dataset[(dataset.time > self.timespan[0]) & (dataset.time < self.timespan[1])]
         #filter by indicators
-        filtered_dataset = time_filtered_dataset.filter(items=strategy.getIndicators() + ['time'])
         inc_fees = 0.0
         close = 0.0
         log = []
@@ -100,13 +105,13 @@ class Trading:
         entries = []
         exits = []
         if self.plot:
-            candle = go.Candlestick(x=time_filtered_dataset['time'], open=time_filtered_dataset['open'], close=time_filtered_dataset['close'], high=time_filtered_dataset['high'], low=time_filtered_dataset['low'], name='Candlesticks')
+            candle = go.Candlestick(x=filtered_dataset['time'], open=filtered_dataset['open'], close=time_filtered_dataset['close'], high=time_filtered_dataset['high'], low=time_filtered_dataset['low'], name='Candlesticks')
             inds = []
             data = []
             for x in strategy.indicators:
                 if x != 'close':
                     rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-                    inds.append(go.Scatter(x=time_filtered_dataset['time'], y=time_filtered_dataset[x], name=x, line=dict(color=(rand_color))))
+                    inds.append(go.Scatter(x=filtered_dataset['time'], y=filtered_dataset[x], name=x, line=dict(color=(rand_color))))
         
         #simulate backtesting
         for row in tqdm(filtered_dataset.itertuples()):
@@ -158,7 +163,8 @@ class Trading:
         print('exit value: ' + str(conv_position))
         print('delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
         print("total trades made: " + str(len(entries)))
-        print("average gain/loss per trade: " + str((conv_position - start) / len(entries)))
+        if conv_position != start:
+            print("average gain/loss per trade: " + str((conv_position - start) / len(entries)))
         print("average time hold of loss")
         #this could give snese of vaolatility
         print("std dev of trades")
@@ -177,47 +183,98 @@ class Trading:
             self.strategies.append(self.importStrategy(x)())
 
         #load list of indicators we'll need to insert into our dataframes
-        all_needed_indicators = set()
-        for x in self.strategies:
-            new_indicators = x.getIndicators()
-            all_needed_indicators.update(set(new_indicators))
+        # all_needed_indicators = set()
+        # for x in self.strategies:
+        #     new_indicators = x.getIndicators()
+        #     all_needed_indicators.update(set(new_indicators))
 
-        #prepare datasets
-        for d in self.dfs:
-            self.prepareDataset(d[0], all_needed_indicators)
+        # #prepare datasets
+        # if not self.test_param_ranges:
+        #     for d in self.dfs:
+        #         self.prepareDataset(d[0], all_needed_indicators)
 
         #execute each strategy on each dataset
         for x in self.strategies:
             for d in self.dfs:
-                if x.is_ml:
-                    x.train(d[0])
+                dataset = d[0]
                 if self.test_param_ranges:
-                    params = x.get_param_ranges()
-                    param_values = []
-                    for p in params.keys():
-                        low = params[p][0]
-                        high = params[p][1]
-                        step = params[p][2]
-                        cur = low
-                        vals = []
-                        while cur < high:
-                            vals.append((cur, p))
-                            cur += step
-                        if vals[-1] != high:
-                            vals.append((high, p))
-                        param_values += [vals]
-                    param_product = list(product(*param_values))
-                    max_return = 0.0
-                    max_attrs = ''
-                    for p in param_product:
-                        for p2 in p:
-                            setattr(x, p2[1], p2[0])
-                        name = str(p2)
-                        new_return = self.executeStrategy(x, d, name)
-                        if new_return > max_return:
-                            max_return = new_return
-                            max_attrs = str(p2)
-                    print('max params: ' + max_attrs)
+                    original_dataset = d[0]
+                    my_params = x.get_param_ranges()
+                    # figure out population size
+                    combinations = utils.calc_combinations(my_params)
+                    pop_size = min(min(max(10, int(combinations/10)), 80), combinations)
+
+                    #get unique set of indicators we need to calculate
+                    indicators = set()
+                    
+
+                    found_identical_score = False
+                    done = False
+                    prev_best_score = 0.0
+                    best_params = None
+                    while not done:
+                        new_best_score = prev_best_score
+                        # update the param ranges
+                        utils.update_params(my_params, best_params)
+                        #mutate the population
+                        population = utils.mutate_population(my_params, pop_size)
+                        # if we haven't yet, generate the list of indicators we'll need
+                        if not indicators:
+                            for k in population[list(population.keys())[0]].keys():
+                                if my_params[k][3]:
+                                    indicators.add(k)
+                        #we have the population, now test each of them
+                        
+                        for p in population:
+                            dataset = original_dataset
+                            for k in population[p].keys():
+                                if k in indicators:
+                                    self.addIndicatorToDataset(dataset, k, population[p][k])
+                            if x.is_ml:
+                                x.train(dataset)
+                            score = self.executeStrategy(x, (dataset, d[1]))
+                            if score > new_best_score:
+                                new_best_score = score
+                                best_params = population[p]
+                        if new_best_score < 1.005 * prev_best_score:
+                            done = True
+                        else:
+                            prev_best_score = new_best_score
+                        #check if we should continue or not
+                    print(best_params)
+                        
+
+
+                    # if necessary, prepare the dataset with each set of param values
+                    # execute the strategy on the given dataset
+
+                # if self.test_param_ranges:
+                #     params = x.get_param_ranges()
+                #     param_values = []
+                #     for p in params.keys():
+                #         low = params[p][0]
+                #         high = params[p][1]
+                #         step = params[p][2]
+                #         cur = low
+                #         vals = []
+                #         while cur < high:
+                #             vals.append((cur, p))
+                #             cur += step
+                #         if vals[-1] != high:
+                #             vals.append((high, p))
+                #         param_values += [vals]
+                #     param_product = list(product(*param_values))
+                #     max_return = 0.0
+                #     max_attrs = ''
+                #     for p in param_product:
+                #         for p2 in p:
+                #             setattr(x, p2[1], p2[0])
+                #         name = str(p2)
+                #         new_return = self.executeStrategy(x, d, name)
+                #         if new_return > max_return:
+                #             max_return = new_return
+                #             max_attrs = str(p2)
+                #     print('max params: ' + max_attrs)
                 else:      
                     self.executeStrategy(x, d)
 
