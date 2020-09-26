@@ -198,7 +198,8 @@ class Trading:
             slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
 
         std_dev = utils.get_log_std(log)
-        str_time, avg_time = utils.get_log_avg_hold(log)
+        # TODO: fix below
+        # str_time, avg_time = utils.get_log_avg_hold(log)
         
         print('Exit value: ' + str(conv_position))
         if self.slippage != 0:
@@ -207,7 +208,7 @@ class Trading:
         print("Total trades made: " + str(len(entries)))
         print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
         print("Standard deviation of the deltas (how volatile) " + str(std_dev))
-        print("Average time each trade is held " + str(str_time) + "(" + str(avg_time) + ")")
+        # print("Average time each trade is held " + str(str_time) + "(" + str(avg_time) + ")")
 
         # log trades
         with open('logs/' + name + '.txt', 'w') as f:
@@ -286,6 +287,7 @@ class Trading:
                             prev_best_score = new_best_score
                         #check if we should continue or not
                     print(best_params)
+                    print(prev_best_score)
                         
 
 

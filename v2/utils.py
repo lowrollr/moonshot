@@ -55,8 +55,8 @@ def update_params(params, best_result):
             high = params[x][1]
             param_range = high - low
             center = best_result[x]
-            new_low = center - (0.375 * param_range)
-            new_high = center + (0.375 * param_range)
+            new_low = min(low, center - (0.375 * param_range))
+            new_high = max(high, center + (0.375 * param_range))
             params[x][0] = new_low
             params[x][1] = new_high
     
@@ -82,7 +82,7 @@ def get_log_std(logs):
 def get_log_avg_hold(logs):
     times = []
     i = 0
-    while i < len(logs) - 1:
+    while i < len(logs):
         log_arr = logs[i].split(" ")
         if log_arr[1] == "bought":
             next_log_arr = logs[i+1].split(" ")
