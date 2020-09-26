@@ -2,6 +2,7 @@ import time
 import datetime
 import numpy as np
 import random
+import os
 
 #should probs make a class but thats TODO
 def date_to_unix(date_arr):
@@ -89,3 +90,9 @@ def add_slippage(up_or_down, close_price, slippage_val):
     else:
         raise Exception("Hey you provided the wrong value (pos/neg)")
     return slip_val
+
+def check_make_log_plot_dir():
+    dirs = ["logs", "slippage_logs", "plots"]
+    for dir in dirs:
+        if not os.path.isdir(str(dir)):
+            os.system("mkdir " + str(dir))

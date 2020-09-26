@@ -15,6 +15,7 @@ import random
 
 class Trading:
     def __init__(self, config):
+        utils.check_make_log_plot_dir()
         self.base_cs = config['ex1']
         self.quote_cs = config['ex2']
         self.freq = config['freq'][0]
@@ -107,7 +108,6 @@ class Trading:
         exits = []
 
         #haven't implemneted slippage plot yet
-        slippage_entries = []
         if self.plot:
             candle = go.Candlestick(x=time_filtered_dataset['time'], open=time_filtered_dataset['open'], close=time_filtered_dataset['close'], high=time_filtered_dataset['high'], low=time_filtered_dataset['low'], name='Candlesticks')
             inds = []
@@ -207,6 +207,10 @@ class Trading:
         # log trades
         with open('logs/' + name + '.txt', 'w') as f:
             for line in log:
+                f.write(line + '\n')
+
+        with open('slippage_logs/' + name + '.txt', 'w') as f:
+            for line in slippage_log:
                 f.write(line + '\n')
 
         return conv_position
