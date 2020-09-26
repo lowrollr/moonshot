@@ -31,13 +31,27 @@ class linear_reg(Strategy):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, random_state=0)
         self.model = LinearRegression(n_jobs=-1)
         self.model.fit(X_train, y_train)
-        print(self.model.predict([save_X]))
         pass
 
-    def process(self, data, full_data):     
-        subset_data = full_data.loc[(data.close > full_data["time"]) & \
-                                (data.close < full_data["time"] - 31556926)]
-        print(subset_data)
+    def process(self, data, full_data): 
+        filtered_time_df = full_data.loc[(full_data["time"] < data.time) & (full_data["time"] > data.time - 31556926)]
+        filtered_time_df = filtered_time_df[["close", "volume", "time"]]
+        filtered_time_df["future_val"] = filtered_time_df[self.target_forecast].shift(-self.predict_out)
+
+        filtered_time_df.replace([np.inf, -np.inf], np.nan)
+        filtered_time_df.dropna(inplace=True)
+        X = np.array(data.drop("future_val", axis=1))
+        X = preprocessing.scale(X)
+        y = np.array(data["future_val"])
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, random_state=0)
+
+        self.model = LinearRegression(n_jobs=-1)
+        self.model.fit(X_train, y_train)
+        accuracy = self.model.p
+
+
+        
 
     def calc_entry(self, data):
         test = np.array([data])

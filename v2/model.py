@@ -11,6 +11,7 @@ from tqdm import tqdm
 from v2.strategy.strategy import Strategy
 from itertools import product
 import v2.utils as utils
+import random
 
 class Trading:
     def __init__(self, config):
@@ -22,6 +23,7 @@ class Trading:
         self.strategy_list = config['strategy']
         self.strategies = []
         self.timespan = []
+        self.slippage = float(config["slippage"][0])
         if config['timespan'][0] == 'max':
             self.timespan = [0, 9999999999]
         elif config["timespan"][0] == "date":
@@ -77,9 +79,7 @@ class Trading:
             print('dataset preparation error')
 
 
-
     def executeStrategy(self, strategy, my_dataset, *args):
-        
         # STRATEGY VARIABLES
         position_quote = 1000000.00
         start = position_quote
@@ -94,11 +94,20 @@ class Trading:
         inc_fees = 0.0
         close = 0.0
         log = []
+        slippage_log = []
         old_quote = 0.0
         
+        slippage_tot = 0.0
+        slippage_pos_base = 0.00
+        slippage_pos_quote = position_quote
+        slippage_fees = 0.0
+
         #PLOT VARIABLES
         entries = []
         exits = []
+
+        #haven't implemneted slippage plot yet
+        slippage_entries = []
         if self.plot:
             candle = go.Candlestick(x=time_filtered_dataset['time'], open=time_filtered_dataset['open'], close=time_filtered_dataset['close'], high=time_filtered_dataset['high'], low=time_filtered_dataset['low'], name='Candlesticks')
             inds = []
@@ -111,22 +120,34 @@ class Trading:
         #simulate backtesting
         for row in tqdm(filtered_dataset.itertuples()):
             close = row.close
+            slippage_close = close
+
             if strategy.is_ml:
+                #need to train over the dataset
                 strategy.process(row, my_dataset[0])
             else:
                 strategy.process(row)
             if not position_taken:
                 if strategy.calc_entry(row):
                     position_taken = True
-                    position_base = position_quote / close
+
                     inc_fees = position_quote * self.fees
                     old_quote = position_quote
+                    position_base = position_quote / close
                     position_quote = 0.0
                     entries.append([row.time, close])
                     log.append(str(row.time) + ': bought at ' + str(row.close))
+                    
+                    if self.slippage != 0:
+                        slippage_fees = slippage_pos_quote * self.fees
+                        slippage_close = utils.add_slippage("pos", close, self.slippage)
+                        slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
+                        slippage_pos_base = slippage_pos_quote / slippage_close
+                        slippage_tot += close - slippage_close
+                        slippage_pos_quote = 0.0
+
             else:
                 if strategy.calc_exit(row):
-                    
                     position_taken = False
                     position_quote = position_base * close
                     position_quote = position_quote * (1 - self.fees)
@@ -136,6 +157,14 @@ class Trading:
                     exits.append([row.time, close])
                     log.append(str(row.time) + ': sold at ' + str(row.close) + ' porfolio value: ' + str(position_quote) + ' delta: ' + str(delta))
 
+                    if self.slippage != 0:
+                        slippage_close = utils.add_slippage("neg", close, self.slippage)
+                        slippage_pos_quote = slippage_pos_base * slippage_close
+                        slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
+                        slippage_pos_quote -= slippage_fees
+                        slippage_tot += slippage_close - close
+                        slippage_pos_base = 0.0
+                        slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
 
         name = 'results-' + strategy.name + '-' + dataset_name
         if args:
@@ -158,15 +187,22 @@ class Trading:
         if position_base:
             conv_position = (position_base * close) * (1 - self.fees)
 
+        slippage_conv_pos = slippage_pos_quote
+        if self.slippage != 0:
+            slippage_close = utils.add_slippage("neg", close, self.slippage)
+            slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
+
         std_dev = utils.get_log_std(log)
         str_time, avg_time = utils.get_log_avg_hold(log)
         
-        print('exit value: ' + str(conv_position))
-        print('delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
-        print("total trades made: " + str(len(entries)))
-        print("average gain/loss per trade: " + str((conv_position - start) / len(entries)))
-        print("standard deviation of the deltas (how volatile) " + str(std_dev))
-        print("average time each trade is held " + str(str_time) + "(" + str(avg_time) + ")")
+        print('Exit value: ' + str(conv_position))
+        if self.slippage != 0:
+            print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
+        print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
+        print("Total trades made: " + str(len(entries)))
+        print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
+        print("Standard deviation of the deltas (how volatile) " + str(std_dev))
+        print("Average time each trade is held " + str(str_time) + "(" + str(avg_time) + ")")
 
         # log trades
         with open('logs/' + name + '.txt', 'w') as f:

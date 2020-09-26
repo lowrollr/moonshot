@@ -1,6 +1,7 @@
 import time
 import datetime
 import numpy as np
+import random
 
 #should probs make a class but thats TODO
 def date_to_unix(date_arr):
@@ -72,3 +73,19 @@ def unix_to_time(unix_val):
                 str(full_dt.minute) + " minute(s) " + \
                 str(full_dt.second) + " second(s) "
     return period_str
+
+def add_slippage(up_or_down, close_price, slippage_val):
+    slip_val = 0
+    if up_or_down == "pos":
+        #mult by 100 for randrange only does int
+        max_slip = int((close_price + close_price * slippage_val) * 100)
+        int_close = int(close_price * 100)
+        slip_val = random.randrange(int_close, max_slip) / 100
+    elif up_or_down == "neg":
+        #mult by 100 for randrange only does int
+        min_slip = int((close_price - close_price * slippage_val) * 100)
+        int_close = int(close_price * 100)
+        slip_val = random.randrange(min_slip, int_close) / 100
+    else:
+        raise Exception("Hey you provided the wrong value (pos/neg)")
+    return slip_val
