@@ -5,10 +5,9 @@ import inspect
 import random
 import plotly.graph_objs as go
 from plotly.offline import plot
-from pyti.smoothed_moving_average import smoothed_moving_average as sma
+
 from v2.strategy.strategy import Strategy
 from tqdm import tqdm
-from v2.strategy.strategy import Strategy
 from itertools import product
 import v2.utils as utils
 import random
@@ -20,7 +19,7 @@ class Trading:
         self.quote_cs = config['ex2']
         self.freq = config['freq'][0]
         self.fees = float(config['fees'][0])
-        self.dfs = self.getPairDatasets(self.base_cs, self.quote_cs, self.freq)
+        
         self.strategy_list = config['strategy']
         self.strategies = []
         self.timespan = []
@@ -39,6 +38,9 @@ class Trading:
         self.plot = False
         if config['plot'][0] == 'true':
             self.plot = True
+        
+        #this needs to happen last
+        self.dfs = self.getPairDatasets(self.base_cs, self.quote_cs, self.freq)
 
     def getPairDatasets(self, _base_cs, _quote_cs, freq):
         datasets = []
@@ -48,6 +50,7 @@ class Trading:
                 filename = name + '_' + str(freq) + '.csv'
                 my_df = pd.read_csv('historical_data/' + filename)
                 my_df.columns = ['time', 'open', 'high', 'low', 'close', 'volume', 'trades']
+                my_df = my_df[(my_df.time > self.timespan[0]) & (my_df.time < self.timespan[1])]
                 datasets.append((my_df, name))
                 
         return datasets
@@ -60,30 +63,38 @@ class Trading:
                 return obj
         return None
     
-    def addIndicatorToDataset(self, dataset, indicator, *args):
+    def addIndicatorToDataset(self, dataset, indicator, col_name, *args):
         if indicator == 'sma':
             period = args[0]
             dataset[indicator] = sma(dataset['close'].tolist(), period) 
+        elif indicator == 'ema':
+            period = args[0]
+            dataset[i] = ema(dataset['close'].tolist(), period)
+        
         return dataset
 
-    def prepareDataset(self, dataset, indicators):
-        try:
-            for i in indicators:
-                #3 letter code
-                ind_type = i[0:3]
-                #get params
-                params = None
-                if len(i) > 3:
-                    params = i[4:].split('_')
-                else:
-                    params = [0]
-                if ind_type == 'sma':
-                    period = int(params[0])
-                    dataset[i] = sma(dataset['close'].tolist(), period)
-                #add more indicator options as we need
+    # def prepareDataset(self, dataset, indicators):
+    #     try:
+    #         for i in indicators:
+    #             #3 letter code
+    #             ind_type = i[0:3]
+    #             #get params
+    #             params = None
+    #             if len(i) > 3:
+    #                 params = i[4:].split('_')
+    #             else:
+    #                 params = [0]
+    #             if ind_type == 'sma':
+    #                 period = int(params[0])
+    #                 dataset[i] = sma(dataset['close'].tolist(), period)
+    #             elif ind_type == 'ema':
+    #                 period = int(params[0])
+    #                 dataset[i] = ema(dataset['close'].tolist(), period)
+    #             elif ind_type
+    #             #add more indicator options as we need
 
-        except:
-            print('dataset preparation error')
+    #     except:
+    #         print('dataset preparation error')
         
 
     def executeStrategy(self, strategy, my_dataset, *args):
@@ -95,7 +106,7 @@ class Trading:
         #filter by timespan
         dataset = my_dataset[0]
         dataset_name = my_dataset[1]
-        filtered_dataset = dataset[(dataset.time > self.timespan[0]) & (dataset.time < self.timespan[1])]
+        
         #filter by indicators
         inc_fees = 0.0
         close = 0.0
@@ -114,16 +125,16 @@ class Trading:
 
         #haven't implemneted slippage plot yet
         if self.plot:
-            candle = go.Candlestick(x=filtered_dataset['time'], open=filtered_dataset['open'], close=time_filtered_dataset['close'], high=time_filtered_dataset['high'], low=time_filtered_dataset['low'], name='Candlesticks')
+            candle = go.Candlestick(x=dataset['time'], open=dataset['open'], close=dataset['close'], high=dataset['high'], low=dataset['low'], name='Candlesticks')
             inds = []
             data = []
             for x in strategy.indicators:
                 if x != 'close':
                     rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-                    inds.append(go.Scatter(x=filtered_dataset['time'], y=filtered_dataset[x], name=x, line=dict(color=(rand_color))))
+                    inds.append(go.Scatter(x=dataset['time'], y=dataset[x], name=x, line=dict(color=(rand_color))))
         
         #simulate backtesting
-        for row in tqdm(filtered_dataset.itertuples()):
+        for row in tqdm(dataset.itertuples()):
             close = row.close
             slippage_close = close
 
@@ -206,7 +217,8 @@ class Trading:
             print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
         print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
         print("Total trades made: " + str(len(entries)))
-        print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
+        if len(entries):
+            print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
         print("Standard deviation of the deltas (how volatile) " + str(std_dev))
         # print("Average time each trade is held " + str(str_time) + "(" + str(avg_time) + ")")
 
@@ -244,49 +256,38 @@ class Trading:
                 dataset = d[0]
                 if self.test_param_ranges:
                     original_dataset = d[0]
-                    my_params = x.get_param_ranges()
-                    # figure out population size
-                    combinations = utils.calc_combinations(my_params)
-                    pop_size = min(min(max(10, int(combinations/10)), 80), combinations)
-
-                    #get unique set of indicators we need to calculate
-                    indicators = set()
-                    
-
-                    found_identical_score = False
+                    indicators = x.indicators
+                    pop_size = 80
+                    best_values = []
                     done = False
                     prev_best_score = 0.0
-                    best_params = None
                     while not done:
                         new_best_score = prev_best_score
                         # update the param ranges
-                        utils.update_params(my_params, best_params)
-                        #mutate the population
-                        population = utils.mutate_population(my_params, pop_size)
-                        # if we haven't yet, generate the list of indicators we'll need
-                        if not indicators:
-                            for k in population[list(population.keys())[0]].keys():
-                                if my_params[k][3]:
-                                    indicators.add(k)
-                        #we have the population, now test each of them
+                        for ind in indicators:
+                            ind.shrinkParamRanges(0.375)
                         
-                        for p in population:
+                        for p in range(0, pop_size):
                             dataset = original_dataset
-                            for k in population[p].keys():
-                                if k in indicators:
-                                    self.addIndicatorToDataset(dataset, k, population[p][k])
+                            for ind in indicators:
+                                ind.genData(dataset)
                             if x.is_ml:
                                 x.train(dataset)
                             score = self.executeStrategy(x, (dataset, d[1]))
                             if score > new_best_score:
                                 new_best_score = score
-                                best_params = population[p]
+                                for ind in indicators:
+                                    ind.storeBestValues()
+                                
                         if new_best_score < 1.005 * prev_best_score:
                             done = True
                         else:
                             prev_best_score = new_best_score
                         #check if we should continue or not
-                    print(best_params)
+                    best_values = []
+                    for ind in indicators:
+                        best_values.append(ind.best_values)
+                    print(best_values)
                     print(prev_best_score)
                         
 

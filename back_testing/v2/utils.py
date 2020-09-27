@@ -42,35 +42,10 @@ def convert_timespan(full_arr):
     else:
         raise Exception("There is supposed to be one or two values for date")
 
-def calc_combinations(params):
-    total_distinct = 1
-    for x in params:
-        total_distinct = total_distinct * (params[x][1] - params[x][0]) / params[x][2]
-    return total_distinct
 
-def update_params(params, best_result):
-    if best_result:
-        for x in params:
-            low = params[x][0]
-            high = params[x][1]
-            param_range = high - low
-            center = best_result[x]
-            new_low = min(low, center - (0.375 * param_range))
-            new_high = max(high, center + (0.375 * param_range))
-            params[x][0] = new_low
-            params[x][1] = new_high
+
+
     
-def mutate_population(params, pop_size):
-    new_population = {}
-    while(len(new_population.keys()) < pop_size):
-        new_comb = {}
-        for p in params:
-            dec_digits = len(str(params[p][2]).split('.')[1])
-            num_values = int((params[p][1] - params[p][0]) / params[p][2])
-            new_comb[p] = round(params[p][0] + (random.randint(0, num_values) * params[p][2]), dec_digits)
-        if str(new_comb) not in new_population:
-            new_population[str(new_comb)] = new_comb
-    return new_population
 def get_log_std(logs):
     nums = []
     for log in logs:

@@ -1,4 +1,7 @@
 from v2.strategy.strategy import Strategy
+from v2.strategy.indicators.param import Param
+from v2.strategy.indicators.smma import SMMA
+from v2.strategy.indicators.indicator import Indicator
 
 
 class swing(Strategy):
@@ -6,32 +9,22 @@ class swing(Strategy):
         self.sma = 60
         self.name = 'swing'
         self.is_ml = False
-        self.diff = 0.03
+        self.diff = Param(0.01, 0.1, 2, 'diff')
+        sma_period = Param(5, 10000, 0, 'period')
+        self.indicators = [Indicator(_params=[self.diff], _name='diff'), SMMA(_params=[sma_period], _name='sma')]
 
-    def get_param_ranges(self):
-        params = {}
-        # low bound / upper bound / step / is an indicator?
-        # all numbers must be floats
-        params['diff'] = [0.01, 0.1, 0.01, False]
-        params['sma'] = [5.0, 10000.0, 5.0, True]
-        return params
-    
-    def get_compond_params(self):
-        compound_params = {}
-
-        return compound_params
 
     def process(self, data):
         pass
 
     def calc_entry(self, data):
-        if data.close < (data.sma * (1- self.diff)):
+        if data.close < (data.sma * (1- self.diff.value)):
             return True
         else:
             return False
 
     def calc_exit(self, data):
-        if data.close > (data.sma * (1 + self.diff)):
+        if data.close > (data.sma * (1 + self.diff.value)):
             return True
         else:
             return False
