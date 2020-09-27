@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -30,7 +29,6 @@ func (*dumbo) connectDB(database string) (*gorm.DB, error) {
 			global_db = db
 			return db, nil
 		}
-		log.Printf(database)
 		log.Printf("Could not connec to the database (%s). Retrying...", err.Error())
 		time.Sleep(time.Second << uint(tries))
 	}
@@ -40,8 +38,8 @@ func (*dumbo) connectDB(database string) (*gorm.DB, error) {
 }
 
 func (*dumbo) autoMigrate(database *gorm.DB) error {
-	return database.AutoMigrate(&Stock{}, &Sentiment{}, &Test{},
-		&TickerName{}, &EnumeratedCompanies{}).Error
+	return database.AutoMigrate(&HistoricalCrypto{}, &CurrentCryptoPrice{},
+		&CryptoNames{}, &PortfolioManager{}).Error
 }
 
 func (*dumbo) addConstraint(database *gorm.DB) error {
@@ -64,45 +62,45 @@ func (*dumbo) addConstraint(database *gorm.DB) error {
 }
 
 //Have to change a bunch of this to match crypto stuff
-func (*dumbo) stock_crypto(stock_data CryptoPayload) (Crypto, error) {
-	stored_crypto := Crypto{Symbol: crypto_data.CompanySymbol,
-		Price:     crypto_data.Price,
-		Timestamp: crypto_data.DateTime}
-	err := db.Create(&stored_crypto).Error
-	return stored_crypto, err
-}
+// func (*dumbo) stock_crypto(crypto_data CryptoPayload) (Crypto, error) {
+// 	stored_crypto := Crypto{Symbol: crypto_data.CompanySymbol,
+// 		Price:     crypto_data.Price,
+// 		Timestamp: crypto_data.DateTime}
+// 	err := db.Create(&stored_crypto).Error
+// 	return stored_crypto, err
+// }
 
 //dunno if we will be getting multiple crypto data points. Need to check
-func (*dumbo) many_stock_store(many_stock_data *[]StockPayload) error {
-	var err error
-	fmt.Println(many_stock_data)
-	//fmt.Println(*many_sentiment_data[0])
-	for _, stock := range *many_stock_data {
-		err = global_db.Create(&Stock{
-			Symbol:    strings.ToLower(stock.CompanySymbol),
-			Price:     stock.Price,
-			Timestamp: stock.DateTime,
-			Volume:    stock.Volume,
-		}).Error
-	}
-	return err
-}
+// func (*dumbo) many_stock_store(many_stock_data *[]CryptoPayload) error {
+// 	var err error
+// 	fmt.Println(many_stock_data)
+// 	//fmt.Println(*many_sentiment_data[0])
+// 	for _, stock := range *many_stock_data {
+// 		err = global_db.Create(&Crypto{
+// 			Symbol:    strings.ToLower(stock.CompanySymbol),
+// 			Price:     stock.Price,
+// 			Timestamp: stock.DateTime,
+// 			Volume:    stock.Volume,
+// 		}).Error
+// 	}
+// 	return err
+// }
 
 //maybe will need this
-func (*dumbo) store_ticker_name(company TickerName) error {
-	return global_db.Create(&company).Error
+func (*dumbo) store_ticker_name(coin CryptoNames) error {
+	return global_db.Create(&coin).Error
 }
 
 //also would need this for frontend possibly
-func (*dumbo) getTickerNames() (map[string]string, error) {
-	var db_names []TickerName
-	err := global_db.Find(&db_names).Error
-	if err != nil {
-		return map[string]string{}, err
-	}
-	comp_names := map[string]string{}
-	for _, comp := range db_names {
-		comp_names[comp.Ticker] = comp.Name
-	}
-	return comp_names, nil
-}
+// func (*dumbo) getTickerNames() (map[string]string, error) {
+// 	var db_names []TickerName
+// 	err := global_db.Find(&db_names).Error
+// 	if err != nil {
+// 		return map[string]string{}, err
+// 	}
+// 	comp_names := map[string]string{}
+// 	for _, comp := range db_names {
+// 		comp_names[comp.Ticker] = comp.Name
+// 	}
+// 	return comp_names, nil
+// }

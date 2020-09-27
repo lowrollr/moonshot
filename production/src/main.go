@@ -17,7 +17,7 @@ func main() {
 	fmt.Println("Connected to database successfully")
 
 	fmt.Println("Creating tables in database")
-	err = Dumbo.autoMigrate(db)
+	err = Dumbo.autoMigrate(global_db)
 	if err != nil {
 		panic(err)
 	}
