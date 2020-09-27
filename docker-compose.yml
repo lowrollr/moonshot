@@ -1,11 +1,11 @@
-version: 3.8
+version: "3"
 services:
   crypto_db:
     image: postgres:12.2-alpine
     env_file: production/.env_db
     ports:
-      -5432:5432
-    restart: "unless-stoped"
+      - 5432:5432
+    restart: "unless-stopped"
     
   trade:
     build: ./production

@@ -1,2 +1,11 @@
-FROM gcc:10.2.0
+FROM gcc:latest
+
+
+
+WORKDIR /code 
+COPY src .
+RUN make
+RUN ls
+CMD ["./trade"]
+
 
