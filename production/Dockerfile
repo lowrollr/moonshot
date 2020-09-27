@@ -1,11 +1,7 @@
-FROM gcc:latest
-
-
-
-WORKDIR /code 
+FROM golang:rc-alpine
+RUN apk update && apk add --no-cache git
+WORKDIR /go/src
 COPY src .
-RUN make
-RUN ls
-CMD ["./trade"]
-
-
+RUN go get -d -v
+RUN go build -v -o trade
+CMD ./trade
