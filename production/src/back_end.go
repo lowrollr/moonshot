@@ -58,7 +58,6 @@ func main() {
 	back_end_server.HandleFunc("/check_availibility", check_availibility).Methods(http.MethodPost)
 	back_end_server.HandleFunc("/all_data_ml", all_data_ml).Methods(http.MethodPost)
 	
-
 	fmt.Println("Start up server")
 	addr := "0.0.0.0:7734"
 	log.Fatal(http.ListenAndServe(addr, back_end_server))

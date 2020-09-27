@@ -1,9 +1,24 @@
 package main
 
 import (
-	"alert"
+	//"alert"
+	"fmt"
  )
 
 func main() {
-	alert.TestInclude()
+	fmt.Println("Connectting to database")
+	//Here going to connect to database
+	var err error = nil
+
+	global_db, err = Dumbo.connectDB(db_string)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Connected to database successfully")
+
+	fmt.Println("Creating tables in database")
+	err = Dumbo.autoMigrate(db)
+	if err != nil {
+		panic(err)
+	}
 }
