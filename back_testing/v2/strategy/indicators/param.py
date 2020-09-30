@@ -1,11 +1,11 @@
 import random
 
 class Param:
-    def __init__(self, _low, _up, _prec, _name):
+    def __init__(self, _low, _up, _prec, _name, _default):
         self.low = _low
         self.up = _up
         self.prec = _prec
-        self.value = self.low
+        self.value = _default
         self.name = _name
     
     def shrinkRange(self, center, percentage):

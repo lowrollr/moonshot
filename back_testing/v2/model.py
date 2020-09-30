@@ -6,7 +6,7 @@ import random
 import plotly.graph_objs as go
 from plotly.offline import plot
 
-from v2.strategy.strategy import Strategy
+from v2.strategy.strategies.strategy import Strategy
 from tqdm import tqdm
 from itertools import product
 import v2.utils as utils
@@ -56,7 +56,7 @@ class Trading:
         return datasets
     
     def importStrategy(self, strategy):
-        module = importlib.import_module('v2.strategy.{0}'.format(strategy))
+        module = importlib.import_module('v2.strategy.strategies.{0}'.format(strategy))
         for mod in dir(module):
             obj = getattr(module, mod)
             if inspect.isclass(obj) and issubclass(obj, Strategy) and obj != Strategy:
@@ -322,6 +322,8 @@ class Trading:
                 #             max_return = new_return
                 #             max_attrs = str(p2)
                 #     print('max params: ' + max_attrs)
-                else:      
+                else:
+                    for ind in x.indicators:
+                        ind.genData(d[0], False)      
                     self.executeStrategy(x, d)
 

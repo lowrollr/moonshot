@@ -1,4 +1,4 @@
-from v2.strategy.strategy import Strategy
+from v2.strategy.strategies.strategy import Strategy
 import numpy as np
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
