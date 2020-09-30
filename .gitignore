@@ -27,12 +27,13 @@ __pycache__/
 
 #too muuch data to store in github. Just using ggoogle drive
 historical_data/
+back_testing/historical_data/
 
 #don't store pesky html or csv files that there may be
 backend/*.html
 *.csv
 
 #plotting and graphs
-backend/plots/
-backend/logs/
-backend/slippage_logs/
+back_testing/plots/
+back_testing/logs/
+back_testing/slippage_logs/
