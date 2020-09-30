@@ -2,7 +2,7 @@ version: "3"
 services:
   crypto_db:
     image: postgres:12.2-alpine
-    env_file: production/.env_db
+    env_file: production/env/.env_db
     ports:
       - 5432:5432
     restart: "unless-stopped"
@@ -12,4 +12,4 @@ services:
     depends_on:
       - crypto_db
     restart: "on-failure"
-    env_file: production/.env_trade
+    env_file: production/env/.env_trade

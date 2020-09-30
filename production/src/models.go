@@ -12,12 +12,32 @@ var (
 	dbName    = os.Getenv("DBNAME")
 )
 
-type Crypto struct {
+type HistoricalCrypto struct {
 	gorm.Model
-	Symbol    string  `gorm:"Type:varchar(7);not null;"`
+	CoinAbv    string  `gorm:"Type:varchar(7);not null;"`
 	Price     float32 `gorm:"Type:NUMERIC(8,2);not null;"`
 	Timestamp int64   `gorm: "Type:timestamp with time zone default now();"`
-	Volume    int64   `gorm:"not null"`
+	//Volume    int64   `gorm:"not null"`
 }
 
-//add stuff for portfolio manager
+type CurrentCryptoPrice struct {
+	gorm.Model
+	CoinAbv    string  `gorm:"Type:varchar(7);not null;unique;primary key;"`
+	Price     float32 `gorm:"Type:NUMERIC(8,2);not null;"`
+	Timestamp int64   `gorm: "Type:timestamp with time zone default now();"`
+}
+
+type CryptoNames struct {
+	CoinAbv string `gorm:"Type:varchar(7);not null;unique;primary key"`
+	CoinName   string `gorm:"Type:varchar(50); not null;"`
+}
+
+type PortfolioManager struct {
+	gorm.Model
+	CoinAbv          string `gorm:"Type:varchar(7);not null;"`
+	CoinAmount    float32	`gorm:"Type:NUMERIC(8,2);not null;"`
+	Delta         float32	`gorm:"Type:NUMERIC(8,2);not null;"`
+	WhenEntered   int64		`gorm:"Type:money;not null;"`
+	StrategyUsing string	`gorm:"Type:varchar(20);not null;unique;primary key"`
+	StopLoss      float32	`gorm:"Type:money;not null;"`
+}
