@@ -1,8 +1,7 @@
-from load_config import load_config
-from v2.model import Trading
-import os
+from run import run_app
+
+
 
 if __name__ == '__main__':
-    config = load_config()
-    model = Trading(config)
-    model.backtest()
+    run_app()
+
