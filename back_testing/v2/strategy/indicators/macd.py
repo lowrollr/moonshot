@@ -7,7 +7,7 @@ from pyti.moving_average_convergence_divergence import moving_average_convergenc
 class MACD(Indicator):
     
 
-    def genData(self, dataset, gen_new_values, value='close'):
+    def genData(self, dataset, gen_new_values=True, value='close'):
         # due to the nature of macd we will always generate new values
         # if this causes a problem we can change it 
 
