@@ -4,9 +4,9 @@ from v2.strategy.indicators.indicator import Indicator
 import numpy as np
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
 from v2.strategy.indicators.smma import SMMA
 from v2.strategy.indicators.macd import MACD
+from sklearn.ensemble import RandomForestRegressor
 
 def warn(*args, **kwargs):
     pass
@@ -22,8 +22,8 @@ class linear_reg(Strategy):
         #add some checking between the params
         self.predict_out = Param(1, 300, 0, "predict", 15)
         self.train_on = Param(1500, 1500, 0, "train_on", 1500)
-        self.update_num = Param(2, 750, 0, "update_num", 100)
-        self.diff = Param(0.003, 0.04, 3, 'diff', 0.01)
+        self.update_num = Param(2, 10000, 0, "update_num", 100)
+        self.diff = Param(0.003, 0.1, 3, 'diff', 0.01)
         self.model = ""
         sma_period = Param(37, 37, 0, "sma", 37)
         ema_fast = Param(5, 10000, 0, 'ema_fast', 15)
@@ -56,7 +56,7 @@ class linear_reg(Strategy):
             X = np.array(reduced_df.drop("future_val", axis=1))
             y = np.array(reduced_df["future_val"])
 
-            self.model = LinearRegression(n_jobs=-1)
+            self.model = RandomForestRegressor(n_jobs=-1)
             self.model.fit(X, y)
             self.counter = 0
         self.counter += 1
