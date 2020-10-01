@@ -9,7 +9,7 @@ class BollingerBands(Indicator):
         period = findParams(self.params, ['period'])[0]
         
         boll_sma = SMA([period], _name='boll_sma')
-        boll_sma.genData(dataset, value=value)
+        boll_sma.genData(dataset, gen_new_values=gen_new_values, value=value)
         dataset['boll_stdev'] = dataset[value].rolling(int(period.value)).std()
         dataset['boll_upper'] = dataset['boll_sma'] + (dataset['boll_stdev'] * 2)
         dataset['boll_lower'] = dataset['boll_sma'] - (dataset['boll_stdev'] * 2)

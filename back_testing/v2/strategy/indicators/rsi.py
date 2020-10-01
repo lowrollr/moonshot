@@ -7,7 +7,8 @@ class RSI(Indicator):
     
     def genData(self, dataset, gen_new_values=True, value='close'):
         period = findParams(self.params, ['period'])[0]
-        period.genValue()
+        if gen_new_values:
+            period.genValue()
 
         dataset['rsi_diff'] =  dataset[value].diff()
 

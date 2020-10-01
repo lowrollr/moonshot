@@ -7,6 +7,7 @@ from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 from v2.strategy.indicators.macd import MACD
+from v2.strategy.indicators.pivot_points import PivotPoints
 from v2.strategy.indicators.indicator import Indicator
 
 
@@ -25,7 +26,8 @@ class swing(Strategy):
         macd_ema_slow = Param(5, 10000, 0, 'ema_slow', 37.0)
         macd_ema_fast = Param(5, 10000, 0, 'ema_fast', 37.0)
         macd_signal = Param(5, 10000, 0, 'signal', 37.0)
-        self.indicators = [Indicator(_params=[self.diff], _name='diff'), SMA(_params=[sma_period]), SMMA(_params=[smma_period]), EMA(_params=[ema_period]), BollingerBands(_params=[boll_period]), RSI(_params=[rsi_period]), StochasticOscillator(_params=[stoch_highlow, stoch_k]), MACD(_params=[macd_ema_fast, macd_ema_slow, macd_signal])]
+        pp_period = Param(5, 10000, 0, 'period', 37.0)
+        self.indicators = [Indicator(_params=[self.diff], _name='diff'), SMA(_params=[sma_period]), SMMA(_params=[smma_period]), EMA(_params=[ema_period]), BollingerBands(_params=[boll_period]), RSI(_params=[rsi_period]), StochasticOscillator(_params=[stoch_highlow, stoch_k]), MACD(_params=[macd_ema_fast, macd_ema_slow, macd_signal]), PivotPoints(_params=[pp_period])]
 
     def process(self, data):
         pass
