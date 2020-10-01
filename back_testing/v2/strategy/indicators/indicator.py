@@ -1,4 +1,4 @@
-from v2.strategy.indicators.param import Param
+
 import random
 
 class Indicator:
@@ -11,7 +11,7 @@ class Indicator:
             self.name = self.__class__.__name__ + _appended_name
         self.best_values = {}
 
-    def genData(self, dataset, gen_new_values=True):
+    def genData(self, dataset, gen_new_values=True, value='close'):
         # generic indicators don't get added to the dataset as columns because they are simply
         # data used within strategies and thus don't need to be applied to data frames
         if gen_new_values:

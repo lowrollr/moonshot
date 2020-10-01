@@ -100,3 +100,9 @@ def check_make_log_plot_dir():
     for dir in dirs:
         if not os.path.isdir(str(dir)):
             os.system("mkdir " + str(dir))
+
+def findParams(params, params_to_find):
+    results = []
+    for x in params_to_find:
+        results.append(next((y for y in params if y.name == x), None))
+    return results
