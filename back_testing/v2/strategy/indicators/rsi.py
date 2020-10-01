@@ -1,6 +1,7 @@
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 from v2.utils.strategy.indicators.smma import SMMA
+import pandas
 
 class RSI(Indicator):
     
