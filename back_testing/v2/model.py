@@ -63,38 +63,6 @@ class Trading:
                 return obj
         return None
     
-    def addIndicatorToDataset(self, dataset, indicator, col_name, *args):
-        if indicator == 'sma':
-            period = args[0]
-            dataset[indicator] = sma(dataset['close'].tolist(), period) 
-        elif indicator == 'ema':
-            period = args[0]
-            dataset[i] = ema(dataset['close'].tolist(), period)
-        
-        return dataset
-
-    # def prepareDataset(self, dataset, indicators):
-    #     try:
-    #         for i in indicators:
-    #             #3 letter code
-    #             ind_type = i[0:3]
-    #             #get params
-    #             params = None
-    #             if len(i) > 3:
-    #                 params = i[4:].split('_')
-    #             else:
-    #                 params = [0]
-    #             if ind_type == 'sma':
-    #                 period = int(params[0])
-    #                 dataset[i] = sma(dataset['close'].tolist(), period)
-    #             elif ind_type == 'ema':
-    #                 period = int(params[0])
-    #                 dataset[i] = ema(dataset['close'].tolist(), period)
-    #             elif ind_type
-    #             #add more indicator options as we need
-
-    #     except:
-    #         print('dataset preparation error')
         
 
     def executeStrategy(self, strategy, my_dataset, *args):
