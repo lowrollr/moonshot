@@ -2,7 +2,6 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.ema import EMA
 from v2.utils import findParams
 
-from pyti.moving_average_convergence_divergence import moving_average_convergence_divergence as macd
 
 class MACD(Indicator):
     
@@ -32,3 +31,4 @@ class MACD(Indicator):
 
         signal = EMA([signal_param], _name='signal')
         signal.genData(dataset, gen_new_values=False, value=self.name)
+        dataset['macd_diff'] = dataset['macd'] - dataset['signal']
