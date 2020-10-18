@@ -9,6 +9,9 @@ from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.macd import MACD
+from v2.strategy.indicators.slope import Slope
+from v2.strategy.indicators.variance import Variance
+from tensorflow.keras.models import load_model
 
 
 class trough_v1(Strategy):
@@ -16,10 +19,12 @@ class trough_v1(Strategy):
         self.is_ml = False
         self.name = 'trough_v1'
         self.stop_loss = 0.0
-        self.model_trough = pickle.load(open('v2/strategy/saved_models/troughs_v3.sav', 'rb'))
-        self.model_peak = pickle.load(open('v2/strategy/saved_models/peaks_v3.sav', 'rb'))
+        self.model_trough = load_model('./v2/strategy/saved_models/boost_rf_lstm.sav')
+        self.boost_model = pickle.load(open('./v2/strategy/saved_models/part_boost_lstm.sav', 'rb'))
+        self.rf_model = pickle.load(open('./v2/strategy/saved_models/part_rf_lstm.sav', 'rb'))
         self.looking_for_exit = False
         self.looking_for_entry = False
+        self.entry_pt_value = 0.0
         self.entry = 0.0
         self.set_new_stop_loss = False
         boll_period = Param(5, 10000, 0, 'period', 90)
@@ -33,43 +38,66 @@ class trough_v1(Strategy):
         ema_slow= Param(6, 10001, 0, 'ema_slow', 120)
         signal = Param(5, 10001, 0, 'signal', 90)
         macd_ = MACD(_params=[ema_fast, ema_slow, signal], _name='macd')
-        self.indicators = [macd_, rsi_, stoch_oscillator, boll_bands]
+        slope_period = Param(5, 10001, 0, 'period', 30)
+        slope = Slope(_params=[slope_period], _name='slope')
+        var_period = Param(5, 10001, 0, 'period', 60)
+        stop_loss_param = Param(0, 0, 0, 'stop_loss_percentage', 0)
+        variance = Variance(_params=[var_period, stop_loss_param], _name='variance')
+        self.indicators = [macd_, rsi_, stoch_oscillator, slope, variance]
                 
 
     def process(self, data):
-        self.stop_loss = max(self.stop_loss, 0.99 * data.close)
+        self.stop_loss = max(self.stop_loss, (1 - (data.stop_loss_percentage / 100)) * data.close)
 
     def calc_entry(self, data):
-        model_data = np.array([data.boll_lower, data.stosc_k, data.macd_diff, data.rsi])
-        my_sum = np.sum(model_data)
-        if not np.isnan(my_sum):
-            model_data = model_data.reshape(1, -1)
-            if self.model_trough.predict(model_data):
-                self.entry = data.close
-                self.looking_for_exit = False
-                return True
-            else:
-                return False
+        rf_model_data = np.array([data.stosc_k, data.slope, data.macd_diff, data.rsi])
+        
+        if not np.isnan(np.sum(rf_model_data)):
+            rf_model_data = rf_model_data.reshape(1, -1)
+            rf_model_prediction = self.rf_model.predict(rf_model_data)[0]
         else:
+            rf_model_prediction = 0.0
+
+        boost_model_data = np.array([data.stosc_k, data.slope, data.macd_diff, data.rsi, rf_model_prediction])
+        if not np.isnan(np.sum(boost_model_data)):
+            boost_model_data = boost_model_data.reshape(1, -1)
+            boost_model_prediction = self.boost_model.predict(boost_model_data)[0]
+        else:
+            boost_model_prediction = 0.0
+
+        nn_model_data = np.array([data.stosc_k, data.slope, data.macd_diff, data.rsi, rf_model_prediction, boost_model_prediction])
+        if not np.isnan(np.sum(nn_model_data)):
+            nn_model_data = nn_model_data.reshape(1, -1)
+            nn_model_data = np.reshape(nn_model_data, (nn_model_data.shape[0], 1, nn_model_data.shape[1]))
+            prediction = self.model_trough.predict(nn_model_data)[0][1]
+        else:
+            prediction = 0.0
+        
+
+        if prediction > 0.9:
+            print(data.time)
+            self.looking_for_entry = True
+            self.entry_pt_value = data.close
             return False
-
-
-    def calc_exit(self, data):
-        if self.looking_for_exit:
-            if data.close < self.stop_loss:
-                return True
-            else:
-                return False
         else:
-            model_data = np.array([data.boll_upper, data.stosc_k, data.macd_diff, data.rsi])
-            my_sum = np.sum(model_data)
-            if not np.isnan(my_sum):
-                model_data = model_data.reshape(1, -1)
-                if self.model_peak.predict(model_data):
-                    self.stop_loss = 0.99 * data.close
-                    self.looking_for_exit = True
-                    return False
+            if self.looking_for_entry:
+                if data.close > self.entry_pt_value:
+                    self.entry = data.close
+                    self.stop_loss = 0.995 * data.close
+                    return True
                 else:
                     return False
             else:
                 return False
+
+        
+
+
+    def calc_exit(self, data):
+        if data.close < self.stop_loss:
+            self.looking_for_entry = False
+            return True
+        else:
+            return False
+        
+            
