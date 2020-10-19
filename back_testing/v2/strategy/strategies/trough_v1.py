@@ -13,7 +13,6 @@ from v2.strategy.indicators.slope import Slope
 from v2.strategy.indicators.variance import Variance
 from tensorflow.keras.models import load_model
 
-
 class trough_v1(Strategy):
     def __init__(self):
         self.is_ml = False
@@ -99,5 +98,3 @@ class trough_v1(Strategy):
             return True
         else:
             return False
-        
-            
