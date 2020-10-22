@@ -14,7 +14,6 @@ from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.macd import MACD
 from v2.strategy.indicators.param import Param
-import tensorflow as tf
 import pickle
 import warnings
 warnings.filterwarnings('ignore')
@@ -22,6 +21,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 def train_dir():
+    models = []
     if not os.path.isdir("./models"):
         os.system("mkdir models")
     if not os.path.exists("training_data.csv"):
@@ -99,7 +99,7 @@ from sklearn.linear_model import ElasticNet
 lin_reg = LinearRegression(n_jobs=-1)
 lin_reg.fit(X_train, y_train)
 lin_reg_score = lin_reg.score(X_test, y_test)
-pickle.dump(lin_reg, open('models/linear_reg.sav', 'wb'))
+pickle.dump(lin_reg, open('models/linear_reg.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("linear regression,{}".format(lin_reg_score))
 
@@ -108,7 +108,7 @@ ridge = Ridge()
 ridge.fit(X_train, y_train)
 score = ridge.score(X_test, y_test)
 
-pickle.dump(ridge, open('models/global_ridge.sav', 'wb'))
+pickle.dump(ridge, open('models/global_ridge.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("ridge_linear_model,{}".format(score))
 
@@ -117,7 +117,7 @@ lasso = Lasso()
 lasso.fit(X_train, y_train)
 score = lasso.score(X_test, y_test)
 
-pickle.dump(lasso, open('models/lasso.sav', 'wb'))
+pickle.dump(lasso, open('models/lasso.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("lasso_model,{}".format(score))
 
@@ -126,7 +126,7 @@ e_net = ElasticNet()
 e_net.fit(X_train, y_train)
 score = e_net.score(X_test, y_test)
 
-pickle.dump(e_net, open('models/elastic_net.sav', 'wb'))
+pickle.dump(e_net, open('models/elastic_net.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("elastic_net,{}".format(score))
 
@@ -139,7 +139,7 @@ svr_model = SVR()
 svr_model.fit(X_train, y_train)
 score = svr_model.score(X_test, y_test)
 
-pickle.dump(svr_model, open('models/SVR.sav', 'wb'))
+pickle.dump(svr_model, open('models/SVR.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("SVR,{}".format(score))
 
@@ -148,7 +148,7 @@ n_svr_model = NuSVR()
 n_svr_model.fit(X_train, y_train)
 score = n_svr_model.score(X_test, y_test)
 
-pickle.dump(n_svr_model, open('models/NuSVR.sav', 'wb'))
+pickle.dump(n_svr_model, open('models/NuSVR.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("NuSVR,{}".format(score))
 
@@ -157,7 +157,7 @@ lin_svr = LinearSVR()
 lin_svr.fit(X_train, y_train)
 score = lin_svr.score(X_test, y_test)
 
-pickle.dump(lin_svr, open('models/linear_SVR.sav', 'wb'))
+pickle.dump(lin_svr, open('models/linear_SVR.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("linear_SVR,{}".format(score))
 
@@ -168,7 +168,7 @@ sgd_model = SGDRegressor()
 sgd_model.fit(X_train, y_train)
 score = sgd.score(X_test, y_test)
 
-pickle.dump(sgd_model, open('models/SGD.sav', 'wb'))
+pickle.dump(sgd_model, open('models/SGD.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("SGD,{}".format(score))
 
@@ -179,7 +179,7 @@ k_neigh_model = KNeighborsRegressor(n_jos=-1)
 k_neigh_model.fit(X_train, y_train)
 score = k_neigh_model(X_test, y_test)
 
-pickle.dump(k_neigh_model, open('models/KNeighbors.sav', 'wb'))
+pickle.dump(k_neigh_model, open('models/KNeighbors.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("KNeighbors,{}".format(score))
 
@@ -187,7 +187,7 @@ radius_model = RadiusNeighborsRegressor(n_jobs=-1)
 radius_model.fit(X_train, y_train)
 score = radius_model(X_test, y_test)
 
-pickle.dump(radius_model, open('models/global_rad.sav', 'wb'))
+pickle.dump(radius_model, open('models/global_rad.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("Radius Neighbors,{}".format(score))
 
@@ -202,7 +202,7 @@ rf_mod = RandomForestRegressor(n_jobs=-1)
 rf_mod.fit(X_train, y_train)
 score = rf_mod.score(X_test, y_test)
 
-pickle.dump(rf_mod, open('models/random_forest.sav', 'wb'))
+pickle.dump(rf_mod, open('models/random_forest.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("Random Forest,{}".format(score))
 
@@ -211,7 +211,7 @@ ef_mod = ExtraTreesRegressor(n_jobs=-1)
 ef_mod.fit(X_train, y_train)
 score = ef_mod.score(X_test, y_test)
 
-pickle.dump(ef_mod, open('models/extra_forest.sav', 'wb'))
+pickle.dump(ef_mod, open('models/extra_forest.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("Extra Forest,{}".format(score))
 
@@ -220,7 +220,7 @@ ada_mod = AdaBoostRegressor()
 ada_mod.fit(X_train, y_train)
 score = ada_mod.score(X_test, y_test)
 
-pickle.dump(ada_mod, open('models/ada_regressor.sav', 'wb'))
+pickle.dump(ada_mod, open('models/ada_regressor.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("Ada Forest,{}".format(score))
 
@@ -228,7 +228,7 @@ grad_mod = GradientBoostingRegressor()
 grad_mod.fit(X_train, y_train)
 score = grad_mod.score(X_test, y_test)
 
-pickle.dump(grad_mod, open('models/grad_boost_sklearn.sav', 'wb'))
+pickle.dump(grad_mod, open('models/grad_boost_sklearn.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("Sklearn Gradient Boost,{}".format(score))
 
@@ -236,6 +236,6 @@ boost_mod = XGBRegressor(n_jobs=-1)
 boost_mod.fit(X_train, y_train)
 score = boost_mod.score(X_test, y_test)
 
-pickle.dump(boost_mod, open('models/grad_boost_orig.sav', 'wb'))
+pickle.dump(boost_mod, open('models/grad_boost_orig.sav', 'wb+'))
 with open("training_data.csv", "a") as f:
     f.write("Grad boosting Original,{}".format(score))
