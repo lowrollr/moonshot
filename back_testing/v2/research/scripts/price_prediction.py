@@ -21,6 +21,16 @@ warnings.filterwarnings('ignore')
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
+def train_dir():
+    if not os.path.isdir("./models"):
+        os.system("mkdir models")
+    if not os.path.exists("training_data.csv"):
+        os.system("touch training_data.csv")
+        with open("training_data.csv", "wa") as f:
+            f.write("model,score")
+
+train_dir()
+
 def load_config():
     my_config = {}
     with open('config.config') as config:
@@ -88,7 +98,10 @@ from sklearn.linear_model import ElasticNet
 #lin reg
 lin_reg = LinearRegression()
 lin_reg.fit(X_train, y_train)
-print(lin_reg.score(X_test, y_test))
+lin_reg_score = lin_reg.score(X_test, y_test)
+pickle.dump(lin_reg, open('models/linear_reg.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("linear regression,{}".format(lin_reg_score))
 
 #ridge
 alphas = [0.01, 0.05, 0.075]
@@ -104,7 +117,9 @@ for a in tqdm(alphas):
         max_score = score
         global_ridge = ridge
 
-print("Max score is: {} with alpha of: {}".format(max_score, alpha_val))
+pickle.dump(global_ridge, open('models/global_ridge.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("ridge_linear_model,{}".format(max_score))
 
 #lasso
 alphas = [0.01, 0.1, 0.5]
@@ -120,7 +135,9 @@ for a in tqdm(alphas):
         max_score = score
         global_lasso = lasso
 
-print("Max score is: {} with alpha of: {}".format(max_score, alpha_val))
+pickle.dump(global_lasso, open('models/lasso.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("lasso_model,{}".format(max_score))
 
 #multi task lasso
 alphas = [0.01, 0.1, 0.5, 1, 2]
@@ -140,7 +157,9 @@ for a in tqdm(alphas):
             max_score = score
             global_e_net = e_net
 
-print("Max score is: {} with alpha of: {} and l1 val of: {}".format(max_score, alpha_val, l1_value))
+pickle.dump(global_e_net, open('models/elastic_net.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("elastic_net,{}".format(max_score))
 
 from sklearn.svm import SVR
 from sklearn.svm import NuSVR
@@ -183,7 +202,9 @@ for c in tqdm(C_vals):
         C_val = c
         global_svr = svr_model
 
-print("Max score is: {} with kernel of: {}, degree val of: {}, and c_val of: {}".format(max_score, ker_val, deg_val, C_val))
+pickle.dump(global_svr, open('models/SVR.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("SVR,{}".format(max_score))
 
 #NuSVR
 kernels = ['linear', 'poly', 'sigmoid', 'precomputed']
@@ -234,7 +255,9 @@ for d in tqdm(degrees):
         deg_val = d
         global_n_svr = n_svr_model
                     
-print("Max score is: {} with kernel of: {}, degree val of: {}, and c_val of: {}".format(max_score, ker_val, deg_val, C_val))
+pickle.dump(global_n_svr, open('models/NuSVR.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("NuSVR,{}".format(max_score))
 
 #Linear SVR
 losses = ['epsilon_insensitive', 'squared_epsilon_insensitive']
@@ -264,7 +287,9 @@ for c in tqdm(C_values):
         C_val = c
         global_lin_svr = lin_svr
 
-print("Max score is: {} with loss of: {} and c_val of: {}".format(max_score, loss_val, C_val))
+pickle.dump(global_lin_svr, open('models/linear_SVR.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("linear_SVR,{}".format(max_score))
 
 from sklearn.linear_model import SGDRegressor
 
@@ -292,7 +317,9 @@ for l in tqdm(losses):
                 l1_rat = r
                 global_sgd = sgd_model
 
-print("Max score is: {} with loss of: {}, alpha of: {}, and l1 ratio of: {}".format(max_score, loss_val, alph, l1_rat))
+pickle.dump(global_sgd, open('models/SGD.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("SGD,{}".format(max_score))
 
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neighbors import RadiusNeighborsRegressor
@@ -316,7 +343,9 @@ for l in tqdm(leaf_sizes):
             leaf_val = l
             global_k_neighbor = k_neigh_model
 
-print("Max score is: {} with {} nieghbors, and a leaf size of: {}".format(max_score, neighbor_val, leaf_val))
+pickle.dump(global_k_neighbor, open('models/KNeighbors.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("KNeighbors,{}".format(max_score))
 
 radius= [.1, .5, 1, 2, 10]
 leaf_sizes = [2, 5, 15, 30, 60]
@@ -337,7 +366,9 @@ for l in tqdm(leaf_sizes):
             leaf_val = l
             global_rad = radius_model
 
-print("Max score is: {} with {} nieghbors, and a leaf size of: {}".format(max_score, rad_val, leaf_val))
+pickle.dump(global_rad, open('models/global_rad.sav', 'wb'))
+with open("training_data.csv", "wa") as f:
+    f.write("Radius Neighbors,{}".format(max_score))
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import ExtraTreesRegressor
@@ -345,6 +376,3 @@ from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from xgboost import XGBRegressor
 
-
-
-print('hi')
