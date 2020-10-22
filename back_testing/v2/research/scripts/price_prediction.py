@@ -26,7 +26,7 @@ def train_dir():
         os.system("mkdir models")
     if not os.path.exists("training_data.csv"):
         os.system("touch training_data.csv")
-        with open("training_data.csv", "wa") as f:
+        with open("training_data.csv", "a") as f:
             f.write("model,score")
 
 train_dir()
@@ -96,279 +96,100 @@ from sklearn.linear_model import Lasso
 from sklearn.linear_model import ElasticNet
 
 #lin reg
-lin_reg = LinearRegression()
+lin_reg = LinearRegression(n_jobs=-1)
 lin_reg.fit(X_train, y_train)
 lin_reg_score = lin_reg.score(X_test, y_test)
 pickle.dump(lin_reg, open('models/linear_reg.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
+with open("training_data.csv", "a") as f:
     f.write("linear regression,{}".format(lin_reg_score))
 
 #ridge
-alphas = [0.01, 0.05, 0.075]
-max_score = 0
-alpha_val = 0
-global_ridge = 0
-for a in tqdm(alphas):
-    ridge = Ridge(alpha=a)
-    ridge.fit(X_train, y_train)
-    score = ridge.score(X_test, y_test)
-    if score > max_score:
-        alpha_val = a
-        max_score = score
-        global_ridge = ridge
+ridge = Ridge()
+ridge.fit(X_train, y_train)
+score = ridge.score(X_test, y_test)
 
-pickle.dump(global_ridge, open('models/global_ridge.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("ridge_linear_model,{}".format(max_score))
+pickle.dump(ridge, open('models/global_ridge.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("ridge_linear_model,{}".format(score))
 
 #lasso
-alphas = [0.01, 0.1, 0.5]
-max_score = 0
-alpha_val = 0
-global_lasso = 0
-for a in tqdm(alphas):
-    lasso = Lasso(alpha=a)
-    lasso.fit(X_train, y_train)
-    score = lasso.score(X_test, y_test)
-    if score > max_score:
-        alpha_val = a
-        max_score = score
-        global_lasso = lasso
+lasso = Lasso()
+lasso.fit(X_train, y_train)
+score = lasso.score(X_test, y_test)
 
-pickle.dump(global_lasso, open('models/lasso.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("lasso_model,{}".format(max_score))
+pickle.dump(lasso, open('models/lasso.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("lasso_model,{}".format(score))
 
-#multi task lasso
-alphas = [0.01, 0.1, 0.5, 1, 2]
-l1_ratio = [0.01, 0.1, 0.3, 0.5]
-max_score = 0
-alpha_val = 0
-l1_value = 0
-global_e_net = 0
-for a in tqdm(alphas):
-    for l in l1_ratio:
-        e_net = ElasticNet(alpha=a, l1_ratio=l)
-        e_net.fit(X_train, y_train)
-        score = e_net.score(X_test, y_test)
-        if score > max_score:
-            alpha_val = a
-            l1_value = l
-            max_score = score
-            global_e_net = e_net
+#e net
+e_net = ElasticNet()
+e_net.fit(X_train, y_train)
+score = e_net.score(X_test, y_test)
 
-pickle.dump(global_e_net, open('models/elastic_net.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("elastic_net,{}".format(max_score))
+pickle.dump(e_net, open('models/elastic_net.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("elastic_net,{}".format(score))
 
 from sklearn.svm import SVR
 from sklearn.svm import NuSVR
 from sklearn.svm import LinearSVR
 
 #SVR
-kernels = ['linear', 'poly', 'rbf', 'sigmoid', 'precomputed']
-degrees = [1, 5, 7]
-C_vals = [0.1, 0.5, 0.7, 1, 2]
-max_score = 0
-ker_val = "rbf"
-deg_val = 3
-C_val = 1
-global_svr = 0
+svr_model = SVR()
+svr_model.fit(X_train, y_train)
+score = svr_model.score(X_test, y_test)
 
-for k in tqdm(kernels):
-    svr_model = SVR(kernel=k)
-    svr_model.fit(X_train, y_train)
-    score = svr_model.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        ker_val = k
-        global_svr = svr_model
-
-for d in tqdm(degrees):
-    svr_model = SVR(kernel=ker_val, degree=d)
-    svr_model.fit(X_train, y_train)
-    score = svr_model.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        deg_val = d
-        global_svr = svr_model
-
-for c in tqdm(C_vals):
-    svr_model = SVR(kernel=ker_val, degree=deg_val, C=c)
-    svr_model.fit(X_train, y_train)
-    score = svr_model.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        C_val = c
-        global_svr = svr_model
-
-pickle.dump(global_svr, open('models/SVR.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("SVR,{}".format(max_score))
+pickle.dump(svr_model, open('models/SVR.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("SVR,{}".format(score))
 
 #NuSVR
-kernels = ['linear', 'poly', 'sigmoid', 'precomputed']
-degrees = [1, 5, 7]
-C_vals = [0.1, 0.5, 0.7, 2]
-nus = [0.1, 0.3, 0.5, 0.7, 1]
+n_svr_model = NuSVR()
+n_svr_model.fit(X_train, y_train)
+score = n_svr_model.score(X_test, y_test)
 
-max_score = 0
-ker_val = 'rbf'
-deg_val = 3
-C_val = 1
-nu_val = 0.5
-global_n_svr = 0
-
-for n in tqdm(nus):
-    n_svr_model = NuSVR(nu=n)
-    n_svr_model.fit(X_train, y_train)
-    score = n_svr_model.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        nu_val = n
-        global_n_svr = n_svr_model
-
-for k in tqdm(kernels):
-    n_svr_model = NuSVR(nu=nu_val, kernel=k)
-    n_svr_model.fit(X_train, y_train)
-    score = n_svr_model.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        ker_val = k
-        global_n_svr = n_svr_model
-
-for c in tqdm(C_vals):
-    n_svr_model = NuSVR(C=c, nu=nu_val, kernel=ker_val)
-    n_svr_model.fit(X_train, y_train)
-    score = n_svr_model.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        C_val = c
-        global_n_svr = n_svr_model
-
-for d in tqdm(degrees):
-    n_svr_model = NuSVR(C=C_val, nu=nu_val, kernel=ker_val, degree=d)
-    n_svr_model.fit(X_train, y_train)
-    score = n_svr_model.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        deg_val = d
-        global_n_svr = n_svr_model
-                    
-pickle.dump(global_n_svr, open('models/NuSVR.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("NuSVR,{}".format(max_score))
+pickle.dump(n_svr_model, open('models/NuSVR.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("NuSVR,{}".format(score))
 
 #Linear SVR
-losses = ['epsilon_insensitive', 'squared_epsilon_insensitive']
-C_values = [0.1, 0.5, 0.7, 1, 2]
+lin_svr = LinearSVR()
+lin_svr.fit(X_train, y_train)
+score = lin_svr.score(X_test, y_test)
 
-max_score = 0
-loss_val = ""
-deg_val = 0
-C_val = 0
-global_lin_svr = 0
-
-for l in tqdm(losses):
-    lin_svr = LinearSVR(loss=l)
-    lin_svr.fit(X_train, y_train)
-    score = lin_svr.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        loss_val = l
-        global_lin_svr = lin_svr
-
-for c in tqdm(C_values):
-    lin_svr = LinearSVR(loss=loss_val, C=c)
-    lin_svr.fit(X_train, y_train)
-    score = lin_svr.score(X_test, y_test)
-    if score > max_score:
-        max_score = score
-        C_val = c
-        global_lin_svr = lin_svr
-
-pickle.dump(global_lin_svr, open('models/linear_SVR.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("linear_SVR,{}".format(max_score))
+pickle.dump(lin_svr, open('models/linear_SVR.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("linear_SVR,{}".format(score))
 
 from sklearn.linear_model import SGDRegressor
 
 #SGD
-losses = ['squared_loss', 'huber', 'epsilon_insensitive','squared_epsilon_insensitive']
-alphas = [0.0001, 0.01, 0.1, 0.5, 0.9]
-l1_ratios = [0.01, 0.15, 0.3, 0.5, 0.8]
+sgd_model = SGDRegressor()
+sgd_model.fit(X_train, y_train)
+score = sgd.score(X_test, y_test)
 
-max_score = 0
-alph = 0.0001
-l1_rat = 0.15
-loss_val = ""
-global_sgd = 0
-
-for l in tqdm(losses):
-    for a in alphas:
-        for r in l1_ratios:
-            sgd_model = SGDRegressor(loss=l, alpha=a, l1_ratio=r)
-            sgd_model.fit(X_train, y_train)
-            score = sgd.score(X_test, y_test)
-            if score > max_score:
-                max_score = score
-                loss_val = l
-                alph = a
-                l1_rat = r
-                global_sgd = sgd_model
-
-pickle.dump(global_sgd, open('models/SGD.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("SGD,{}".format(max_score))
+pickle.dump(sgd_model, open('models/SGD.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("SGD,{}".format(score))
 
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neighbors import RadiusNeighborsRegressor
 
-neighbors = [1, 5, 10, 20]
-leaf_sizes = [2, 5, 15, 30, 60]
+k_neigh_model = KNeighborsRegressor(n_jos=-1)
+k_neigh_model.fit(X_train, y_train)
+score = k_neigh_model(X_test, y_test)
 
-max_score = 0
-leaf_val = 0
-neighbor_val = 0
-global_k_neighbor = 0
+pickle.dump(k_neigh_model, open('models/KNeighbors.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("KNeighbors,{}".format(score))
 
-for l in tqdm(leaf_sizes):
-    for n in neighbors:
-        k_neigh_model = KNeighborsRegressor(n_neighbors=n, leaf_size=l, n_jobs=-1)
-        k_neigh_model.fit(X_train, y_train)
-        score = k_neigh_model(X_test, y_test)
-        if score > max_score:
-            max_score = score
-            neighbor_val = n
-            leaf_val = l
-            global_k_neighbor = k_neigh_model
+radius_model = RadiusNeighborsRegressor(n_jobs=-1)
+radius_model.fit(X_train, y_train)
+score = radius_model(X_test, y_test)
 
-pickle.dump(global_k_neighbor, open('models/KNeighbors.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("KNeighbors,{}".format(max_score))
-
-radius= [.1, .5, 1, 2, 10]
-leaf_sizes = [2, 5, 15, 30, 60]
-
-max_score = 0
-leaf_val = 0
-rad_val = 0
-global_rad = 0
-
-for l in tqdm(leaf_sizes):
-    for r in radius:
-        radius_model = RadiusNeighborsRegressor(radius=r, leaf_size=l, n_jobs=-1)
-        radius_model.fit(X_train, y_train)
-        score = radius_model(X_test, y_test)
-        if score > max_score:
-            max_score = score
-            rad_val = r
-            leaf_val = l
-            global_rad = radius_model
-
-pickle.dump(global_rad, open('models/global_rad.sav', 'wb'))
-with open("training_data.csv", "wa") as f:
-    f.write("Radius Neighbors,{}".format(max_score))
+pickle.dump(radius_model, open('models/global_rad.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("Radius Neighbors,{}".format(score))
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import ExtraTreesRegressor
@@ -376,3 +197,45 @@ from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from xgboost import XGBRegressor
 
+#RF regressor
+rf_mod = RandomForestRegressor(n_jobs=-1)
+rf_mod.fit(X_train, y_train)
+score = rf_mod.score(X_test, y_test)
+
+pickle.dump(rf_mod, open('models/random_forest.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("Random Forest,{}".format(score))
+
+#Extra Forest regressor
+ef_mod = ExtraTreesRegressor(n_jobs=-1)
+ef_mod.fit(X_train, y_train)
+score = ef_mod.score(X_test, y_test)
+
+pickle.dump(ef_mod, open('models/extra_forest.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("Extra Forest,{}".format(score))
+
+#ada regression
+ada_mod = AdaBoostRegressor()
+ada_mod.fit(X_train, y_train)
+score = ada_mod.score(X_test, y_test)
+
+pickle.dump(ada_mod, open('models/ada_regressor.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("Ada Forest,{}".format(score))
+
+grad_mod = GradientBoostingRegressor()
+grad_mod.fit(X_train, y_train)
+score = grad_mod.score(X_test, y_test)
+
+pickle.dump(grad_mod, open('models/grad_boost_sklearn.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("Sklearn Gradient Boost,{}".format(score))
+
+boost_mod = XGBRegressor(n_jobs=-1)
+boost_mod.fit(X_train, y_train)
+score = boost_mod.score(X_test, y_test)
+
+pickle.dump(boost_mod, open('models/grad_boost_orig.sav', 'wb'))
+with open("training_data.csv", "a") as f:
+    f.write("Grad boosting Original,{}".format(score))
