@@ -21,9 +21,15 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 def train_dir():
-    models = []
+    models = ["linear_reg.sav", "global_ridge.sav","lasso.sav","elastic_net.sav","SVR.sav", 
+            "NuSVR.sav","linear_SVR.sav", "SGD.sav", "KNeighbors.sav", "global_rad.sav", 
+            "random_forest.sav", "extra_forest.sav", "ada_regressor.sav", "grad_boost_sklearn.sav",
+            "grad_boost_orig.sav"]
+    
     if not os.path.isdir("./models"):
         os.system("mkdir models")
+    for f in models:
+        os.system("touch models/" + str(f))
     if not os.path.exists("training_data.csv"):
         os.system("touch training_data.csv")
         with open("training_data.csv", "a") as f:
