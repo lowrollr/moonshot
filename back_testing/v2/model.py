@@ -20,7 +20,10 @@ class Trading:
         self.freq = config['freq'][0]
         self.fees = float(config['fees'][0])
         
+        self.indicators_to_graph = config['indicators_to_graph']
+        
         self.strategy_list = config['strategy']
+        self.version_list = config['strategy_version']
         self.strategies = []
         self.timespan = []
         self.slippage = float(config["slippage"][0])
@@ -55,8 +58,21 @@ class Trading:
                 
         return datasets
     
-    def importStrategy(self, strategy):
-        module = importlib.import_module('v2.strategy.strategies.{0}'.format(strategy))
+    def importStrategy(self, strategy, version):
+        
+        base_dir = 'v2.strategy.strategies.' + strategy
+        if version == 'latest':
+            all_files = os.listdir('./v2/strategy/strategies/' + strategy)
+            highest_version = 0.0
+            for x in all_files:
+                if x[0:len(strategy)] == strategy:
+                    my_file = x.split('.py')[0]
+                    my_version = my_file.split('_v')[1]
+                    my_version = float(my_version.replace('_', '.'))
+                    highest_version = max(my_version, highest_version)
+
+            version = str(highest_version).replace('.', '_')
+        module = importlib.import_module(base_dir + '.' + strategy + '_v' + version)
         for mod in dir(module):
             obj = getattr(module, mod)
             if inspect.isclass(obj) and issubclass(obj, Strategy) and obj != Strategy:
@@ -96,10 +112,11 @@ class Trading:
             candle = go.Candlestick(x=dataset['time'], open=dataset['open'], close=dataset['close'], high=dataset['high'], low=dataset['low'], name='Candlesticks')
             inds = []
             data = []
-            # for x in strategy.indicators:
-            #     if x != 'close':
-            #         rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-            #         inds.append(go.Scatter(x=dataset['time'], y=dataset[x], name=x, line=dict(color=(rand_color))))
+            
+            for x in self.indicators_to_graph:
+                if x in dataset.columns: 
+                    rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
+                    inds.append(go.Scatter(x=dataset['time'], y=dataset[x], name=x, line=dict(color=(rand_color))))
         
         #simulate backtesting
         for row in tqdm(dataset.itertuples()):
@@ -204,8 +221,8 @@ class Trading:
 
     def backtest(self):
         #dynamically load strategies
-        for x in self.strategy_list:
-            self.strategies.append(self.importStrategy(x)())
+        for x in range(len(self.strategy_list)):
+            self.strategies.append(self.importStrategy(self.strategy_list[x], self.version_list[x])())
 
         #load list of indicators we'll need to insert into our dataframes
         # all_needed_indicators = set()
