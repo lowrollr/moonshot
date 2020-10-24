@@ -21,4 +21,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Starting connecting to Python server...")
+	startClient()
 }

@@ -7,9 +7,19 @@ services:
       - 5432:5432
     restart: "unless-stopped"
     
-  trade:
-    build: ./production
+  golang_trade:
+    build: ./production/golang
     depends_on:
       - crypto_db
+      - python_trade
     restart: "on-failure"
-    env_file: production/env/.env_trade
+    env_file: production/golang/env/.env_trade
+
+  python_trade:
+    build: ./production/python
+    depends_on: 
+      - crypto_db
+    restart: "on-failure"
+    ports:
+      - 1234:1234
+    

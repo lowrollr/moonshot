@@ -25,10 +25,8 @@ def train_dir():
         os.system("mkdir models")
     if not os.path.isdir("./graphs"):
         os.system("mkdir graphs")
-    if not os.path.exists("training_data.csv"):
-        os.system("touch training_data.csv")
-        with open("training_data.csv", "a") as f:
-            f.write("model,score\n")
+    with open("training_data.csv", "w") as f:
+        f.write("model,score\n")
 
 train_dir()
 
@@ -75,12 +73,14 @@ for d in datasets:
     training_set = training_set.dropna()
     appended_dataset = appended_dataset.append(training_set)
 
-train_df = appended_dataset[["time", "open", "high", "low", "close", "volume", "ema_slow", "ema_fast", "macd", "stosc_k", "rsi", "smma", "slope"]]
+train_df = appended_dataset[["time", "close", "volume", "macd", "stosc_k", "rsi", "smma", "slope"]]
 final_df = pd.DataFrame()
-for i in range(2, 11):
+PREDICT_NUM = 5
+predics = [5, 10, 25, 50, 100]
+for i in predics:
     temp_df = train_df
     temp_df["predict_number"] = i
-    temp_df["predict_forecast"] = (temp_df["close"].shift(-int(i)) - temp_df["close"]) / temp_df["close"]
+    temp_df["predict_forecast"] = temp_df["close"].shift(-int(i))
     final_df = pd.concat([final_df, temp_df])
 
 final_df.dropna(inplace=True)
@@ -91,12 +91,41 @@ y = final_df["predict_forecast"].values
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
 
+graph_X = []
+graph_X_pred = []
+graph_y = []
+for i in range(len(X_test)):
+    if X_test[i][-1] == PREDICT_NUM:
+        graph_X.append(X_test[i][0])
+        graph_X_pred.append(X_test[i])
+        graph_y.append(y_test[i])
 print("now training models\n")
+
+graph_X = graph_X[-1440:] 
+graph_X_pred = graph_X_pred[-1440:]
+graph_y = graph_y[-1440:]
+future_graph_X = [x + PREDICT_NUM for x in graph_X]
 
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import ElasticNet
+from xgboost import XGBRegressor
+
+#lin reg
+grad_boost = LinearRegression(n_jobs=-1)
+grad_boost.fit(X_train, y_train)
+lin_reg_score = grad_boost.score(X_test, y_test)
+pickle.dump(grad_boost, open('v2/research/scripts/models/xgboost.sav', 'wb+'))
+with open("v2/research/scripts/training_data.csv", "a") as f:
+    f.write("grad boost,{}\n".format(lin_reg_score))
+predictions = grad_boost.predict(graph_X_pred)
+plt.plot(future_graph_X, graph_y, label = "original prices", color="blue")
+plt.plot(graph_X, predictions, label = "predicted prices", color="red")
+plt.savefig('v2/research/scripts/graphs/xgbregrossor.png')
+plt.clf()
+
+test_y = [7150] * 1440
 
 #lin reg
 lin_reg = LinearRegression(n_jobs=-1)
@@ -105,23 +134,23 @@ lin_reg_score = lin_reg.score(X_test, y_test)
 pickle.dump(lin_reg, open('v2/research/scripts/models/linear_reg.sav', 'wb+'))
 with open("v2/research/scripts/training_data.csv", "a") as f:
     f.write("linear regression,{}\n".format(lin_reg_score))
-predictions = lin_reg.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
+predictions = lin_reg.predict(graph_X_pred)
+plt.plot(future_graph_X, test_y, label = "original prices", color="blue")
+plt.plot(graph_X, test_y, label = "predicted prices", color="red")
 plt.savefig('v2/research/scripts/graphs/lin_reg.png')
 plt.clf()
 
 #ridge
-ridge = Ridge()
+ridge = Ridge(alpha = .01)
 ridge.fit(X_train, y_train)
 score = ridge.score(X_test, y_test)
 
 pickle.dump(ridge, open('v2/research/scripts/models/global_ridge.sav', 'wb+'))
 with open("v2/research/scripts/training_data.csv", "a") as f:
     f.write("ridge_linear_model,{}\n".format(score))
-predictions = ridge.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
+predictions = ridge.predict(graph_X_pred)
+plt.plot(future_graph_X, graph_y, label = "original prices", color="blue")
+plt.plot(graph_X, predictions, label = "predicted prices", color="red")
 plt.savefig('v2/research/scripts/graphs/ridge.png')
 plt.clf()
 
@@ -133,9 +162,9 @@ score = lasso.score(X_test, y_test)
 pickle.dump(lasso, open('v2/research/scripts/models/lasso.sav', 'wb+'))
 with open("v2/research/scripts/training_data.csv", "a") as f:
     f.write("lasso_model,{}\n".format(score))
-predictions = lasso.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
+predictions = lasso.predict(graph_X_pred)
+plt.plot(future_graph_X, graph_y, label = "original prices", color="blue")
+plt.plot(graph_X, predictions, label = "predicted prices", color="red")
 plt.savefig('v2/research/scripts/graphs/lasso.png')
 plt.clf()
 
@@ -147,9 +176,9 @@ score = e_net.score(X_test, y_test)
 pickle.dump(e_net, open('v2/research/scripts/models/elastic_net.sav', 'wb+'))
 with open("v2/research/scripts/training_data.csv", "a") as f:
     f.write("elastic_net,{}\n".format(score))
-predictions = e_net.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
+predictions = e_net.predict(graph_X_pred)
+plt.plot(future_graph_X, graph_y, label = "original prices", color="blue")
+plt.plot(graph_X, predictions, label = "predicted prices", color="red")
 plt.savefig('v2/research/scripts/graphs/e_net.png')
 plt.clf()
 
@@ -162,8 +191,8 @@ score = grad_mod.score(X_test, y_test)
 pickle.dump(grad_mod, open('v2/research/scripts/models/grad_boost_sklearn.sav', 'wb+'))
 with open("v2/research/scripts/training_data.csv", "a") as f:
     f.write("Sklearn Gradient Boost,{}\n".format(score))
-predictions = grad_model.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
+predictions = grad_model.predict(graph_X_pred)
+plt.plot(future_graph_X, graph_y, label = "original prices", color="blue")
+plt.plot(graph_X, predictions, label = "predicted prices", color="red")
 plt.savefig('v2/research/scripts/graphs/grad_boost_sklearn.png')
 plt.clf()
