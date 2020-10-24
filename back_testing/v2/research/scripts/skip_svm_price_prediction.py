@@ -23,8 +23,6 @@ from sklearn.model_selection import train_test_split
 def train_dir():
     if not os.path.isdir("./models"):
         os.system("mkdir models")
-    if not os.path.isdir("./graphs"):
-        os.system("mkdir graphs")
     if not os.path.exists("training_data.csv"):
         os.system("touch training_data.csv")
         with open("training_data.csv", "a") as f:
@@ -77,10 +75,10 @@ for d in datasets:
 
 train_df = appended_dataset[["time", "open", "high", "low", "close", "volume", "ema_slow", "ema_fast", "macd", "stosc_k", "rsi", "smma", "slope"]]
 final_df = pd.DataFrame()
-for i in range(2, 11):
+for i in range(1, 11):
     temp_df = train_df
     temp_df["predict_number"] = i
-    temp_df["predict_forecast"] = (temp_df["close"].shift(-int(i)) - temp_df["close"]) / temp_df["close"]
+    temp_df["predict_forecast"] = temp_df["close"].shift(-int(i))
     final_df = pd.concat([final_df, temp_df])
 
 final_df.dropna(inplace=True)
@@ -93,66 +91,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle
 
 print("now training models\n")
 
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import Ridge
-from sklearn.linear_model import Lasso
-from sklearn.linear_model import ElasticNet
-
-#lin reg
-lin_reg = LinearRegression(n_jobs=-1)
-lin_reg.fit(X_train, y_train)
-lin_reg_score = lin_reg.score(X_test, y_test)
-pickle.dump(lin_reg, open('v2/research/scripts/models/linear_reg.sav', 'wb+'))
-with open("v2/research/scripts/training_data.csv", "a") as f:
-    f.write("linear regression,{}\n".format(lin_reg_score))
-predictions = lin_reg.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
-plt.savefig('v2/research/scripts/graphs/lin_reg.png')
-plt.clf()
-
-#ridge
-ridge = Ridge()
-ridge.fit(X_train, y_train)
-score = ridge.score(X_test, y_test)
-
-pickle.dump(ridge, open('v2/research/scripts/models/global_ridge.sav', 'wb+'))
-with open("v2/research/scripts/training_data.csv", "a") as f:
-    f.write("ridge_linear_model,{}\n".format(score))
-predictions = ridge.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
-plt.savefig('v2/research/scripts/graphs/ridge.png')
-plt.clf()
-
-#lasso
-lasso = Lasso()
-lasso.fit(X_train, y_train)
-score = lasso.score(X_test, y_test)
-
-pickle.dump(lasso, open('v2/research/scripts/models/lasso.sav', 'wb+'))
-with open("v2/research/scripts/training_data.csv", "a") as f:
-    f.write("lasso_model,{}\n".format(score))
-predictions = lasso.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
-plt.savefig('v2/research/scripts/graphs/lasso.png')
-plt.clf()
-
-#e net
-e_net = ElasticNet()
-e_net.fit(X_train, y_train)
-score = e_net.score(X_test, y_test)
-
-pickle.dump(e_net, open('v2/research/scripts/models/elastic_net.sav', 'wb+'))
-with open("v2/research/scripts/training_data.csv", "a") as f:
-    f.write("elastic_net,{}\n".format(score))
-predictions = e_net.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
-plt.savefig('v2/research/scripts/graphs/e_net.png')
-plt.clf()
-
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 
 grad_mod = GradientBoostingRegressor()
@@ -162,8 +103,3 @@ score = grad_mod.score(X_test, y_test)
 pickle.dump(grad_mod, open('v2/research/scripts/models/grad_boost_sklearn.sav', 'wb+'))
 with open("v2/research/scripts/training_data.csv", "a") as f:
     f.write("Sklearn Gradient Boost,{}\n".format(score))
-predictions = grad_model.predict(X_test)
-plt.plot(X_test, y_test, label = "original prices")
-plt.plot(X_test, predictions, label = "predicted prices")
-plt.savefig('v2/research/scripts/graphs/grad_boost_sklearn.png')
-plt.clf()
