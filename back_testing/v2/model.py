@@ -15,8 +15,20 @@ import random
 class Trading:
     def __init__(self, config):
         utils.check_make_log_plot_dir()
-        self.base_cs = config['ex1']
-        self.quote_cs = config['ex2']
+        self.base_cs = []
+        self.quote_cs = []
+        if config['ex1'] == 'all' and config['ex2'] == 'all':
+            self.base_cs = utils.all_ex1([])
+            self.quote_cs = utils.all_ex2([])
+        elif config['ex1'] == 'all':
+            self.quote_cs = config['ex2']
+            self.base_cs = utils.all_ex1(self.quote_cs)
+        elif config['ex2'] == 'all':
+            self.base_cs = config['ex1']
+            self.quote_cs = utils.all_ex2(self.base_cs)
+        else:
+            self.base_cs = config['ex1']
+            self.quote_cs = config['ex2']
         self.freq = config['freq'][0]
         self.fees = float(config['fees'][0])
         

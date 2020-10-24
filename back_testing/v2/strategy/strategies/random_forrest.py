@@ -3,7 +3,6 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 import numpy as np
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 from v2.strategy.indicators.smma import SMMA
 from v2.strategy.indicators.macd import MACD
 from sklearn.ensemble import RandomForestRegressor
