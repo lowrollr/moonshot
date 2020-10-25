@@ -106,3 +106,4 @@ def findParams(params, params_to_find):
     for x in params_to_find:
         results.append(next((y for y in params if y.name == x), None))
     return results
+
