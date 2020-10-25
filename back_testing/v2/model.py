@@ -190,7 +190,8 @@ class Trading:
                 data = [candle] + inds + [ent_graph, exit_graph]
             else:
                 data = [candle] + inds
-            
+            if hasattr(strategy, 'scatter_x'):
+                data += [strategy.get_stop_loss_plot()]
             layout = go.Layout(title=name)
             fig = go.Figure(data=data, layout=layout)
             plot(fig, filename='plots/' + name + '.html')
