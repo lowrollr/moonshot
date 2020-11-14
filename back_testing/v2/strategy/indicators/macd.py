@@ -31,4 +31,4 @@ class MACD(Indicator):
 
         signal = EMA([signal_param], _name='signal')
         signal.genData(dataset, gen_new_values=False, value=self.name)
-        dataset['macd_diff'] = dataset['macd'] - dataset['signal']
+        dataset['macd_diff'] = dataset['MACD'] - dataset['signal']

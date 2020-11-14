@@ -14,7 +14,11 @@ import random
 
 class Trading:
     def __init__(self, config):
+        # We need to read in the fields from our config file and turn them into actionable parameters
+
         utils.check_make_log_plot_dir()
+
+        # we will store 
         self.base_cs = []
         self.quote_cs = []
         if config['ex1'] == 'all' and config['ex2'] == 'all':
@@ -189,7 +193,7 @@ class Trading:
                 exit_graph = go.Scatter(x=[item[0] for item in exits], y=[item[1] for item in exits], name='Exits', mode='markers')
                 data = [candle] + inds + [ent_graph, exit_graph]
             else:
-                data = [candle] + inds
+                data = inds
             if hasattr(strategy, 'scatter_x'):
                 data += [strategy.get_stop_loss_plot()]
             layout = go.Layout(title=name)
