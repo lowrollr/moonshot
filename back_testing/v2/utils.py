@@ -92,8 +92,17 @@ def convertTimespan(full_arr):
 
 
 
-    
-def get_log_std(logs):
+'''
+ARGS:
+    -> logs ([String]): List of log strings (representing each line of the log file)
+RETURN:
+    -> (Float): 
+WHAT: 
+    -> 
+TODO:
+    -> finish commenting this
+'''    
+def getLogStd(logs):
     nums = []
     for log in logs:
         log_arr = log.split(" ")

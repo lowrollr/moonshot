@@ -339,7 +339,7 @@ class Trading:
             slippage_close = utils.add_slippage("neg", close, self.slippage)
             slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
 
-        std_dev = utils.get_log_std(log)
+        std_dev = utils.getLogStd(log)
         
         # write statistics to console
         print('Exit value: ' + str(conv_position))
