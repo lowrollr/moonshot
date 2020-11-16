@@ -95,6 +95,8 @@ def add_slippage(up_or_down, close_price, slippage_val):
         raise Exception("Hey you provided the wrong value (pos/neg)")
     return slip_val
 
+# Make sure the logging and plots directories exist in the appropriate places
+# Add new directories if needed if they don't already exist
 def check_make_log_plot_dir():
     dirs = ["logs", "slippage_logs", "plots"]
     for dir in dirs:

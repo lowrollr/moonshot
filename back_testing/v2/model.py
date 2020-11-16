@@ -12,44 +12,35 @@ from itertools import product
 import v2.utils as utils
 import random
 
+# The Trading class is a wrapper for an instance of the backtesting infrastructure
 class Trading:
     def __init__(self, config):
-        # We need to read in the fields from our config file and turn them into actionable parameters
-
+        
+        # Ensure logging/plotting directories are set up correctly
         utils.check_make_log_plot_dir()
 
-        # we will store 
+        # We need to read in the fields from our config file and turn them into actionable parameters
+        # Parse each field as needed and construct the proper paremeters
         self.base_cs = []
         self.quote_cs = []
-        if config['ex1'] == 'all' and config['ex2'] == 'all':
-            self.base_cs = utils.all_ex1([])
-            self.quote_cs = utils.all_ex2([])
-        elif config['ex1'] == 'all':
-            self.quote_cs = config['ex2']
-            self.base_cs = utils.all_ex1(self.quote_cs)
-        elif config['ex2'] == 'all':
-            self.base_cs = config['ex1']
-            self.quote_cs = utils.all_ex2(self.base_cs)
-        else:
-            self.base_cs = config['ex1']
-            self.quote_cs = config['ex2']
+        self.base_cs = config['ex1']
+        self.quote_cs = config['ex2']
         self.freq = config['freq'][0]
         self.fees = float(config['fees'][0])
-        
         self.indicators_to_graph = config['indicators_to_graph']
-        
         self.strategy_list = config['strategy']
         self.version_list = config['strategy_version']
         self.strategies = []
         self.timespan = []
         self.slippage = float(config["slippage"][0])
-        if config['timespan'][0] == 'max':
+
+        if config['timespan'][0] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
-        elif config["timespan"][0] == "date":
+        elif config["timespan"][0] == "date": # test from date_a to date_b (mm/dd/yyyy)
             self.timespan = utils.convert_timespan(config["timespan"][1:])
-        elif len(config['timespan']) == 1:
+        elif len(config['timespan']) == 1: # date_a already defined in unix time, no need to convert
             self.timespan = [int(config['timespan'][0]), 9999999999]
-        else:
+        else: 
             self.timespan = [int(x) for x in config['timespan']]
         self.test_param_ranges = False
         if config['test_param_ranges'][0] == 'true':
@@ -58,7 +49,8 @@ class Trading:
         if config['plot'][0] == 'true':
             self.plot = True
         
-        #this needs to happen last
+        # Load the appropriate datasets 
+        # This happens last, depend on other config parameters
         self.dfs = self.getPairDatasets(self.base_cs, self.quote_cs, self.freq)
 
     def getPairDatasets(self, _base_cs, _quote_cs, freq):
