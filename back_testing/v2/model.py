@@ -15,25 +15,28 @@ import inspect
 import random
 import plotly.graph_objs as go
 from plotly.offline import plot
-
-from v2.strategy.strategies.strategy import Strategy
 from tqdm import tqdm
 from itertools import product
-import v2.utils as utils
 import random
 
+from v2.strategy.strategies.strategy import Strategy
+import v2.utils as utils
+
 '''
-The Trading class is a wrapper for an instance of the backtesting infrastructure
-Everything that's a core process of backtesting goes in here
+CLASS: Trading
+WHAT:
+    -> The Trading class is a wrapper for an instance of the backtesting infrastructure
+    -> Everything that's a core process of backtesting goes in here
 '''
 class Trading:
+
     '''
-    PRE:
-        -> config (dict): param-value pairs read in from 'config.config' file
-    POST:
+    ARGS:
+        -> config ({String: Object}): param-value pairs read in from 'config.config' file
+    RETURN:
+        -> None
     WHAT: 
-        -> initializes and configures Trading class using the values read in from the config file
-    TODO:
+        -> initializes and configures the Trading class using the values read in from the config file
     '''
     def __init__(self, config):
         
@@ -75,39 +78,74 @@ class Trading:
         self.dfs = self.getPairDatasets(self.base_cs, self.quote_cs, self.freq)
 
 
-    # 
-    def getPairDatasets(self, _base_cs, _quote_cs, freq):
+    '''
+    ARGS:
+        -> base_currencies ([String]): List of base currencies to fetch datasets for
+        -> quote_currencies ([String]): List of quote currencies to fetch datasets for
+        -> freq (Int): The timeframe to fetch datasets for (in minutes)
+    RETURN:
+        -> datasets ([Dataframe]): List of pandas dataframes, each containg a dataset
+            for a base/quote pair
+    WHAT: 
+        -> fetches a dataset for each possible pair of <base currency>/<quote currency> 
+            for the given timeframe
+    '''
+    def getPairDatasets(self, base_currencies, quote_currencies, freq):
         datasets = []
-        for b in _base_cs:
-            for q in _quote_cs:
+
+        for b in base_currencies:
+            for q in quote_currencies:
+                # construct the appropriate filename 
                 name = b + q
                 filename = name + '_' + str(freq) + '.csv'
+                # grab the dataset from the csv file
                 my_df = pd.read_csv('historical_data/' + filename)
                 my_df.columns = ['time', 'open', 'high', 'low', 'close', 'volume', 'trades']
+                # filter dataset to only include data from the configured timespan 
                 my_df = my_df[(my_df.time > self.timespan[0]) & (my_df.time < self.timespan[1])]
                 datasets.append((my_df, name))
                 
         return datasets
-    
+
+
+    '''
+    ARGS:
+        -> strategy (String): name of the strategy to import
+        -> version (String): version of the strategy to import
+    RETURN:
+        -> obj (Strategy): Strategy object, or None if the given strategy name does
+            not correspond to a strategy
+    WHAT: 
+        -> finds the object corresponding to the given strategy and version number in the strategies
+            directory, returns a reference(?) to that object which can be used to call the constructor
+    '''
     def importStrategy(self, strategy, version):
-        
+        # construct the base directory
         base_dir = 'v2.strategy.strategies.' + strategy
-        if version == 'latest':
+
+        if version == 'latest': # fetch the latest version of the given strategy
             all_files = os.listdir('./v2/strategy/strategies/' + strategy)
             highest_version = 0.0
+            # find the highest version number
             for x in all_files:
                 if x[0:len(strategy)] == strategy:
                     my_file = x.split('.py')[0]
                     my_version = my_file.split('_v')[1]
                     my_version = float(my_version.replace('_', '.'))
                     highest_version = max(my_version, highest_version)
-
+                    
+            # set version to be the highest version found
             version = str(highest_version).replace('.', '_')
+        
+        # this code attempts to find the module (strategy) with the given name, 
+        # and gets the corresponding object if it exists
         module = importlib.import_module(base_dir + '.' + strategy + '_v' + version)
         for mod in dir(module):
             obj = getattr(module, mod)
             if inspect.isclass(obj) and issubclass(obj, Strategy) and obj != Strategy:
                 return obj
+
+        # return None if no object is found
         return None
     
         
@@ -256,16 +294,6 @@ class Trading:
         for x in range(len(self.strategy_list)):
             self.strategies.append(self.importStrategy(self.strategy_list[x], self.version_list[x])())
 
-        #load list of indicators we'll need to insert into our dataframes
-        # all_needed_indicators = set()
-        # for x in self.strategies:
-        #     new_indicators = x.getIndicators()
-        #     all_needed_indicators.update(set(new_indicators))
-
-        # #prepare datasets
-        # if not self.test_param_ranges:
-        #     for d in self.dfs:
-        #         self.prepareDataset(d[0], all_needed_indicators)
 
         #execute each strategy on each dataset
         for x in self.strategies:
@@ -309,36 +337,6 @@ class Trading:
                         
 
 
-                    # if necessary, prepare the dataset with each set of param values
-                    # execute the strategy on the given dataset
-
-                # if self.test_param_ranges:
-                #     params = x.get_param_ranges()
-                #     param_values = []
-                #     for p in params.keys():
-                #         low = params[p][0]
-                #         high = params[p][1]
-                #         step = params[p][2]
-                #         cur = low
-                #         vals = []
-                #         while cur < high:
-                #             vals.append((cur, p))
-                #             cur += step
-                #         if vals[-1] != high:
-                #             vals.append((high, p))
-                #         param_values += [vals]
-                #     param_product = list(product(*param_values))
-                #     max_return = 0.0
-                #     max_attrs = ''
-                #     for p in param_product:
-                #         for p2 in p:
-                #             setattr(x, p2[1], p2[0])
-                #         name = str(p2)
-                #         new_return = self.executeStrategy(x, d, name)
-                #         if new_return > max_return:
-                #             max_return = new_return
-                #             max_attrs = str(p2)
-                #     print('max params: ' + max_attrs)
                 else:
                     for ind in x.indicators:
                         ind.genData(d[0], False)      
