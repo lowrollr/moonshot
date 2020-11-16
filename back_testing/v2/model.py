@@ -366,56 +366,96 @@ class Trading:
         return conv_position
 
 
+
+
+    '''
+    ARGS:
+        -> None
+    RETURN:
+        -> None
+    WHAT: 
+        -> backtests each strategy on each dataset pair
+        -> handles genetic algorithm if we are attempting to optimize parameters
+    '''
     def backtest(self):
-        #dynamically load strategies
+        # dynamically load strategy objects and call their constructors
         for x in range(len(self.strategy_list)):
             self.strategies.append(self.importStrategy(self.strategy_list[x], self.version_list[x])())
 
-
-        #execute each strategy on each dataset
+        # execute each strategy on each dataset
         for x in self.strategies:
             for d in self.dfs:
+
                 dataset = d[0]
-                if self.test_param_ranges:
+
+                if self.test_param_ranges: # if we are using the genetic algorithm to optimize parameters
+
+                    # store the original dataset
                     original_dataset = d[0]
+
+                    # grab the indicators for the given strategy
                     indicators = x.indicators
+
+                    # set population size
                     pop_size = 80
-                    best_values = []
+
+                    # flag to keep track of whether or not genetic algorithm has reached threshold 
+                    # necessary to end execution
                     done = False
+
+                    # keep track of best score so far
                     prev_best_score = 0.0
+
+                    # run until improvement is small enough to exit
                     while not done:
                         new_best_score = prev_best_score
                         # update the param ranges
                         for ind in indicators:
                             ind.shrinkParamRanges(0.375)
                         
+                        # each element of the population is a set of parameters the strategy is executed with
                         for p in range(0, pop_size):
+
+                            # generate data for the new set of parameters (which have effect on indicators)
                             dataset = original_dataset
                             for ind in indicators:
                                 ind.genData(dataset)
+                            
+                            # retrain the model if the strategy has the model-training built-in
                             if x.is_ml:
                                 x.train(dataset)
+
+                            # execute the strategy and grab the exit value
                             score = self.executeStrategy(x, (dataset, d[1]))
+
+                            # store the param values if this is a new high score
                             if score > new_best_score:
                                 new_best_score = score
                                 for ind in indicators:
                                     ind.storeBestValues()
-                                
+                        # if the best scorer for this population is less than 0.5% better than the previous best score,
+                        # this will be the last generation
                         if new_best_score < 1.005 * prev_best_score:
                             done = True
                         else:
+                            # if not, continue to the next generation and note this generation's best score
                             prev_best_score = new_best_score
-                        #check if we should continue or not
+                    
+                    # grab the best param values for each indicator
                     best_values = []
                     for ind in indicators:
                         best_values.append(ind.best_values)
+
+                    # write the best param values and best overall score to the console
                     print(best_values)
                     print(prev_best_score)
                         
 
 
-                else:
+                else: #if we are not running the genetic algorithm
+                    # add all indicator data to the dataset
                     for ind in x.indicators:
-                        ind.genData(d[0], False)      
+                        ind.genData(d[0], False)
+                    # execute the strategy on the dataset       
                     self.executeStrategy(x, d)
 
