@@ -3,13 +3,21 @@
 Vivaldi is a platform for testing, evaluating, and executing algorithmic strategies for trading cryptocurrency. If you are reading this, you are probably grading our project.
 
 Here are the important parts:
+
 Research Notebooks (where we evaluate and test new strategies, models, and ideas):
+
 https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/research/notebookshttps://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/strategy/strategies
+
 Backtesting Code (Infrastructure that supports strategy testing and evaluation):
+
 https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2
+
 Strategies (Algorithms that utilize the models we developed in the notebooks):
+
 https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/strategy/strategies
+
 Indicators (Features we engineered):
+
 https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/strategy/indicators
 
 Feel free to reach out to marshingjay@ku.edu if you have any questions about our project!
