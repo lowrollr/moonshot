@@ -37,8 +37,24 @@ class Param:
         self.value = _default
         self.name = _name
     
+    '''
+    ARGS:
+        -> center (Float): where to center new lower bound and upper bound
+        -> percentage (Float): percentage by which to increase lower bound and decrease upper bound
+    RETURN:
+        -> None
+    WHAT: 
+        -> Shrinks previous range around a new center value
+            hint: just read the code and it will make more sense
+        -> Observe that the percentage is equal to half of the overall change in the difference of the upper and lower bounds
+    TODO:
+        -> make percentage just be the overall delta difference instead of half
+    '''
     def shrinkRange(self, center, percentage):
+        # compute the current difference between the upper and lower bounds
         delta = self.up - self.low
+        # compute and set new bounds
+        # note that max() and min() ensure that the delta can not increase by calling this
         new_low = max(self.low, center - (percentage * delta))
         new_up = min(self.up, center + (percentage * delta))
         self.low = new_low
