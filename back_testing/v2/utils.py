@@ -132,12 +132,22 @@ def getLogAvgHold(logs):
             times.append(sell_time - buy_time)
         i += 2
     time_mean = np.mean(times)
-    return unix_to_time(time_mean), time_mean
+    return unixToTime(time_mean), time_mean
 
-
-def unix_to_time(unix_val):
+'''
+ARGS:
+    -> unix_val (Int): Unix time value
+RETURN:
+    -> period_str (String): Fancy string representation of unix time value 
+WHAT: 
+    -> Converts unix time value to fancy string representation of that value
+''' 
+def unixToTime(unix_val):
+    # make sure unix_val is int
     check_int = int(unix_val)
+    # convert unix int to datetime object
     full_dt = datetime.datetime.fromtimestamp(check_int)
+    # format string with datetime components
     period_str = str(full_dt.year - 1970) + " year(s) " + \
                 str(full_dt.month) + " month(s) " + \
                 str(full_dt.day) + " day(s) " + \
