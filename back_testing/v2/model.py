@@ -1,3 +1,13 @@
+'''
+FILE: model.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+    -> Ross Copeland (rhcopeland101@gmail.com)
+WHAT:
+    -> This file contains the Trading class and its member functions,
+    which implement all core functionaltiy of the backtesting framework
+'''
+
 import pandas as pd
 import os
 import importlib
@@ -12,8 +22,19 @@ from itertools import product
 import v2.utils as utils
 import random
 
-# The Trading class is a wrapper for an instance of the backtesting infrastructure
+'''
+The Trading class is a wrapper for an instance of the backtesting infrastructure
+Everything that's a core process of backtesting goes in here
+'''
 class Trading:
+    '''
+    PRE:
+        -> config (dict): param-value pairs read in from 'config.config' file
+    POST:
+    WHAT: 
+        -> initializes and configures Trading class using the values read in from the config file
+    TODO:
+    '''
     def __init__(self, config):
         
         # Ensure logging/plotting directories are set up correctly
@@ -49,10 +70,12 @@ class Trading:
         if config['plot'][0] == 'true':
             self.plot = True
         
-        # Load the appropriate datasets 
+        # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
         self.dfs = self.getPairDatasets(self.base_cs, self.quote_cs, self.freq)
 
+
+    # 
     def getPairDatasets(self, _base_cs, _quote_cs, freq):
         datasets = []
         for b in _base_cs:
