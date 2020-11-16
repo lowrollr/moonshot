@@ -6,7 +6,7 @@ Here are the important parts:
 
 Research Notebooks (where we evaluate and test new strategies, models, and ideas):
 
-https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/research/notebookshttps://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/strategy/strategies
+https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/research/notebooks
 
 Backtesting Code (Infrastructure that supports strategy testing and evaluation):
 
