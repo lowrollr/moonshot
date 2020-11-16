@@ -37,6 +37,7 @@ class Param:
         self.value = _default
         self.name = _name
     
+
     '''
     ARGS:
         -> center (Float): where to center new lower bound and upper bound
@@ -60,6 +61,16 @@ class Param:
         self.low = new_low
         self.up = new_up
 
+
+    '''
+    ARGS:
+        -> None
+    RETURN:
+        -> self.value (Float): the new value set for this param
+    WHAT: 
+        -> Generates a new value within the param's range, w.r.t the param's precision
+        -> updates self.value accordingly
+    '''
     def genValue(self):
         self.value = round(random.uniform(self.low, self.up), self.prec)
         return self.value
