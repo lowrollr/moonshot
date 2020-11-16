@@ -185,12 +185,24 @@ def addSlippage(up_or_down, close_price, slippage_val):
         raise Exception("Hey you provided the wrong value (pos/neg)")
     return slip_val
 
-# Make sure the logging and plots directories exist in the appropriate places
-# Add new directories if needed if they don't already exist
-def check_make_log_plot_dir():
+'''
+ARGS:
+    -> None
+RETURN:
+    -> None
+WHAT: 
+    -> ensures that proper directories exist for:
+        - logs
+        - slippage logs
+        - plots
+    -> If they do not exist in the appropriate place, they are created
+''' 
+def checkLogPlotDir():
+    # dirs to ensure the existence of
     dirs = ["logs", "slippage_logs", "plots"]
     for dir in dirs:
         if not os.path.isdir(str(dir)):
+            # create the dir if necessary
             os.system("mkdir " + str(dir))
 
 def findParams(params, params_to_find):

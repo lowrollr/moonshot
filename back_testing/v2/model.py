@@ -41,7 +41,7 @@ class Trading:
     def __init__(self, config):
         
         # Ensure logging/plotting directories are set up correctly
-        utils.check_make_log_plot_dir()
+        utils.checkLogPlotDir()
 
         # We need to read in the fields from our config file and turn them into actionable parameters
         # Parse each field as needed and construct the proper paremeters
