@@ -110,7 +110,17 @@ def getLogStd(logs):
             nums.append(float(log_arr[-1]))
     return np.std(nums, dtype = np.float32)
 
-def get_log_avg_hold(logs):
+'''
+ARGS:
+    -> logs ([String]): List of log strings (representing each line of the log file)
+RETURN:
+    -> 
+WHAT: 
+    -> 
+TODO:
+    -> finish commenting this
+'''    
+def getLogAvgHold(logs):
     times = []
     i = 0
     while i < len(logs):
@@ -123,6 +133,7 @@ def get_log_avg_hold(logs):
         i += 2
     time_mean = np.mean(times)
     return unix_to_time(time_mean), time_mean
+
 
 def unix_to_time(unix_val):
     check_int = int(unix_val)
