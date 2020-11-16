@@ -1,3 +1,11 @@
+'''
+FILE: __main__.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This is the entry point for the backtesting infrastructure
+'''
+
 from run import run_app
 
 
