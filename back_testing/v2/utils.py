@@ -62,18 +62,33 @@ def strToUnix(date):
     # convert list of ints to unix date and return
     return dateToUnix(date_arr)
 
-def convert_timespan(full_arr):
+
+'''
+ARGS:
+    -> full_arr ([String]): List of strings containing Date 1 & Date 2
+RETURN:
+    -> [unix1, unix2] ([Int]): Unix times for each datestring
+WHAT: 
+    -> Converts date string pair to unix time pair
+    -> If only 1 date is provided, set unix2 to a large number
+'''
+def convertTimespan(full_arr):
+    # if one or two dates are specified (required)
     if len(full_arr) < 3 and len(full_arr) > 0:
+        # date components will be seperated with '.' characters
         date1_str = full_arr[0].split(".")
+        # convert date 1 to unix time
         unix1 = strToUnix(date1_str)
         unix2 = 9999999999
+        # convert date 2 to unix time if it exists
         if len(full_arr) == 2:
             date2_str = full_arr[1].split(".")
             unix2 = strToUnix(date2_str)
+        # return the pair of unix times
         return [unix1, unix2]
-    else:
-        raise Exception("Dates must be specified with one or two values")
 
+    else: # throw error if number of dates is incorrect 
+        raise Exception("config: Dates must be specified with one or two values")
 
 
 
