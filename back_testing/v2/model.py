@@ -235,12 +235,9 @@ class Trading:
             close = row.close
             slippage_close = close
 
-
-            
             # run the process function (will execute anything that needs to happen each tick for the strategy)
             strategy.process(row)
 
-            
             if not position_taken: # if we are not entered into a position
                 # run the entry function for our strategy
                 if strategy.calc_entry(row):
@@ -298,8 +295,6 @@ class Trading:
                         slippage_pos_base = 0.0
                         slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
 
-
-
         # build the file name to use for graphs/plots
         name = 'results-' + strategy.name + '-' + dataset_name
 
@@ -351,7 +346,6 @@ class Trading:
             print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
         print("Standard deviation of the deltas (how volatile) " + str(std_dev))
         
-
         # write to log
         with open('logs/' + name + '.txt', 'w') as f:
             for line in log:
@@ -364,8 +358,6 @@ class Trading:
 
         # return the final quote position
         return conv_position
-
-
 
 
     '''
@@ -449,8 +441,6 @@ class Trading:
                     # write the best param values and best overall score to the console
                     print(best_values)
                     print(prev_best_score)
-                        
-
 
                 else: #if we are not running the genetic algorithm
                     # add all indicator data to the dataset
