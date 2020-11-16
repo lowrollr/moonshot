@@ -57,8 +57,17 @@ class Indicator:
         if gen_new_values: # if we are generating new values, call genValue for each param belonging to this indciator
             for x in self.params:
                 x.genValue()
-    
+
+    '''
+    ARGS:
+        -> percentage (Float): percentage to shrink each bound by for a Param range
+    RETURN:
+        -> None
+    WHAT: 
+        -> Shrinks each Param around the current best value by a given percentage on each side (upper and lower)
+    '''
     def shrinkParamRanges(self, percentage):
+        # this should only be happening if this indicator is part of a genetic algorithm optimization
         if self.best_values:
             for x in self.params:
                 x.shrinkRange(self.best_values[x.name], percentage)
