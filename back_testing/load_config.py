@@ -13,7 +13,6 @@ RETURN:
     -> my_config ({String: String}): dictionary mapping param names to param values
 WHAT: 
     -> Parses input from config file (config.config) and reads it into a dictionary
-
 '''
 def load_config():
     my_config = {}
