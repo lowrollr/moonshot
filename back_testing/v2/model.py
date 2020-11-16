@@ -149,65 +149,118 @@ class Trading:
         return None
     
         
-
+    '''
+    ARGS:
+        -> strategy (Strategy): Strategy object (to call it's entry, exit, and process function)
+        -> my_dataset ((Dataframe, String)): dataset to run the strategy on, and its name
+        -> *args[0] (String) <Optional>: param names to append to log file (if it's useful to specify)
+    RETURN:
+        -> conv_position (Float): Total amount of funds in quote currency held after executing the 
+            strategy on the dataset
+    WHAT: 
+        -> Executes the given strategy on the dataset
+        -> Calls the appropriate strategy procedures each tick
+            i.e. calc_enrty() when looking to enter
+                 calc_exit() when looking to exit
+                 process() every tick
+        -> This assumes that our entire position is converted from currency a to currency b and
+            vice-versa when making a trade
+        -> Optionally plots a candlestick chart showing entry/exit points
+        -> Logs entry and exit points
+        -> Calculates performance metrics and writes them to the console after executing
+    TODO:
+        -> This function does way too many things...
+        -> Is slippage all the way implemented?
+    '''
     def executeStrategy(self, strategy, my_dataset, *args):
-        # STRATEGY VARIABLES
+
+        # initialize starting position to 1000000 units
         position_quote = 1000000.00
         start = position_quote
+        # initialize base position to 0 units
         position_base = 0.00
+        # this will keep track of whether or not we are engaged in a position in the base currency
         position_taken = False
-        #filter by timespan
+        
+        # the dataset itself will be the first part of the tuple passed
         dataset = my_dataset[0]
+        # the name of the dataset is the second part
         dataset_name = my_dataset[1]
         
-        #filter by indicators
+        # this keeps track of fees we incur by entering a postion in the base currency
+        # these will be subtracted once we have converted our position back to the quote currency
+        # (by closing our position or reaching the end of the dataset)
         inc_fees = 0.0
+
+        # keeps track of the current close price (used within the loop as well as after)
         close = 0.0
+
+        # store strings to write to the log here
         log = []
+
+        # store string to write to the slippage log here
         slippage_log = []
         old_quote = 0.0
         
+        # vars to keep track of slippage
         slippage_tot = 0.0
         slippage_pos_base = 0.00
         slippage_pos_quote = position_quote
         slippage_fees = 0.0
 
-        #PLOT VARIABLES
+        # stores tuples (time, value) for when we enter/exit a position
+        # these get plotted
         entries = []
         exits = []
 
-        #haven't implemneted slippage plot yet
+        # set up plotly stuff if we are configured to plot
         if self.plot:
+             # if configured to plot, create a candlestick plotly graph object
             candle = go.Candlestick(x=dataset['time'], open=dataset['open'], close=dataset['close'], high=dataset['high'], low=dataset['low'], name='Candlesticks')
+            # stores indicator graph objects
             inds = []
+            # stores all graphs objects
             data = []
             
+            # add each indicator configured to be graphed and add corresponding objects to inds
             for x in self.indicators_to_graph:
                 if x in dataset.columns: 
+                    # give the indicator a random color
                     rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
                     inds.append(go.Scatter(x=dataset['time'], y=dataset[x], name=x, line=dict(color=(rand_color))))
         
-        #simulate backtesting
+        # this is the main loop for iterating through each row of the dataset
         for row in tqdm(dataset.itertuples()):
+            # keep track of the close price for the given tick
             close = row.close
             slippage_close = close
 
-            if strategy.is_ml:
-                #need to train over the dataset
-                strategy.process(row, my_dataset[0])
-            else:
-                strategy.process(row)
-            if not position_taken:
+
+            
+            # run the process function (will execute anything that needs to happen each tick for the strategy)
+            strategy.process(row)
+
+            
+            if not position_taken: # if we are not entered into a position
+                # run the entry function for our strategy
                 if strategy.calc_entry(row):
+                    # if the entry function returns True, it is signaling to enter, so take a position
                     position_taken = True
 
+                    # calculate fees that will be incurred
                     inc_fees = position_quote * self.fees
+
+                    # convert our position to the base currency
                     old_quote = position_quote
                     position_base = position_quote / close
                     position_quote = 0.0
+
+                    # append entry to entries log for the graph as well as to the text log
                     entries.append([row.time, close])
                     log.append(str(row.time) + ': bought at ' + str(row.close))
-                    
+
+
+                    # do slippage things if we are keeping track of slippage
                     if self.slippage != 0:
                         slippage_fees = slippage_pos_quote * self.fees
                         slippage_close = utils.add_slippage("pos", close, self.slippage)
@@ -216,17 +269,26 @@ class Trading:
                         slippage_tot += close - slippage_close
                         slippage_pos_quote = 0.0
 
-            else:
+            else: # otherwise, we are looking to exit a position
+                # run the exit function of our strategy
                 if strategy.calc_exit(row):
+                    # if the exit function returns True, it is signaling to exit, so leave the position
                     position_taken = False
+
+                    # convert our position to the quote currency
                     position_quote = position_base * close
+                    position_base = 0.0
+
+                    # subtract fees from this transaction as well as the fees from our entry transaction
                     position_quote = position_quote * (1 - self.fees)
                     position_quote -= inc_fees
                     delta = position_quote - old_quote
-                    position_base = 0.0
+
+                    # append exit to exits log for the graph as well as to the text log
                     exits.append([row.time, close])
                     log.append(str(row.time) + ': sold at ' + str(row.close) + ' porfolio value: ' + str(position_quote) + ' delta: ' + str(delta))
 
+                    # do slippage things if we are keeping track of slippage
                     if self.slippage != 0:
                         slippage_close = utils.add_slippage("neg", close, self.slippage)
                         slippage_pos_quote = slippage_pos_base * slippage_close
@@ -236,37 +298,50 @@ class Trading:
                         slippage_pos_base = 0.0
                         slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
 
+
+
+        # build the file name to use for graphs/plots
         name = 'results-' + strategy.name + '-' + dataset_name
+
+        # append the param string if it was passed
         if args:
             name += '-' + args[0]
+
+        # plot the graph if configured to do so
         if self.plot:
-            #plot graph
-            if entries:
+            
+            if entries: # if we are plotting entries/exits, add the appropriate scatter plots to the graph
                 ent_graph = go.Scatter(x=[item[0] for item in entries], y=[item[1] for item in entries], name='Entries', mode='markers')
                 exit_graph = go.Scatter(x=[item[0] for item in exits], y=[item[1] for item in exits], name='Exits', mode='markers')
+                # concatenate all our plots into a single list to be displayed
                 data = [candle] + inds + [ent_graph, exit_graph]
             else:
-                data = inds
+                # concatenate all our plots into a single list to be displayed
+                data = [candle] + inds
+            
+            # retrieve the plot of our stop loss from the strategy (if it exists)
             if hasattr(strategy, 'scatter_x'):
                 data += [strategy.get_stop_loss_plot()]
+
+            # write the graph and save it 
             layout = go.Layout(title=name)
             fig = go.Figure(data=data, layout=layout)
             plot(fig, filename='plots/' + name + '.html')
 
+        # convert our position to the quote price if it isn't already in the quote price
         conv_position = position_quote
-        #output final account value
         if position_base:
             conv_position = (position_base * close) * (1 - self.fees)
 
+        # compute slippage
         slippage_conv_pos = slippage_pos_quote
         if self.slippage != 0:
             slippage_close = utils.add_slippage("neg", close, self.slippage)
             slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
 
         std_dev = utils.get_log_std(log)
-        # TODO: fix below
-        # str_time, avg_time = utils.get_log_avg_hold(log)
         
+        # write statistics to console
         print('Exit value: ' + str(conv_position))
         if self.slippage != 0:
             print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
@@ -275,17 +350,19 @@ class Trading:
         if len(entries):
             print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
         print("Standard deviation of the deltas (how volatile) " + str(std_dev))
-        # print("Average time each trade is held " + str(str_time) + "(" + str(avg_time) + ")")
+        
 
-        # log trades
+        # write to log
         with open('logs/' + name + '.txt', 'w') as f:
             for line in log:
                 f.write(line + '\n')
 
+        # write to slippage log
         with open('slippage_logs/' + name + '.txt', 'w') as f:
             for line in slippage_log:
                 f.write(line + '\n')
 
+        # return the final quote position
         return conv_position
 
 
