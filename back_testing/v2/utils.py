@@ -91,7 +91,6 @@ def convertTimespan(full_arr):
         raise Exception("config: Dates must be specified with one or two values")
 
 
-
 '''
 ARGS:
     -> logs ([String]): List of log strings (representing each line of the log file)
@@ -109,6 +108,7 @@ def getLogStd(logs):
         if log_arr[1] == "sold":
             nums.append(float(log_arr[-1]))
     return np.std(nums, dtype = np.float32)
+
 
 '''
 ARGS:
@@ -134,6 +134,7 @@ def getLogAvgHold(logs):
     time_mean = np.mean(times)
     return unixToTime(time_mean), time_mean
 
+
 '''
 ARGS:
     -> unix_val (Int): Unix time value
@@ -155,6 +156,7 @@ def unixToTime(unix_val):
                 str(full_dt.minute) + " minute(s) " + \
                 str(full_dt.second) + " second(s) "
     return period_str
+
 
 '''
 ARGS:
@@ -185,6 +187,7 @@ def addSlippage(up_or_down, close_price, slippage_val):
         raise Exception("Hey you provided the wrong value (pos/neg)")
     return slip_val
 
+
 '''
 ARGS:
     -> None
@@ -205,6 +208,17 @@ def checkLogPlotDir():
             # create the dir if necessary
             os.system("mkdir " + str(dir))
 
+
+
+'''
+ARGS:
+    -> params ([Param]): list of param objects to look within
+    -> params_to_find ([String]): list of param names to find within params
+RETURN:
+    -> results ([Param]): list of param objects matching with given param names
+WHAT: 
+    -> finds objects in master list of params that have one of the given names, returns the list of them
+''' 
 def findParams(params, params_to_find):
     results = []
     for x in params_to_find:
