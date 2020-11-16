@@ -26,11 +26,18 @@ class Strategy:
         self.indicators = []
         self.is_ml = False
 
-        
+    '''
+    ARGS:
+        -> data (Tuple): a single row from a dataframe
+    RETURN:
+        -> None
+    WHAT: 
+        -> this will be called every tick by the backtesting model
+        -> put things in here that you want to happen every tick
+            or want to keep track of between ticks
+    '''
     def process(self, data):
-        # this happens every tick
-        # use this to keep track of things that need to be kept track of over multiple ticks
-
+       
         pass
         
     def getIndicators(self):
