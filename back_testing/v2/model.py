@@ -32,7 +32,7 @@ class Trading:
 
     '''
     ARGS:
-        -> config ({String: Object}): param-value pairs read in from 'config.config' file
+        -> config ({String: String}): param-value pairs read in from 'config.config' file
     RETURN:
         -> None
     WHAT: 

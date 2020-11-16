@@ -1,22 +1,52 @@
+'''
+FILE: utils.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+    -> Ross Copeland (rhcopeland101@gmail.com)
+WHAT:
+    -> This file contains utility functions for backtesting
+    -> Functions that don't have a home elsewhere can go here
+TODO:
+    -> Should this be a class?
+'''
+
 import time
 import datetime
 import numpy as np
 import random
 import os
 
-#should probs make a class but thats TODO
-def date_to_unix(date_arr):
+'''
+ARGS:
+    -> date_arr ([Int]): list of ints s.t. date_arr = [year, month, day, hour, minute]
+RETURN:
+    -> unix (Int): Time in unix time corresponding to the given date
+WHAT: 
+    -> Converts actual date in integer representation to unix date
+'''
+def dateToUnix(date_arr):
     dt = datetime.datetime(date_arr[0], date_arr[1], \
                     date_arr[2], date_arr[3], date_arr[4])
     unix = dt.timestamp()
     return int(unix)
 
-def str_to_unix(date):
+
+'''
+ARGS:
+    -> date ([String]): List of strings containing any of year, month, day, hour, minute
+RETURN:
+    -> (Int): Time in unix time corresponding to the given date
+WHAT: 
+    -> Converts actual date in string representation to unix date
+'''
+def strToUnix(date):
+    # set date component defaults
     year = 2020
     month = 1
     day = 1
     hour = 0
     min_ = 0
+    # add date components as they are available
     if len(date) >= 1:
         year = int(date[0])
     if len(date) >= 2:
@@ -27,20 +57,22 @@ def str_to_unix(date):
         hour = int(date[3])
     if len(date) >= 5:
         min_ = int(date[4])
+    # concatenate components together to form a list
     date_arr = [year, month, day, hour, min_]
-    return date_to_unix(date_arr)
+    # convert list of ints to unix date and return
+    return dateToUnix(date_arr)
 
 def convert_timespan(full_arr):
     if len(full_arr) < 3 and len(full_arr) > 0:
         date1_str = full_arr[0].split(".")
-        unix1 = str_to_unix(date1_str)
+        unix1 = strToUnix(date1_str)
         unix2 = 9999999999
         if len(full_arr) == 2:
             date2_str = full_arr[1].split(".")
-            unix2 = str_to_unix(date2_str)
+            unix2 = strToUnix(date2_str)
         return [unix1, unix2]
     else:
-        raise Exception("There is supposed to be one or two values for date")
+        raise Exception("Dates must be specified with one or two values")
 
 
 
