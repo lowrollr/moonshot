@@ -156,7 +156,20 @@ def unixToTime(unix_val):
                 str(full_dt.second) + " second(s) "
     return period_str
 
-def add_slippage(up_or_down, close_price, slippage_val):
+'''
+ARGS:
+    -> up_or_down (String):
+    -> close_price (Float):
+    -> slippage_val (Float):
+RETURN:
+    -> slip_val (Float): 
+WHAT: 
+    -> 
+TODO:
+    -> finish commenting this
+    -> make error message sound more professional
+''' 
+def addSlippage(up_or_down, close_price, slippage_val):
     slip_val = 0
     if up_or_down == "pos":
         #mult by 100 for randrange only does int
