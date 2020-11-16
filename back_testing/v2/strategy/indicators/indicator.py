@@ -58,6 +58,7 @@ class Indicator:
             for x in self.params:
                 x.genValue()
 
+
     '''
     ARGS:
         -> percentage (Float): percentage to shrink each bound by for a Param range
@@ -72,6 +73,16 @@ class Indicator:
             for x in self.params:
                 x.shrinkRange(self.best_values[x.name], percentage)
 
+
+    '''
+    ARGS:
+        -> None
+    RETURN:
+        -> self.best_values ({String: Float}): mapping of param_name to best value found for that param so far
+            during genetic algorithm execution
+    WHAT: 
+        -> Stores the current values in the best_values dict
+    '''
     def storeBestValues(self):
         self.best_values = {}
         for x in self.params:
