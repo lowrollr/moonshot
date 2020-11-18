@@ -31,6 +31,7 @@ class Strategy:
         self.indicators = []
         self.is_ml = False
 
+
     '''
     ARGS:
         -> data (Tuple): a single row from a dataframe
