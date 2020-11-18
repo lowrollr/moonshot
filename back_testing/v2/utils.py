@@ -6,8 +6,6 @@ AUTHORS:
 WHAT:
     -> This file contains utility functions for backtesting
     -> Functions that don't have a home elsewhere can go here
-TODO:
-    -> Should this be a class?
 '''
 
 import time
