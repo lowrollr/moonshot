@@ -15,7 +15,7 @@ CLASS: MACD
 WHAT:
     -> Implements the MACD Indicator and adds the approprite columns to the dataset
     -> What is MACD? --> https://www.investopedia.com/trading/macd/
-    -> Params Required
+    -> Params Required:
         -> 'ema_slow'
         -> 'ema_fast'
         -> 'signal'
