@@ -27,7 +27,7 @@ class SMA(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> computes the simple moving average of the specified average over the given period
+        -> computes the simple moving average of the specified value over the given period
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
 
