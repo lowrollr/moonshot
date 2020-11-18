@@ -1,7 +1,17 @@
-from v2.strategy.indicators.indicator import Indicator
-from v2.utils import findParams
+'''
+FILE: variance.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+    -> Ross Copeland (rhcopeland101@gmail.com)
+WHAT:
+    -> This file contains the Variance Indicator
+'''
+
 import pandas
 import numpy as np
+
+from v2.strategy.indicators.indicator import Indicator
+from v2.utils import findParams
 
 class Variance(Indicator):
     def process_variance(self, var_std, var_mean, cur_var):
