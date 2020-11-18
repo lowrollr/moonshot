@@ -8,6 +8,7 @@ WHAT:
 
 from pyti.smoothed_moving_average import smoothed_moving_average as smma
 
+from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
 
 '''
@@ -31,7 +32,7 @@ class SMMA(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> computes the smoothed moving average of the specified average over the given period
+        -> computes the smoothed moving average of the specified value over the given period
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
 
