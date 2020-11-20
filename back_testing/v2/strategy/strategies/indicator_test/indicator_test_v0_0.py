@@ -42,7 +42,10 @@ class indicator_test(Strategy):
     def __init__(self):
         self.name = 'indicator_test'
         self.is_ml = False
-        self.indicators = fetchIndicators(['macd'])
+        self.indicators = fetchIndicators(indicator_list=['macd', 'ema', 'sma', 'smma', \
+            'pivot_points', 'stochastic_oscillator', 'rsi', 'bollinger_bands', \
+                'slope', 'variance', 'optimal'\
+                    ], param_specification={'sma.period': 900})
 
     def process(self, data):
         pass
