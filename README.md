@@ -1,5 +1,7 @@
 ![Vivaldi Logo](https://github.com/marshingjay/vivaldi/blob/master/frontend/assets/vivaldi.PNG)
 
+We are team One Sigma (Ross Copeland, Jacob Marshall).
+
 Vivaldi is a platform for testing, evaluating, and executing algorithmic strategies for trading cryptocurrency. If you are reading this, you are probably grading our project.
 
 Here are the important parts:
@@ -19,6 +21,14 @@ https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/strategy/stra
 Indicators (Features we engineered):
 
 https://github.com/marshingjay/vivaldi/tree/master/back_testing/v2/strategy/indicators
+
+Our Presentation:
+
+https://github.com/marshingjay/vivaldi/blob/master/731%20Presentation.pdf
+
+Our Data:
+
+https://support.kraken.com/hc/en-us/articles/360047124832-Downloadable-historical-OHLCVT-Open-High-Low-Close-Volume-Trades-data
 
 Feel free to reach out to marshingjay@ku.edu if you have any questions about our project!
 

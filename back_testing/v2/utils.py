@@ -6,8 +6,6 @@ AUTHORS:
 WHAT:
     -> This file contains utility functions for backtesting
     -> Functions that don't have a home elsewhere can go here
-TODO:
-    -> Should this be a class?
 '''
 
 import time
@@ -97,9 +95,9 @@ ARGS:
 RETURN:
     -> (Float): 
 WHAT: 
-    -> 
+    -> Computes the Standard Deviation of all of the trades made
 TODO:
-    -> finish commenting this
+    -> Test this to see if it works
 '''    
 def getLogStd(logs):
     nums = []
@@ -107,6 +105,8 @@ def getLogStd(logs):
         log_arr = log.split(" ")
         if log_arr[1] == "sold":
             nums.append(float(log_arr[-1]))
+    if len(nums) == 0:
+        return 0
     return np.std(nums, dtype = np.float32)
 
 
@@ -114,11 +114,9 @@ def getLogStd(logs):
 ARGS:
     -> logs ([String]): List of log strings (representing each line of the log file)
 RETURN:
-    -> 
+    -> time_mean (String, float): tuple of string representation and float of average hold of each position
 WHAT: 
-    -> 
-TODO:
-    -> finish commenting this
+    -> Comutes the average hold time for each position
 '''    
 def getLogAvgHold(logs):
     times = []
@@ -131,6 +129,8 @@ def getLogAvgHold(logs):
             sell_time = float(next_log_arr[0][:-1])
             times.append(sell_time - buy_time)
         i += 2
+    if len(times) <= 0:
+        return "0", 0
     time_mean = np.mean(times)
     return unixToTime(time_mean), time_mean
 
@@ -141,7 +141,7 @@ ARGS:
 RETURN:
     -> period_str (String): Fancy string representation of unix time value 
 WHAT: 
-    -> Converts unix time value to fancy string representation of that value
+    -> Converts unix value to string representation that is easier to read
 ''' 
 def unixToTime(unix_val):
     # make sure unix_val is int

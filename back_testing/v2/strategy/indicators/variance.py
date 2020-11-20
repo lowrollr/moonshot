@@ -13,7 +13,25 @@ import numpy as np
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 
+'''
+CLASS: Variance
+WHAT:
+    -> Calculates variance and adds the approprite column to the dataset
+    -> What is variance? --> https://en.wikipedia.org/wiki/Variance
+    -> Params Required:
+        -> 'period'
+'''
 class Variance(Indicator):
+    '''
+    ARGS:
+        -> var_std (Float): standard deviation of the window
+        -> var_mean (Float) <optional>: the mean of the window
+        -> cur_val (Float) <optional>: current value to process the varaince for
+    RETURN:
+        -> None
+    WHAT: 
+        -> computes the variance of the specified value over the given period
+    '''
     def process_variance(self, var_std, var_mean, cur_var):
         if cur_var > var_mean + (2 * var_std):
             return 0.5
@@ -25,14 +43,21 @@ class Variance(Indicator):
 
             return 0.1 + (unscaled_coeff * 0.4)
 
-
+    '''
+    ARGS:
+        -> dataset (DataFrame): dataset to add the indicator values as a column to
+        -> gen_new_values (Boolean) <optional>: weather or not we should generate new values for each param belonging
+            to this Indicator
+        -> value (String) <optional>: dataframe column name to use for calculations
+    RETURN:
+        -> None
+    WHAT: 
+        -> adds the variance of the specified value over the given period
+    '''
     def genData(self, dataset, gen_new_values=True, value='close'):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()
-        
-
-
 
         dataset['variance'] = dataset[value].rolling(window=int(period.value)).var()
 
