@@ -1,3 +1,10 @@
+'''
+FILE: sma.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This file contains the SMA (Simple Moving Average) Indicator
+'''
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 import pandas as pd

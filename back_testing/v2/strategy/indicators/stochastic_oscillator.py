@@ -1,5 +1,5 @@
 '''
-FILE: ema.py
+FILE: stochastic_oscillator.py
 AUTHORS:
     -> Jacob Marshall (marshingjay@gmail.com)
 WHAT:
