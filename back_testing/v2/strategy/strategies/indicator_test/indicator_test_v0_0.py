@@ -11,11 +11,12 @@ from v2.strategy.indicators.pivot_points import PivotPoints
 from v2.strategy.indicators.variance import Variance
 from v2.strategy.indicators.slope import Slope
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.optimal import Optimal
 
 
-class swing(Strategy):
+class indicator_test(Strategy):
     def __init__(self):
-        self.name = 'swing'
+        self.name = 'indicator_test'
         self.is_ml = False
         self.diff = Param(0.01, 0.1, 2, 'diff', 0.02)
         sma_period = Param(5, 10000, 0, 'period',90)
@@ -31,8 +32,10 @@ class swing(Strategy):
         pp_period = Param(5, 10000, 0, 'period', 37.0)
         var_period = Param(5, 10000, 0, 'period', 90)
         slope_period = Param(5, 10001, 0, 'period', 60)
-        self.indicators = [Indicator(_params=[self.diff], _name='diff'), SMA(_params=[sma_period]), SMMA(_params=[smma_period]), EMA(_params=[ema_period]), BollingerBands(_params=[boll_period]), RSI(_params=[rsi_period]), StochasticOscillator(_params=[stoch_highlow, stoch_k]), MACD(_params=[macd_ema_fast, macd_ema_slow, macd_signal]), PivotPoints(_params=[pp_period]), Slope(_params=[slope_period]), Variance(_params=[var_period])]
-
+        optimal_penalty = Param(0, 0, 0, 'penalty', 0.0026)
+        
+        self.indicators = [Indicator(_params=[self.diff], _name='diff'), SMA(_params=[sma_period]), SMMA(_params=[smma_period]), EMA(_params=[ema_period]), BollingerBands(_params=[boll_period]), RSI(_params=[rsi_period]), StochasticOscillator(_params=[stoch_highlow, stoch_k]), MACD(_params=[macd_ema_fast, macd_ema_slow, macd_signal]), PivotPoints(_params=[pp_period]), Slope(_params=[slope_period]), Variance(_params=[var_period]), Optimal(_params=[optimal_penalty])]
+        self.indicators = [Optimal(_params=[optimal_penalty])]
     def process(self, data):
         pass
 
