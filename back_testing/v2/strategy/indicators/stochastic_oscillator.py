@@ -45,5 +45,6 @@ class StochasticOscillator(Indicator):
         dataset['stosc_low_price'] = dataset['high'].rolling(window=int(param_highlow_range.value)).max()
         dataset['stosc_k'] = 100*((dataset['close'] - dataset['stosc_low_price']) / (dataset['stosc_high_price'] - dataset['stosc_low_price']))
 
+        param_k_period_sma.name = 'period'
         k_period_sma = SMA([param_k_period_sma], _name='stosc_d')
         k_period_sma.genData(dataset, gen_new_values=gen_new_values, value='stosc_k')
