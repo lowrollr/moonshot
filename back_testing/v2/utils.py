@@ -24,7 +24,8 @@ WHAT:
 '''
 def dateToUnix(date_arr):
     dt = datetime.datetime(date_arr[0], date_arr[1], \
-                    date_arr[2], date_arr[3], date_arr[4])
+                    date_arr[2], date_arr[3], date_arr[4],\
+                    tzinfo=datetime.timezone.utc)
     unix = dt.timestamp()
     return int(unix)
 
