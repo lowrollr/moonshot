@@ -12,7 +12,7 @@ from v2.strategy.indicators.sma import SMA
 import pandas
 
 '''
-CLASS: Variance
+CLASS: StochasticOscillator
 WHAT:
     -> Calculates the stocastic oscillation and adds the approprite column to the dataset
     -> What is stochastic oscillator? --> https://www.investopedia.com/terms/s/stochasticoscillator.asp
@@ -35,6 +35,7 @@ class StochasticOscillator(Indicator):
         -> calculates and adds the stochastic oscillation of the specified value over the given period to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
+        
         param_highlow_range, param_k_period_sma = findParams(self.params, ['highlow_range', 'k_period'])
         if gen_new_values:
             highlow_range_value = param_highlow_range.genValue()

@@ -210,7 +210,6 @@ def checkLogPlotDir():
             os.system("mkdir " + str(dir))
 
 
-
 '''
 ARGS:
     -> params ([Param]): list of param objects to look within
