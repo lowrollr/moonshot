@@ -1,3 +1,10 @@
+'''
+FILE: indicator_test_v0_0.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This file is used for the testing and debugging of indicators
+'''
 from v2.strategy.strategies.strategy import Strategy
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.smma import SMMA
@@ -13,8 +20,24 @@ from v2.strategy.indicators.slope import Slope
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 
+'''
+CLASS: indicator_test
+WHAT:
+    -> Creates a strategy class that can be specified within the config
+    -> This is used so that you can use debugger
+    -> Params Required:
+        -> None
+'''
 
 class indicator_test(Strategy):
+    '''
+    ARGS:
+        -> None
+    RETURN:
+        -> None
+    WHAT: 
+        -> calculates and adds the indicators to self.indicators to be tested
+    '''
     def __init__(self):
         self.name = 'indicator_test'
         self.is_ml = False
@@ -35,7 +58,6 @@ class indicator_test(Strategy):
         optimal_penalty = Param(0, 0, 0, 'penalty', 0.0026)
         
         self.indicators = [Indicator(_params=[self.diff], _name='diff'), SMA(_params=[sma_period]), SMMA(_params=[smma_period]), EMA(_params=[ema_period]), BollingerBands(_params=[boll_period]), RSI(_params=[rsi_period]), StochasticOscillator(_params=[stoch_highlow, stoch_k]), MACD(_params=[macd_ema_fast, macd_ema_slow, macd_signal]), PivotPoints(_params=[pp_period]), Slope(_params=[slope_period]), Variance(_params=[var_period]), Optimal(_params=[optimal_penalty])]
-        self.indicators = [Optimal(_params=[optimal_penalty])]
     def process(self, data):
         pass
 
