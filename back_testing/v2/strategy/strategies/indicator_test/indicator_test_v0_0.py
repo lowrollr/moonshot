@@ -43,8 +43,13 @@ class indicator_test(Strategy):
     def __init__(self):
         self.name = 'indicator_test'
         self.is_ml = False
+<<<<<<< HEAD
+        self.indicators = fetchIndicators(indicator_list=['optimal_v2', 'stochastic_oscillator'], param_specification={'sma.period': 900})
+
+=======
         self.indicators = fetchIndicators(indicator_list=['optimal_v2'], param_specification={'sma.period': 900})
         self.indicators = fetchIndicators(indicator_list=["stochastic_oscillator"])
+>>>>>>> 31531ac10b64dd78a3ada1e0b975b7215650e364
     def process(self, data):
         pass
 
