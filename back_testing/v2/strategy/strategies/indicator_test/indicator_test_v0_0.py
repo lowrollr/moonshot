@@ -46,6 +46,7 @@ class indicator_test(Strategy):
             'pivot_points', 'stochastic_oscillator', 'rsi', 'bollinger_bands', \
                 'slope', 'variance', 'optimal'\
                     ], param_specification={'sma.period': 900})
+        self.indicators = fetchIndicators(indicator_list=["ichimoku"])
 
     def process(self, data):
         pass
