@@ -73,12 +73,15 @@ class Optimal_v2(Indicator):
             overall_entry = x[0][1][0]
             overall_exit = x[-1][1][1]
             movement_slope = (overall_exit - overall_entry) / (x[-1][0][1] - x[0][0][0])
+            total_delta = (overall_exit - overall_entry) / overall_entry
             for (start, end), (buy, sell) in x:
                 profit_perc = (sell - buy) / buy
                 delta_entry = buy - overall_entry
                 delta_exit = overall_exit - sell
-                weight_entry = (1 / (0.001 + delta_entry)) * pow(profit_perc, 2) * pow(movement_slope, 2)
-                weight_exit = (1 / (0.001 + delta_exit)) * pow(profit_perc, 2) * pow(movement_slope, 2)
+                # weight_entry = (1 / (0.001 + delta_entry)) * pow(profit_perc, 2) * pow(movement_slope, 2)
+                # weight_exit = (1 / (0.001 + delta_exit)) * pow(profit_perc, 2) * pow(movement_slope, 2)
+                weight_entry = (1 / (0.001 + delta_entry)) * pow(total_delta, 2)
+                weight_exit = (1 / (0.001 + delta_exit)) * pow(total_delta, 2)
                 entry_weights[start] = weight_entry
                 exit_weights[end] = weight_exit
 
