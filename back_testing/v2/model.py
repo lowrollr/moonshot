@@ -60,7 +60,7 @@ class Trading:
 
         if config['timespan'][0] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
-        elif config["timespan"][0] == "date": # test from date_a to date_b (yyyy/mm/dd)
+        elif config["timespan"][0] == "date": # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
             self.timespan = utils.convertTimespan(config["timespan"][1:])
         elif len(config['timespan']) == 1: # date_a already defined in unix time, no need to convert
             self.timespan = [int(config['timespan'][0]), 9999999999]

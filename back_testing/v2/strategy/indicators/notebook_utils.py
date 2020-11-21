@@ -137,8 +137,20 @@ def fetchIndicators(indicator_list, param_specification={}):
 
             my_ind = Optimal(_params=[optimal_penalty])
         elif indicator == 'ichimoku':
-            pass
-            # waiting on params to be implemented for this indicator
+            short_window_val, medium_window_val, long_window_val = 9, 26, 52
+            if 'ichimoku.short_window' in param_specification:
+                short_window_val = param_specification['ichimoku.short_window']
+            short_window = Param(5, 50, 0, 'short_window', short_window_val)
+
+            if 'ichimoku.medium_window' in param_specification:
+                medium_window_val = param_specification['ichimoku.medium_window']
+            medium_window = Param(15, 75, 0, 'medium_window', medium_window_val)
+            
+            if 'ichimoku.long_window' in param_specification:
+                long_window_val = param_specification['ichimoku.long_window']
+            long_window = Param(40, 200, 0, 'long_window', long_window_val)
+
+            my_ind = Ichimoku(_params=[short_window, medium_window, long_window])
         else:
             raise Exception('Invalid Indicator Name: ' + str(indicator))
 

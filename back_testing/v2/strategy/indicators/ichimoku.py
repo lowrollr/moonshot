@@ -33,19 +33,20 @@ class Ichimoku(Indicator):
         -> calculates and adds the Ichimoku Cloud values of the specified value to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
-        nine_period_high = dataset['high'].rolling(window=9).max()
-        nine_period_low = dataset['low'].rolling(window=0).min()
-        dataset["tenkan_sen"] = (nine_period_high + nine_period_low) / 2
+        #standard vals are short_window = 9, medium_window = 26, long_window = 52
+        short_window, medium_window, long_window = findParams(self.params, ['short_window', 'medium_window', 'long_window'])
+        short_period_high = dataset['high'].rolling(window=short_window).max()
+        short_period_low = dataset['low'].rolling(window=short_window).min()
+        dataset["tenkan_sen"] = (short_period_high + short_period_low) / 2
 
-        period26_high = dataset['high'].rolling(window=26).max()
-        period26_low = dataset['low'].rolling(window=26).min()
-        dataset['kijun_sen'] = (period26_high + period26_low) / 2
+        medium_period_high = dataset['high'].rolling(window=medium_window).max()
+        medium_period_low = dataset['low'].rolling(window=medium_window).min()
+        dataset['kijun_sen'] = (medium_period_high + medium_period_low) / 2
 
-        dataset["senkou_span_a"] = ((dataset["tenkan_sen"] + dataset["kijun_sen"]) / 2).shift(26)
+        dataset["senkou_span_a"] = ((dataset["tenkan_sen"] + dataset["kijun_sen"]) / 2).shift(medium_window)
 
-        periodlong_high = dataset['high'].rolling(window=52).max()
-        periodlong_low = dataset['low'].rolling(window=52).min()
-        dataset["senkou_span_b"] = ((periodlong_high + periodlong_low) / 2).shift(26)
+        long_period_high = dataset['high'].rolling(window=long_window).max()
+        long_period_low = dataset['low'].rolling(window=long_window).min()
+        dataset["senkou_span_b"] = ((long_period_high + long_period_low) / 2).shift(medium_window)
 
-        dataset["chikou_span"] = dataset['close'].shift(-26)
         dataset.dropna()
