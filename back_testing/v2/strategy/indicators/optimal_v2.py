@@ -18,7 +18,7 @@ class Optimal_v2(Indicator):
 
 
     def genData(self, dataset, gen_new_values=True, value='close'):
-
+        dataset[value] = dataset[value].ewm(span=3).mean()
         movements = []
         joined_movements = []
 
@@ -59,7 +59,7 @@ class Optimal_v2(Indicator):
         cur_movement = [movements[0]]
         if len(movements) > 1:
             for (start, end), (buy, sell) in movements[1:]:
-                if sell > cur_movement[-1][1][1] and buy > cur_movement[-1][1][0]:
+                if (sell > cur_movement[-1][1][1] and buy > cur_movement[-1][1][0]):
                     cur_movement.append(((start, end), (buy, sell)))
                 else:
                     joined_movements.append(cur_movement)
@@ -68,8 +68,29 @@ class Optimal_v2(Indicator):
         joined_movements.append(cur_movement)
         entry_weights = {}
         exit_weights = {}
+        prev_movement = joined_movements[0]
+        final_joined_movements = []
+        was_join_last = False
+        for x in joined_movements[1:]:
+            prev_buy = prev_movement[0][1][0]
+            prev_sell = prev_movement[-1][1][1]
+            prev_exit_time = prev_movement[-1][0][1]
 
-        for x in joined_movements:
+            cur_buy = x[0][1][0]
+            cur_sell = x[-1][1][1]
+            cur_enter_time = x[0][0][0]
+            if prev_buy < cur_buy and prev_sell < cur_sell and cur_enter_time - 600 < prev_exit_time:
+                final_joined_movements.append(prev_movement + x)
+                prev_movement = prev_movement + x
+                was_join_last = True
+            else:
+                final_joined_movements.append(prev_movement)
+                prev_movement = x 
+                was_join_last = False
+        if not was_join_last:
+            final_joined_movements.append(prev_movement)
+            
+        for x in final_joined_movements:
             overall_entry = x[0][1][0]
             overall_exit = x[-1][1][1]
             movement_slope = (overall_exit - overall_entry) / (x[-1][0][1] - x[0][0][0])
