@@ -19,6 +19,7 @@ from v2.strategy.indicators.variance import Variance
 from v2.strategy.indicators.slope import Slope
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
+from v2.strategy.indicators.optimal_v2 import Optimal_v2
 from v2.strategy.indicators.notebook_utils import genDataForAll, fetchIndicators
 
 '''
@@ -42,10 +43,7 @@ class indicator_test(Strategy):
     def __init__(self):
         self.name = 'indicator_test'
         self.is_ml = False
-        self.indicators = fetchIndicators(indicator_list=['macd', 'ema', 'sma', 'smma', \
-            'pivot_points', 'stochastic_oscillator', 'rsi', 'bollinger_bands', \
-                'slope', 'variance', 'optimal'\
-                    ], param_specification={'sma.period': 900})
+        self.indicators = fetchIndicators(indicator_list=['optimal_v2'], param_specification={'sma.period': 900})
 
     def process(self, data):
         pass

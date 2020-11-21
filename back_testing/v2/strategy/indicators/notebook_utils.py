@@ -21,6 +21,7 @@ from v2.strategy.indicators.variance import Variance
 from v2.strategy.indicators.slope import Slope
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
+from v2.strategy.indicators.optimal_v2 import Optimal_v2
 from v2.strategy.indicators.ichimoku import Ichimoku
 '''
 ARGS:
@@ -151,6 +152,8 @@ def fetchIndicators(indicator_list, param_specification={}):
             long_window = Param(40, 200, 0, 'long_window', long_window_val)
 
             my_ind = Ichimoku(_params=[short_window, medium_window, long_window])
+        elif indicator == 'optimal_v2':
+            my_ind = Optimal_v2(_params=[])
         else:
             raise Exception('Invalid Indicator Name: ' + str(indicator))
 
