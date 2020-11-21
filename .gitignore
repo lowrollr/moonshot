@@ -37,3 +37,6 @@ backend/*.html
 back_testing/plots/
 back_testing/logs/
 back_testing/slippage_logs/
+
+#ignore changes to config file
+back_testing/config.config
