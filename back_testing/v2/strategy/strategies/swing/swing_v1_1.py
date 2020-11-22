@@ -1,13 +1,28 @@
+'''
+FILE: swing_v1_0.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This is version 1.1 of the swing algorithm
+    -> see key changes in class header
+'''
+
 from v2.strategy.strategies.strategy import Strategy
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.smma import SMMA
 from v2.strategy.indicators.macd import MACD
 from v2.strategy.indicators.indicator import Indicator
 
-
-class swing_v2(Strategy):
+'''
+CLASS: swing
+WHAT:
+    -> Improves upon version 1_0
+    -> Implements stop loss
+    -> Uses macd to inform buy/sell signals
+'''
+class swing_v(Strategy):
     def __init__(self):
-        self.name = 'swing_v2'
+        self.name = 'swing_v1_1'
         self.is_ml = False
         self.diff = Param(0.01, 0.1, 2, 'diff', 0.05)
         self.stop_loss = 0.0

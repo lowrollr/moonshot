@@ -13,13 +13,13 @@ from v2.strategy.indicators.indicator import Indicator
 
 
 '''
-CLASS: swing
+CLASS: Swing_1_0
 WHAT:
     -> Implements the swing strategy
     -> buys when price is x% below simple moving average
     -> sells when price is x% above simple moving average
 '''
-class swing(Strategy):
+class Swing_1_0(Strategy):
 
     '''
     ARGS:
@@ -27,11 +27,10 @@ class swing(Strategy):
     RETURN:
         -> None
     WHAT: 
-        -> initializes approprtiate params and indicators
-        
+        -> initializes approprtiate params and indicators   
     '''
     def __init__(self):
-        self.name = 'swing'
+        self.name = 'swing_v1_0'
         self.is_ml = False
         # represents % above or below sma we should buy or sell at
         self.diff = Param(0.01, 0.1, 2, 'diff', 0.02)
