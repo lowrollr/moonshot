@@ -13,6 +13,7 @@ import datetime
 import numpy as np
 import random
 import os
+import re
 
 '''
 ARGS:
@@ -225,3 +226,25 @@ def findParams(params, params_to_find):
         results.append(next((y for y in params if y.name == x), None))
     return results
 
+'''
+ARGS:
+    -> quote_currencies ([String]): list of quote currencies
+    -> frequncy (String): string representation of frequency of the data
+RETURN:
+    -> list of strings of filenames to open
+WHAT:
+    -> checks to see which files meet the specification and that are not empty
+'''
+def retrieveAll(quote_currencies, frequency):
+    base_currencies = []
+    all_files = os.listdir("historical_data/")
+    for filename in all_files:
+        for q in quote_currencies:
+            file_str = str(q) + "_" + str(frequency) + ".csv"
+            if re.match(r'(\w+)'+ file_str, filename):
+                match = re.match(r'(\w+)'+ file_str, filename)
+                if os.stat("historical_data/" + match[0]).st_size == 0:
+                    continue
+                base_currencies.append(match[0])
+
+    return base_currencies
