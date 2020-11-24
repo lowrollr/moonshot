@@ -45,8 +45,6 @@ class Trading:
 
         # We need to read in the fields from our config file and turn them into actionable parameters
         # Parse each field as needed and construct the proper paremeters
-        self.base_cs = []
-        self.quote_cs = []
         self.base_cs = config['ex1']
         self.quote_cs = config['ex2']
         self.freq = config['freq'][0]
@@ -91,19 +89,25 @@ class Trading:
             for the given timeframe
     '''
     def getPairDatasets(self, base_currencies, quote_currencies, freq):
+        filenames = []
         datasets = []
-
-        for b in base_currencies:
-            for q in quote_currencies:
-                # construct the appropriate filename 
-                name = b + q
-                filename = name + '_' + str(freq) + '.csv'
-                # grab the dataset from the csv file
-                my_df = pd.read_csv('historical_data/' + filename)
-                my_df.columns = ['time', 'open', 'high', 'low', 'close', 'volume', 'trades']
-                # filter dataset to only include data from the configured timespan 
-                my_df = my_df[(my_df.time > self.timespan[0]) & (my_df.time < self.timespan[1])]
-                datasets.append((my_df, name))
+        if base_currencies == ['all']:
+            filenames = utils.retrieveAll(quote_currencies, freq)
+        else:
+            for b in base_currencies:
+                for q in quote_currencies:
+                    # construct the appropriate filename 
+                    name = b + q
+                    filename = name + '_' + str(freq) + '.csv'
+                    filenames.append(filename)
+                    # grab the dataset from the csv file
+        for f in filenames:
+            my_df = pd.read_csv('historical_data/' + f)
+            my_df.columns = ['time', 'open', 'high', 'low', 'close', 'volume', 'trades']
+            # filter dataset to only include data from the configured timespan 
+            my_df = my_df[(my_df.time > self.timespan[0]) & (my_df.time < self.timespan[1])]
+            name = f.split('_')[0]
+            datasets.append((my_df, name))
                 
         return datasets
 
