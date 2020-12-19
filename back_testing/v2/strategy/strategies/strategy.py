@@ -30,6 +30,7 @@ class Strategy:
     def __init__(self):
         self.indicators = []
         self.is_ml = False
+        self.name = self.__class__.__name__
 
 
     '''
