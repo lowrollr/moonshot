@@ -1,0 +1,32 @@
+{
+    # All possible pairs of the given quote/base currencies 
+    # will be fetched from the historical data repository
+
+    # Quote Currencies
+    "ex1": ["XBT"],
+    # Base Currencies
+    "ex2": ["USD"],
+    # Whether or not to test ranges of values for each indicator parameter (genetic algo)
+    "test_param_ranges": false,
+    # Timespan to fetch data for
+    # max = all data
+    # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
+    "timespan": "max",
+    # Candle frequency to retrieve 
+    # 1 = 1 minute
+    "freq": 1,
+    # Fees to subtract from trades (percentage)
+    "fees": 0.0026,
+    # Strategy to execute (file name sans version no.)
+    "strategy": ["swing", "buy_and_hold"],
+    # Version of strategy
+    # specifying latest will just grab the highest version number present
+    "strategy_version": ["latest", "latest"],
+    # Indicators to plot on the results graph
+    "indicators_to_graph": [],
+    # Whether or not results should be plotted
+    "plot": true,
+    # Slippage to factor into profits
+    "slippage": 0
+}
+
