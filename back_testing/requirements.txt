@@ -9,3 +9,5 @@ tensorflow==2.2.0
 tqdm==4.49.0
 scikit_learn==0.23.2
 hjson==3.0.2
+dominate==2.6.0
+chart-studio==1.1.0
