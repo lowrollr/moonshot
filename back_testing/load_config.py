@@ -5,7 +5,7 @@ AUTHORS:
 WHAT:
     -> This file contains functionality for loading the configuration file
 '''
-
+import hjson
 '''
 ARGS:
     -> None
@@ -15,9 +15,6 @@ WHAT:
     -> Parses input from config file (config.config) and reads it into a dictionary
 '''
 def load_config():
-    my_config = {}
-    with open('config.config') as config:
-        for line in config:
-            args = line.split('=')
-            my_config[args[0]] = args[1].rstrip().split(',')
-    return my_config
+    with open('config.hjson') as config:
+        
+        return hjson.load(config)

@@ -47,16 +47,16 @@ class Trading:
         # Parse each field as needed and construct the proper paremeters
         self.base_cs = config['ex1']
         self.quote_cs = config['ex2']
-        self.freq = config['freq'][0]
-        self.fees = float(config['fees'][0])
+        self.freq = config['freq']
+        self.fees = float(config['fees'])
         self.indicators_to_graph = config['indicators_to_graph']
         self.strategy_list = config['strategy']
         self.version_list = config['strategy_version']
         self.strategies = []
         self.timespan = []
-        self.slippage = float(config["slippage"][0])
+        self.slippage = float(config["slippage"])
 
-        if config['timespan'][0] == 'max': # test over entire dataset
+        if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
         elif config["timespan"][0] == "date": # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
             self.timespan = utils.convertTimespan(config["timespan"][1:])
@@ -64,12 +64,12 @@ class Trading:
             self.timespan = [int(config['timespan'][0]), 9999999999]
         else: 
             self.timespan = [int(x) for x in config['timespan']]
-        self.test_param_ranges = False
-        if config['test_param_ranges'][0] == 'true':
-            self.test_param_ranges = True
-        self.plot = False
-        if config['plot'][0] == 'true':
-            self.plot = True
+        
+        
+        self.test_param_ranges = config['test_param_ranges'] 
+        
+        
+        self.plot = config['plot']
         
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
