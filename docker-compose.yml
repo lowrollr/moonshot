@@ -1,4 +1,5 @@
 version: "3"
+
 services:
   crypto_db:
     image: postgres:12.2-alpine
@@ -7,19 +8,57 @@ services:
       - 5432:5432
     restart: "unless-stopped"
     
-  golang_trade:
-    build: ./production/golang
+  portoflio_manager:
+    build: ./portfolio_manager
     depends_on:
       - crypto_db
-      - python_trade
     restart: "on-failure"
-    env_file: production/golang/env/.env_trade
+    env_file: portfolio_manager/.env_db
+    ports:
+      - 2626:2626
 
-  python_trade:
-    build: ./production/python
+  strategy_manager:
+    build: ./strategy_manager
     depends_on: 
       - crypto_db
     restart: "on-failure"
+    env_file: strategy_manager/.env_trade
     ports:
       - 1234:1234
-    
+
+  executor:
+    build: ./executor
+    depends_on:
+      - crypto_db
+    restart: "on-failure"
+    #env_file
+    ports:
+      - 8787:8787
+
+  main_data_consumer:
+    build: ./main_data_consumer
+    depends_on:
+      - crypto_db
+    restart: "on_failure"
+    #env_file
+    ports:
+      - 9090:9090
+
+  
+  alt_data_consumer:
+    build: ./alt_data_consumer
+    depends_on:
+      - crypto_db
+    restart: "on_failure"
+    #env_file
+    ports:
+      - 8787:8787
+
+  model_land:
+    build: ./model_land
+    depends_on:
+      - crypto_db
+    restart: "on_failure"
+    #env_file
+    ports:
+      - 2222:2222
