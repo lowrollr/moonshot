@@ -218,26 +218,43 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
 
     return filename
 
+
+'''
+    ARGS:
+        -> dataframe (Dataframe): contains a dataset for a base/quote currency pair, as well as any indicators applied to the data
+        -> entries ([[int, float]]): time, close pairs for each occurance when a strategy entered a position
+        -> exits ([[int, float]]): time, close pairs for each occurance when a strategy exited a position
+        -> indicators_to_graph [string]: list of indicator names to plot
+        -> name (string): base file name containing information about the currency pair and strategy being used
+        -> report_format (string): specifies how to format the report (links to plots or all plots on one page)
+    RETURN:
+        -> None
+    WHAT: 
+        -> generates a webpage report for the strategy execution
+'''
 def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format):
-    # movement_graphs = generate_movement_graphs(dataset, entries, exits)
+    # initialize the HTML document object
     doc = dominate.document(title='Overall Report')
+
+    # generate the graphs/stats for individual movements
     movement_plots, overall_stats = generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name)
 
+    # if the report format is auto, set the format to the appropriate type given the number of plots
     if report_format == 'auto':
         if len(movement_plots) < 20:
             report_format == 'divs'
         else:
             report_format = 'pages'
     filenames = []
+    # if the report format is pages, create a page for each entry/exit pair
     if report_format == 'pages':
         
         movement_num = 0
         for mp, mp_stats in movement_plots:
             filenames.append(generate_movement_page(mp, mp_stats, name, movement_num))
-            
             movement_num += 1 
 
-
+    # link to stylesheets and plotly script (IMPORTANT) 
     with doc.head:
         link(rel='stylesheet', href='./reports/style.css')
         script(type='text/javascript', src='script.js')
@@ -246,7 +263,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with doc:
         with div():
             attr(cls='body')
-            
+            # if the report format is div, embed all plots into the single page
             if report_format == 'divs':
                 for mp, mp_stats in movement_plots:
                     td(raw(mp))
@@ -256,17 +273,17 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
                             row = tr()
                             row.add(td(stat))
                             row.add(td(mp_stats[stat]))
+            # if the report format is pages, create links to each other report's page
             elif report_format == 'pages':
                 reports_dir = './reports/'
                 report_list = ul()
                 for i,f in enumerate(filenames):
                     report_list += li(a('Movement #' + str(i), href=reports_dir + f), __pretty=False)
 
-            
             else:
                 raise Exception('Invalid report format!')
             
-            
-    with open('test_output.html', 'w') as output:
+    # write the report to a file
+    with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
