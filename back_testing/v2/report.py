@@ -289,11 +289,14 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
         with div():
             td(raw(overall_as_div))
             attr(cls='body')
+            h1('Overall Stats')
             with table().add(tbody()):
                 for stat in overall_stats:
                     row = tr()
                     row.add(td(stat))
                     row.add(td(overall_stats[stat]))
+
+            h1('Individual Movements')
             # if the report format is div, embed all plots into the single page
             if report_format == 'divs':
                 for mp, mp_stats in movement_plots:
@@ -307,8 +310,21 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
             # if the report format is pages, create links to each other report's page
             elif report_format == 'pages':
                 report_list = ul()
-                for i,f in enumerate(filenames):
-                    report_list += li(a('Movement #' + str(i), href=f), __pretty=False)
+                
+                with table().add(tbody()):
+                    stat_types = list(movement_plots[0][1].keys())
+                    row = tr()
+                    row.add(td('Movement'))
+                    for stat in stat_types:
+                        row.add(td(stat))
+                    for i,f in enumerate(filenames):
+                        mp_stats = movement_plots[i][1]
+                        new_row = tr()
+                        new_row.add(td(a('Movement #' + str(i), href=f), __pretty=False))
+                        for stat in stat_types:
+                            new_row.add(td(mp_stats[stat]))
+                            
+                
 
             else:
                 raise Exception('Invalid report format!')
