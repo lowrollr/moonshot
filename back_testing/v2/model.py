@@ -358,7 +358,7 @@ class Trading:
 
         # execute each strategy on each dataset
         if self.test_param_ranges:
-            self.genetic_execution_2()
+            self.segmented_genetic_execution()
 
         for x in self.strategies:
             for d in self.dfs:
