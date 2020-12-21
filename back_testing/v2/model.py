@@ -255,18 +255,17 @@ class Trading:
 
                     # append entry to entries log for the graph as well as to the text log
                     entries.append([row.time, close])
-                    log.append(str(row.time) + ': bought at ' + str(row.close))
                     
                     
 
-                    # do slippage things if we are keeping track of slippage
-                    if self.slippage != 0:
-                        slippage_fees = slippage_pos_quote * self.fees
-                        slippage_close = utils.add_slippage("pos", close, self.slippage)
-                        slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
-                        slippage_pos_base = slippage_pos_quote / slippage_close
-                        slippage_tot += close - slippage_close
-                        slippage_pos_quote = 0.0
+                    # # do slippage things if we are keeping track of slippage
+                    # if self.slippage != 0:
+                    #     slippage_fees = slippage_pos_quote * self.fees
+                    #     slippage_close = utils.add_slippage("pos", close, self.slippage)
+                    #     slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
+                    #     slippage_pos_base = slippage_pos_quote / slippage_close
+                    #     slippage_tot += close - slippage_close
+                    #     slippage_pos_quote = 0.0
                 
                 
             else: # otherwise, we are looking to exit a position
@@ -287,17 +286,16 @@ class Trading:
 
                     # append exit to exits log for the graph as well as to the text log
                     exits.append([row.time, close])
-                    log.append(str(row.time) + ': sold at ' + str(row.close) + ' porfolio value: ' + str(position_quote) + ' delta: ' + str(delta))
 
-                    # do slippage things if we are keeping track of slippage
-                    if self.slippage != 0:
-                        slippage_close = utils.add_slippage("neg", close, self.slippage)
-                        slippage_pos_quote = slippage_pos_base * slippage_close
-                        slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
-                        slippage_pos_quote -= slippage_fees
-                        slippage_tot += slippage_close - close
-                        slippage_pos_base = 0.0
-                        slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
+                    # # do slippage things if we are keeping track of slippage
+                    # if self.slippage != 0:
+                    #     slippage_close = utils.add_slippage("neg", close, self.slippage)
+                    #     slippage_pos_quote = slippage_pos_base * slippage_close
+                    #     slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
+                    #     slippage_pos_quote -= slippage_fees
+                    #     slippage_tot += slippage_close - close
+                    #     slippage_pos_base = 0.0
+                    #     slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
                 
         dataset['account_value'] = np.array(account_history)
 
@@ -333,15 +331,6 @@ class Trading:
             # for how volitile should be how many are profitable
             #print("Standard deviation of the deltas (how volatile) " + str(std_dev))
         
-        # write to log
-        with open('logs/' + name + '.txt', 'w') as f:
-            for line in log:
-                f.write(line + '\n')
-
-        # write to slippage log
-        with open('slippage_logs/' + name + '.txt', 'w') as f:
-            for line in slippage_log:
-                f.write(line + '\n')
         
         # write stats to dict to send to reports
         stats = dict()
