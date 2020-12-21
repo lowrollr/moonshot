@@ -17,12 +17,14 @@ import inspect
 import random
 import plotly.graph_objs as go
 from plotly.offline import plot
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from itertools import product
 import random
 import numpy as np
 
 from v2.strategy.strategies.strategy import Strategy
+from v2.report import write_report
 import v2.utils as utils
 from load_config import load_config
 
@@ -59,11 +61,12 @@ class Trading:
         self.strategies = []
         self.timespan = []
         self.slippage = float(config["slippage"])
+        self.report_format = config['report_format']
 
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
-        elif config["timespan"][0] == "date": # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
-            self.timespan = utils.convertTimespan(config["timespan"][1:])
+        elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
+            self.timespan = utils.convertTimespan(config["timespan"])
         elif len(config['timespan']) == 1: # date_a already defined in unix time, no need to convert
             self.timespan = [int(config['timespan'][0]), 9999999999]
         else: 
@@ -221,22 +224,6 @@ class Trading:
         # these get plotted
         entries = []
         exits = []
-
-        # set up plotly stuff if we are configured to plot
-        if self.plot:
-             # if configured to plot, create a candlestick plotly graph object
-            candle = go.Candlestick(x=dataset['time'], open=dataset['open'], close=dataset['close'], high=dataset['high'], low=dataset['low'], name='Candlesticks')
-            # stores indicator graph objects
-            inds = []
-            # stores all graphs objects
-            data = []
-            
-            # add each indicator configured to be graphed and add corresponding objects to inds
-            for x in self.indicators_to_graph:
-                if x in dataset.columns: 
-                    # give the indicator a random color
-                    rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-                    inds.append(go.Scatter(x=dataset['time'], y=dataset[x], name=x, line=dict(color=(rand_color))))
         
         # this is the main loop for iterating through each row of the dataset
         for row in tqdm(dataset.itertuples()):
@@ -247,8 +234,9 @@ class Trading:
 
             # run the process function (will execute anything that needs to happen each tick for the strategy)
             strategy.process(row)
-
+            
             if not position_taken: # if we are not entered into a position
+
                 # run the entry function for our strategy
                 if strategy.calc_entry(row):
                     # if the entry function returns True, it is signaling to enter, so take a position
@@ -265,7 +253,8 @@ class Trading:
                     # append entry to entries log for the graph as well as to the text log
                     entries.append([row.time, close])
                     log.append(str(row.time) + ': bought at ' + str(row.close))
-
+                    
+                    
 
                     # do slippage things if we are keeping track of slippage
                     if self.slippage != 0:
@@ -275,8 +264,10 @@ class Trading:
                         slippage_pos_base = slippage_pos_quote / slippage_close
                         slippage_tot += close - slippage_close
                         slippage_pos_quote = 0.0
-
+                
+                
             else: # otherwise, we are looking to exit a position
+                
                 # run the exit function of our strategy
                 if strategy.calc_exit(row):
                     # if the exit function returns True, it is signaling to exit, so leave the position
@@ -304,6 +295,7 @@ class Trading:
                         slippage_tot += slippage_close - close
                         slippage_pos_base = 0.0
                         slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
+                
 
         # build the file name to use for graphs/plots
         name = 'results-' + strategy.name + '-' + dataset_name
@@ -311,27 +303,6 @@ class Trading:
         # append the param string if it was passed
         if args:
             name += '-' + args[0]
-
-        # plot the graph if configured to do so
-        if self.plot:
-            
-            if entries: # if we are plotting entries/exits, add the appropriate scatter plots to the graph
-                ent_graph = go.Scatter(x=[item[0] for item in entries], y=[item[1] for item in entries], name='Entries', mode='markers')
-                exit_graph = go.Scatter(x=[item[0] for item in exits], y=[item[1] for item in exits], name='Exits', mode='markers')
-                # concatenate all our plots into a single list to be displayed
-                data = [candle] + inds + [ent_graph, exit_graph]
-            else:
-                # concatenate all our plots into a single list to be displayed
-                data = [candle] + inds
-            
-            # retrieve the plot of our stop loss from the strategy (if it exists)
-            if hasattr(strategy, 'scatter_x'):
-                data += [strategy.get_stop_loss_plot()]
-
-            # write the graph and save it 
-            layout = go.Layout(title=name)
-            fig = go.Figure(data=data, layout=layout)
-            plot(fig, filename='plots/' + name + '.html')
 
         # convert our position to the quote price if it isn't already in the quote price
         conv_position = position_quote
@@ -368,6 +339,7 @@ class Trading:
             for line in slippage_log:
                 f.write(line + '\n')
 
+        write_report(dataset, entries, exits, strategy.indicators, name, self.report_format)
         # return the final quote position
         return conv_position
 
