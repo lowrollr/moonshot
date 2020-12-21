@@ -271,12 +271,12 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
             elif report_format == 'pages':
                 report_list = ul()
                 
-                with table().add(tbody()):
+                with table(id="ind_movements_data").add(tbody()):
                     stat_types = list(movement_plots[0][1].keys())
                     row = tr()
                     row.add(td('Movement'))
-                    for stat in stat_types:
-                        row.add(td(stat))
+                    for i in range (len(stat_types)):
+                        row.add(th(stat_types[i], onclick="sortRows(" + str(i+1) + ")"))
                     for i,f in enumerate(filenames):
                         mp_stats = movement_plots[i][1]
                         new_row = tr()
