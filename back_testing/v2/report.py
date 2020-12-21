@@ -9,6 +9,7 @@ WHAT:
 import dominate
 import random
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 from plotly.offline import plot
 from numpy import mean
 from dominate.tags import *
@@ -16,6 +17,8 @@ from dominate.util import raw
 import chart_studio.tools as tls
 import os
 
+
+ALT_AXIS_COLS = {'macd_diff'}
 
 '''
     ARGS:
@@ -88,7 +91,7 @@ def generate_overall_graph(dataset, entries, exits, indicators_to_graph, name, s
     TODO:
         -> its possible some of this could be abstracted
 '''
-def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, padding=20):
+def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, fees, padding=20):
     if not entries:
         return None
     # contains plot div strings to embed
@@ -114,7 +117,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
         starting_time = time_entry - (padding * 60)
 
         # plot the entry point
-        ent_graph = [go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')]
+        ent_graph = go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')
         
         # make sure we aren't considering an entry point without a corresponding exit point
         if i < len(exits):
@@ -124,35 +127,50 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             ending_time = time_exit + (padding * 60)
 
             # plot the exit point
-            exit_graph = [go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')]
+            exit_graph = go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')
         
             # filter the dataframe to only include data from our specified timeframe
             cur_dataframe = dataframe[(dataframe.time >= starting_time) & (dataframe.time <= ending_time)]
 
             # generate a candlestick for the data
-            candle = [go.Candlestick(x=cur_dataframe['time'], open=cur_dataframe['open'], close=cur_dataframe['close'], high=cur_dataframe['high'], low=cur_dataframe['low'], name='Candlesticks')]
+            candle = go.Candlestick(x=cur_dataframe['time'], open=cur_dataframe['open'], close=cur_dataframe['close'], high=cur_dataframe['high'], low=cur_dataframe['low'], name='Candlesticks')
 
             # if we are plotting entries/exits, add the appropriate scatter plots to the graph
             inds = []
+            secondary_inds = []
             for ind in indicators_to_graph:
                 if ind in cur_dataframe.columns: 
                     # give the indicator a random color
                     rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-                    inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
+                    if ind in ALT_AXIS_COLS:
+                        secondary_inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
+                    else:
+                        inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
 
             # bundle all of our plots together into a single object
-            data = candle + inds + ent_graph + exit_graph
+            # data = candle + inds + ent_graph + exit_graph
 
             # initialize the plot and save it to a div formatted string that we can embed
-            layout = go.Layout(title='Movement ' + str(i))
-            fig = go.Figure(data=data, layout=layout)
+            
+            fig = make_subplots(specs=[[{"secondary_y": True}]])
+            fig.update_layout(template='plotly_dark', title_text='Movement ' + str(i))
+            fig.add_trace(candle, secondary_y=False)
+            if inds:
+                for ind in inds:
+                    fig.add_trace(ind, secondary_y=False)
+            if secondary_inds:
+                for ind in secondary_inds:
+                    fig.add_trace(ind, secondary_y=True)
+                
+            fig.add_trace(ent_graph, secondary_y=False)
+            fig.add_trace(exit_graph, secondary_y=False)
             plot_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
 
             # calculate hold time and percent profit for the movement
             hold_time = (time_exit - time_entry) / 60
-            profit = (price_exit - price_entry)
+            profit = round(((price_exit / price_entry) * 100) - 100, 2)
             movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
-            movement_stats['% Profit'] = str(round(((price_exit / price_entry) * 100) - 100, 2)) + '%'
+            movement_stats['% Profit'] = str(profit) + '%'
 
             # append the hold time and profit to the overall set of hold times and profits
             overall_hold_times.append(hold_time)
@@ -162,16 +180,16 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             plots.append((plot_as_div, movement_stats))
 
     # calculate metrics for the overall performance
-    overall_stats['entry_exit_pairs'] = len(overall_hold_times)
-    overall_stats['avg_hold_time'] = mean(overall_hold_times)
-    overall_stats['max_hold_time'] = max(overall_hold_times)
-    overall_stats['min_hold_time'] = min(overall_hold_times)
-    overall_stats['avg_profit'] = mean(overall_profits)
-    overall_stats['max_profit'] = max(overall_profits)
-    overall_stats['min_profit'] = min(overall_profits)
-    overall_stats['percent_profitable'] = sum([x > 0 for x in overall_profits]) / len(overall_profits)
-    overall_stats['total_profit'] = sum(overall_profits)
-    overall_stats['pervent_profit'] = ((1000000 + overall_stats['total_profit']) / 1000000) * 100
+    overall_stats['Total Trades'] = len(overall_hold_times)
+    overall_stats['Average Hold Time'] = str(round(mean(overall_hold_times), 2)) + ' min'
+    overall_stats['Maximum Hold Time'] = str(round(max(overall_hold_times), 2)) + ' min'
+    overall_stats['Minimum Hold Time'] = str(round(min(overall_hold_times), 2)) + ' min'
+    overall_stats['Average Profit (%)'] = str(round(mean(overall_profits), 2)) + '%'
+    overall_stats['Max Profit (%)'] = str(round(max(overall_profits), 2)) + '%'
+    overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits), 2)) + '%'
+    overall_stats['Percentage of Trades Profitable'] = str(sum([x > fees for x in overall_profits]) / len(overall_profits) * 100) + '%'
+    # overall_stats['total_profit'] = sum(overall_profits)
+    # overall_stats['percent_profit'] = ((1000000 + overall_stats['total_profit']) / 1000000) * 100
 
     
     return (plots, overall_stats)
@@ -193,7 +211,7 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
 
     # link to stylesheets and plotly script (IMPORTANT)
     with doc.head:
-        link(rel='stylesheet', href='./reports/style.css')
+        link(rel='stylesheet', href='style.css')
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
@@ -232,12 +250,12 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
     WHAT: 
         -> generates a webpage report for the strategy execution
 '''
-def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format):
+def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format, other_stats, fees):
     # initialize the HTML document object
     doc = dominate.document(title='Overall Report')
 
     # generate the graphs/stats for individual movements
-    movement_plots, overall_stats = generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name)
+    movement_plots, overall_stats = generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, fees)
 
     # if the report format is auto, set the format to the appropriate type given the number of plots
     if report_format == 'auto':
@@ -254,15 +272,35 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
             filenames.append(generate_movement_page(mp, mp_stats, name, movement_num))
             movement_num += 1 
 
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig.add_trace(go.Scatter(x=dataframe['time'], y=dataframe['account_value'], name='account_value'), secondary_y=False)
+    fig.add_trace(go.Scatter(x=dataframe['time'], y=dataframe['close'], name='asset value'), secondary_y=True)
+    fig.update_layout(template='plotly_dark', title='Overall Profit Growth vs. Asset Growth')
+    overall_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
+
     # link to stylesheets and plotly script (IMPORTANT) 
     with doc.head:
-        link(rel='stylesheet', href='./reports/style.css')
+        link(rel='stylesheet', href='style.css')
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
     with doc:
         with div():
+            td(raw(overall_as_div))
             attr(cls='body')
+            h1('Overall Stats')
+            with table().add(tbody()):
+                for stat in overall_stats:
+                    row = tr()
+                    row.add(td(stat))
+                    row.add(td(overall_stats[stat]))
+                for stat in other_stats:
+                    row = tr()
+                    row.add(td(stat))
+                    row.add(td(other_stats[stat]))
+
+            h1('Individual Movements')
             # if the report format is div, embed all plots into the single page
             if report_format == 'divs':
                 for mp, mp_stats in movement_plots:
@@ -275,10 +313,22 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
                             row.add(td(mp_stats[stat]))
             # if the report format is pages, create links to each other report's page
             elif report_format == 'pages':
-                reports_dir = './reports/'
                 report_list = ul()
-                for i,f in enumerate(filenames):
-                    report_list += li(a('Movement #' + str(i), href=reports_dir + f), __pretty=False)
+                
+                with table().add(tbody()):
+                    stat_types = list(movement_plots[0][1].keys())
+                    row = tr()
+                    row.add(td('Movement'))
+                    for stat in stat_types:
+                        row.add(td(stat))
+                    for i,f in enumerate(filenames):
+                        mp_stats = movement_plots[i][1]
+                        new_row = tr()
+                        new_row.add(td(a('Movement #' + str(i), href=f), __pretty=False))
+                        for stat in stat_types:
+                            new_row.add(td(mp_stats[stat]))
+                            
+                
 
             else:
                 raise Exception('Invalid report format!')
