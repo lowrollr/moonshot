@@ -530,12 +530,12 @@ class Trading:
                         for ind in indicators:
                             ind.genData(dataset)
 
-                        n = len(dataset.index) // 10
+                        n = len(dataset.index) // 5
                         df_chunks = [dataset[i:i+n] for i in range(0,dataset.shape[0],n)]
                         chunk_scores = []
                         for i, chunk in enumerate(df_chunks[:-1]):
                             chunk_scores.append(self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"]))
-                        for i in range(0, 5):
+                        for i in range(1):
                             chunk_scores.remove(max(chunk_scores))
                         score = np.mean(chunk_scores)
                         # store the param values if this is a new high score
