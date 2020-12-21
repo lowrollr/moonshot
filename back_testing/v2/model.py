@@ -186,6 +186,7 @@ class Trading:
 
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
+        account_value = position_quote
         start = position_quote
         # initialize base position to 0 units
         position_base = 0.00
@@ -222,7 +223,7 @@ class Trading:
         # these get plotted
         entries = []
         exits = []
-        
+        account_history = []
         # this is the main loop for iterating through each row of the dataset
         for row in tqdm(dataset.itertuples()):
         
@@ -232,7 +233,11 @@ class Trading:
 
             # run the process function (will execute anything that needs to happen each tick for the strategy)
             strategy.process(row)
-            
+            if position_quote:
+                account_value = position_quote
+            else:
+                account_value = position_base * close
+            account_history.append(account_value)
             if not position_taken: # if we are not entered into a position
 
                 # run the entry function for our strategy
@@ -294,6 +299,7 @@ class Trading:
                         slippage_pos_base = 0.0
                         slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
                 
+        dataset['account_value'] = np.array(account_history)
 
         # build the file name to use for graphs/plots
         name = 'results-' + strategy.name + '-' + dataset_name
@@ -336,8 +342,18 @@ class Trading:
         with open('slippage_logs/' + name + '.txt', 'w') as f:
             for line in slippage_log:
                 f.write(line + '\n')
+        
+        # write stats to dict to send to reports
+        stats = dict()
+        stats['Initial Portfolio Value'] = 1000000.00
+        stats['Exit Portfolio Value'] = round(conv_position, 2)
+        stats['Portfolio Delta ($)'] = round(conv_position - start, 2)
+        stats['Portfolio Delta (%)'] = str(round(((conv_position / start) * 100) - 100, 2)) + '%'
+
+
         if self.plot:
-            write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format)
+            print('Generating Report...')
+            write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format, stats, self.fees)
         # return the final quote position
         return conv_position
 
@@ -358,7 +374,7 @@ class Trading:
 
         # execute each strategy on each dataset
         if self.test_param_ranges:
-            self.genetic_execution()
+            self.genetic_execution_2()
 
         for x in self.strategies:
             for d in self.dfs:
@@ -488,3 +504,87 @@ class Trading:
 
                 # execute the strategy and grab the exit value
                 print("\n\nScore when tested ono validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
+
+
+    def genetic_execution_2(self):
+        #load genetic configurations specified in genetic.hjson
+        genetic_config = load_config("genetic.hjson")
+
+        max_generations = genetic_config["max_generations"]
+        population_size = genetic_config["organisms"]
+
+        for x in self.strategies:
+            for d in self.dfs:
+                
+                test_pop_number = genetic_config["test_n_population"]
+
+                # grab the indicators for the given strategy
+                indicators = x.indicators
+
+                # flag to keep track of whether or not genetic algorithm has reached threshold 
+                # necessary to end execution
+                done = False
+
+                # keep track of best score so far
+                prev_best_score = 0.0
+
+                dataset = d[0]
+                # run until improvement is small enough to exit
+                gen_count = 1
+                while not done and gen_count <= max_generations:
+                    new_best_score = prev_best_score
+                    test_best_score = 0
+                    # update the param ranges
+                    for ind in indicators:
+                        ind.shrinkParamRanges(genetic_config["shrink_algo"], genetic_config["param_range_percentage"])
+                    
+                    padding_count = 0
+                    # each element of the population is a set of parameters the strategy is executed with
+                    for p in range(1, population_size+1):
+
+                        dataset
+                        
+                        for ind in indicators:
+                            ind.genData(dataset)
+
+                        n = len(dataset.index) // 10
+                        df_chunks = [dataset[i:i+n] for i in range(0,dataset.shape[0],n)]
+                        chunk_scores = []
+                        for i, chunk in enumerate(df_chunks[:-1]):
+                            chunk_scores.append(self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"]))
+                        score = min(chunk_scores)
+                        # store the param values if this is a new high score
+                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
+                            if score > new_best_score:
+                                new_best_score = score
+                                padding_count = 0
+                                for ind in indicators:
+                                    ind.storeBestValues()
+                        else:
+                            if score > test_best_score:
+                                test_best_score = score
+                                for ind in indicators:
+                                    ind.storeBestValues()
+                    # if the best scorer for this population is less than 0.5% better than the previous best score,
+                    # this will be the last generation
+                    if new_best_score < (1 + genetic_config["exit_score"]) * prev_best_score and gen_count % test_pop_number != 0:
+                        if padding_count >= genetic_config["padding_num"]:
+                            done = True
+                        padding_count += 1
+                    else:
+                        # if not, continue to the next generation and note this generation's best score
+                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
+                            prev_best_score = new_best_score
+                        else:
+                            prev_best_score = test_best_score
+                    print("Best score of the {} generation is: {}".format(gen_count, prev_best_score))
+                    gen_count += 1
+                
+                # grab the best param values for each indicator
+                best_values = []
+                for ind in indicators:
+                    best_values.append(ind.best_values)
+
+                # write the best param values and best overall score to the console
+                print(best_values)
+                print(prev_best_score)
