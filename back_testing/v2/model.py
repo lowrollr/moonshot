@@ -688,11 +688,9 @@ class Trading:
                     for ind in indicators:
                         ind.shrinkParamRanges(genetic_config["shrink_algo"], genetic_config["param_range_percentage"])
                     
-                    padding_count = 0
                     # each element of the population is a set of parameters the strategy is executed with
                     for p in range(1, population_size+1):
 
-                        dataset
                         
                         for ind in indicators:
                             ind.genData(dataset)
