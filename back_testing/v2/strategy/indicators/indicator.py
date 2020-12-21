@@ -67,11 +67,20 @@ class Indicator:
     WHAT: 
         -> Shrinks each Param around the current best value by a given percentage on each side (upper and lower)
     '''
-    def shrinkParamRanges(self, percentage):
+    def shrinkParamRanges(self, shrink_type, percentage):
         # this should only be happening if this indicator is part of a genetic algorithm optimization
+        if shrink_type != "constrictive" and shrink_type != "flexible":
+            raise ValueError("Algo name is not defined")
+        # Constrictive reduces param ranges greatly
+        # -> if param range is near end of range, it will take the half percentage given
+        # Flexible tries to keep as much of the range as alive as possible
+        # -> unlike constrictive flexible would take double the percentage given
+        # -> Ex: range = [1,100] val = 2 percentage = .45
+        # ----> new flexible param range = [1, 90]
+        # ----> new constrictive param range = [1,45]
         if self.best_values:
             for x in self.params:
-                x.shrinkRange(self.best_values[x.name], percentage)
+                x.shrinkRange(self.best_values[x.name], shrink_type, percentage)
 
 
     '''
@@ -82,6 +91,8 @@ class Indicator:
             during genetic algorithm execution
     WHAT: 
         -> Stores the current values in the best_values dict
+    TODO:
+        -> Check if can remove return because code does not use return
     '''
     def storeBestValues(self):
         self.best_values = {}

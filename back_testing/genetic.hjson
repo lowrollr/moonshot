@@ -1,0 +1,30 @@
+{
+    #how data is split up for genetic testing 
+    # train + test + validation must equal 1
+    #what the algorithm will look at for each "organism"
+    "train_data": 0.7,
+    # What algorithm will test against after every n population
+    "test_data": 0.2,
+    # What data will be tested against at the very end
+    # This takes no part in the training process
+    "validation_data": 0.1,
+    # When testing data should be used. Use this sparsely to then 
+    # Help with over fitting of the training data
+    # Must not equal one
+    "test_n_population": 3,
+    # Number of organisms to a population
+    "organisms": 100,
+    #how much to shrink the param range after every geneation
+    "param_range_percentage": 0.45,
+    # This is the percent score of when the algorithm should exit
+    # Compares current score against last score, if less than this value, it exits
+    "exit_score": 0.001,
+    # This is the maxiumum number of generations this should run
+    "max_generations": 50,
+    # The type of shrinking algorithm we want to use
+    # Choices: constrictive, flexible
+    "shrink_algo": "flexible",
+    #if you want to print out all of the data per organism or just the best from each population
+    "print_all": false
+}
+

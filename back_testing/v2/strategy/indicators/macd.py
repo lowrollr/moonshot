@@ -9,6 +9,7 @@ WHAT:
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.ema import EMA
 from v2.utils import findParams
+from v2.strategy.indicators.param import Param
 
 '''
 CLASS: MACD
@@ -53,12 +54,12 @@ class MACD(Indicator):
             signal_param.genValue()
 
         # add slow, fast EMAs to dataset
-        ema_slow_param.name = 'period'
-        ema_slow = EMA([ema_slow_param], _name='ema_slow')
+        ema_slow_param_simple = Param(_name='period', _default=ema_slow_param.value)
+        ema_slow = EMA([ema_slow_param_simple], _name='ema_slow')
         ema_slow.genData(dataset, gen_new_values=False, value=value)
         
-        ema_fast_param.name = 'period'
-        ema_fast = EMA([ema_fast_param], _name='ema_fast')
+        ema_fast_param_simple = Param(_name='period', _default=ema_fast_param.value)
+        ema_fast = EMA([ema_fast_param_simple], _name='ema_fast')
         ema_fast.genData(dataset, gen_new_values=False, value=value)
 
         # add fast - slow diff to dataset
@@ -66,8 +67,8 @@ class MACD(Indicator):
 
         # compute signal EMA using fast - slow diff
         # note the value used is the data from the previously added column
-        signal_param.name = 'period'
-        signal = EMA([signal_param], _name='signal')
+        signal_param_simple = Param(_name='period', _default=signal_param.value)
+        signal = EMA([signal_param_simple], _name='signal')
         signal.genData(dataset, gen_new_values=False, value=self.name)
 
         # final macd calculation, now we are finished

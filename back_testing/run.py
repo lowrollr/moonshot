@@ -19,6 +19,6 @@ WHAT:
     -> Loads configuration, initiates Trading model, starts backtest procedure
 '''
 def run_app():
-    config = load_config()
+    config = load_config('config.hjson')
     model = Trading(config)
     model.backtest()
