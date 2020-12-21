@@ -506,7 +506,7 @@ class Trading:
                 print("\n\nScore when tested ono validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
 
 
-    def genetic_execution_2(self):
+    def segmented_genetic_execution(self):
         #load genetic configurations specified in genetic.hjson
         genetic_config = load_config("genetic.hjson")
 
@@ -552,7 +552,9 @@ class Trading:
                         chunk_scores = []
                         for i, chunk in enumerate(df_chunks[:-1]):
                             chunk_scores.append(self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"]))
-                        score = min(chunk_scores)
+                        for i in range(0, 5):
+                            chunk_scores.remove(max(chunk_scores))
+                        score = np.mean(chunk_scores)
                         # store the param values if this is a new high score
                         if gen_count % test_pop_number != 0 and gen_count != max_generations:
                             if score > new_best_score:
