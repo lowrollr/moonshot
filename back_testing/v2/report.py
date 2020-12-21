@@ -168,9 +168,9 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
 
             # calculate hold time and percent profit for the movement
             hold_time = (time_exit - time_entry) / 60
-            profit = (price_exit - price_entry)
+            profit = round(((price_exit / price_entry) * 100) - 100, 2)
             movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
-            movement_stats['% Profit'] = str(round(((price_exit / price_entry) * 100) - 100, 2)) + '%'
+            movement_stats['% Profit'] = str(profit) + '%'
 
             # append the hold time and profit to the overall set of hold times and profits
             overall_hold_times.append(hold_time)
@@ -186,10 +186,10 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     overall_stats['min_hold_time'] = min(overall_hold_times)
     overall_stats['avg_profit'] = mean(overall_profits)
     overall_stats['max_profit'] = max(overall_profits)
-    overall_stats['min_profit'] = min(overall_profits)
-    overall_stats['percent_profitable'] = sum([x > 0 for x in overall_profits]) / len(overall_profits)
-    overall_stats['total_profit'] = sum(overall_profits)
-    overall_stats['pervent_profit'] = ((1000000 + overall_stats['total_profit']) / 1000000) * 100
+    overall_stats['max_drawdown'] = min(overall_profits)
+    overall_stats['percent_profitable'] = str(sum([x > 0.1 for x in overall_profits]) / len(overall_profits) * 100) + '%'
+    # overall_stats['total_profit'] = sum(overall_profits)
+    # overall_stats['percent_profit'] = ((1000000 + overall_stats['total_profit']) / 1000000) * 100
 
     
     return (plots, overall_stats)
@@ -281,6 +281,11 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with doc:
         with div():
             attr(cls='body')
+            with table().add(tbody()):
+                for stat in overall_stats:
+                    row = tr()
+                    row.add(td(stat))
+                    row.add(td(overall_stats[stat]))
             # if the report format is div, embed all plots into the single page
             if report_format == 'divs':
                 for mp, mp_stats in movement_plots:
@@ -293,10 +298,9 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
                             row.add(td(mp_stats[stat]))
             # if the report format is pages, create links to each other report's page
             elif report_format == 'pages':
-                reports_dir = './reports/'
                 report_list = ul()
                 for i,f in enumerate(filenames):
-                    report_list += li(a('Movement #' + str(i), href=reports_dir + f), __pretty=False)
+                    report_list += li(a('Movement #' + str(i), href=f), __pretty=False)
 
             else:
                 raise Exception('Invalid report format!')
