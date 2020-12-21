@@ -91,7 +91,7 @@ def generate_overall_graph(dataset, entries, exits, indicators_to_graph, name, s
     TODO:
         -> its possible some of this could be abstracted
 '''
-def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, padding=20):
+def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, fees, padding=20):
     if not entries:
         return None
     # contains plot div strings to embed
@@ -180,14 +180,14 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             plots.append((plot_as_div, movement_stats))
 
     # calculate metrics for the overall performance
-    overall_stats['entry_exit_pairs'] = len(overall_hold_times)
-    overall_stats['avg_hold_time'] = mean(overall_hold_times)
-    overall_stats['max_hold_time'] = max(overall_hold_times)
-    overall_stats['min_hold_time'] = min(overall_hold_times)
-    overall_stats['avg_profit'] = mean(overall_profits)
-    overall_stats['max_profit'] = max(overall_profits)
-    overall_stats['max_drawdown'] = min(overall_profits)
-    overall_stats['percent_profitable'] = str(sum([x > 0.1 for x in overall_profits]) / len(overall_profits) * 100) + '%'
+    overall_stats['Total Trades'] = len(overall_hold_times)
+    overall_stats['Average Hold Time'] = str(round(mean(overall_hold_times), 2)) + ' min'
+    overall_stats['Maximum Hold Time'] = str(round(max(overall_hold_times), 2)) + ' min'
+    overall_stats['Minimum Hold Time'] = str(round(min(overall_hold_times), 2)) + ' min'
+    overall_stats['Average Profit (%)'] = str(round(mean(overall_profits), 2)) + '%'
+    overall_stats['Max Profit (%)'] = str(round(max(overall_profits), 2)) + '%'
+    overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits), 2)) + '%'
+    overall_stats['Percentage of Trades Profitable'] = str(sum([x > fees for x in overall_profits]) / len(overall_profits) * 100) + '%'
     # overall_stats['total_profit'] = sum(overall_profits)
     # overall_stats['percent_profit'] = ((1000000 + overall_stats['total_profit']) / 1000000) * 100
 
@@ -250,12 +250,12 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
     WHAT: 
         -> generates a webpage report for the strategy execution
 '''
-def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format):
+def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format, other_stats, fees):
     # initialize the HTML document object
     doc = dominate.document(title='Overall Report')
 
     # generate the graphs/stats for individual movements
-    movement_plots, overall_stats = generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name)
+    movement_plots, overall_stats = generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, fees)
 
     # if the report format is auto, set the format to the appropriate type given the number of plots
     if report_format == 'auto':
@@ -295,6 +295,10 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
                     row = tr()
                     row.add(td(stat))
                     row.add(td(overall_stats[stat]))
+                for stat in other_stats:
+                    row = tr()
+                    row.add(td(stat))
+                    row.add(td(other_stats[stat]))
 
             h1('Individual Movements')
             # if the report format is div, embed all plots into the single page
