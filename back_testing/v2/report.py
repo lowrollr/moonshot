@@ -153,7 +153,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             # initialize the plot and save it to a div formatted string that we can embed
             
             fig = make_subplots(specs=[[{"secondary_y": True}]])
-            fig.update_layout(title_text='Movement ' + str(i))
+            fig.update_layout(template='plotly_dark', title_text='Movement ' + str(i))
             fig.add_trace(candle, secondary_y=False)
             if inds:
                 for ind in inds:
@@ -272,6 +272,13 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
             filenames.append(generate_movement_page(mp, mp_stats, name, movement_num))
             movement_num += 1 
 
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig.add_trace(go.Scatter(x=dataframe['time'], y=dataframe['account_value'], name='account_value'), secondary_y=False)
+    fig.add_trace(go.Scatter(x=dataframe['time'], y=dataframe['close'], name='asset value'), secondary_y=True)
+    fig.update_layout(template='plotly_dark', title='Overall Profit Growth vs. Asset Growth')
+    overall_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
+
     # link to stylesheets and plotly script (IMPORTANT) 
     with doc.head:
         link(rel='stylesheet', href='./reports/style.css')
@@ -280,6 +287,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
 
     with doc:
         with div():
+            td(raw(overall_as_div))
             attr(cls='body')
             with table().add(tbody()):
                 for stat in overall_stats:
