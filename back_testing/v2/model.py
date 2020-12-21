@@ -207,11 +207,6 @@ class Trading:
         # keeps track of the current close price (used within the loop as well as after)
         close = 0.0
 
-        # store strings to write to the log here
-        log = []
-
-        # store string to write to the slippage log here
-        slippage_log = []
         old_quote = 0.0
         
         # vars to keep track of slippage
@@ -256,18 +251,17 @@ class Trading:
 
                     # append entry to entries log for the graph as well as to the text log
                     entries.append([row.time, close])
-                    log.append(str(row.time) + ': bought at ' + str(row.close))
                     
                     
 
-                    # do slippage things if we are keeping track of slippage
-                    if self.slippage != 0:
-                        slippage_fees = slippage_pos_quote * self.fees
-                        slippage_close = utils.add_slippage("pos", close, self.slippage)
-                        slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
-                        slippage_pos_base = slippage_pos_quote / slippage_close
-                        slippage_tot += close - slippage_close
-                        slippage_pos_quote = 0.0
+                    # # do slippage things if we are keeping track of slippage
+                    # if self.slippage != 0:
+                    #     slippage_fees = slippage_pos_quote * self.fees
+                    #     slippage_close = utils.add_slippage("pos", close, self.slippage)
+                    #     slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
+                    #     slippage_pos_base = slippage_pos_quote / slippage_close
+                    #     slippage_tot += close - slippage_close
+                    #     slippage_pos_quote = 0.0
                 
                 
             else: # otherwise, we are looking to exit a position
@@ -288,17 +282,16 @@ class Trading:
 
                     # append exit to exits log for the graph as well as to the text log
                     exits.append([row.time, close])
-                    log.append(str(row.time) + ': sold at ' + str(row.close) + ' porfolio value: ' + str(position_quote) + ' delta: ' + str(delta))
 
-                    # do slippage things if we are keeping track of slippage
-                    if self.slippage != 0:
-                        slippage_close = utils.add_slippage("neg", close, self.slippage)
-                        slippage_pos_quote = slippage_pos_base * slippage_close
-                        slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
-                        slippage_pos_quote -= slippage_fees
-                        slippage_tot += slippage_close - close
-                        slippage_pos_base = 0.0
-                        slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
+                    # # do slippage things if we are keeping track of slippage
+                    # if self.slippage != 0:
+                    #     slippage_close = utils.add_slippage("neg", close, self.slippage)
+                    #     slippage_pos_quote = slippage_pos_base * slippage_close
+                    #     slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
+                    #     slippage_pos_quote -= slippage_fees
+                    #     slippage_tot += slippage_close - close
+                    #     slippage_pos_base = 0.0
+                    #     slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
                 
         dataset['account_value'] = np.array(account_history)
 
@@ -315,10 +308,12 @@ class Trading:
             conv_position = (position_base * close) * (1 - self.fees)
 
         # compute slippage
-        slippage_conv_pos = slippage_pos_quote
-        if self.slippage != 0:
-            slippage_close = utils.add_slippage("neg", close, self.slippage)
-            slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
+        # slippage_conv_pos = slippage_pos_quote
+        # if self.slippage != 0:
+        #     slippage_close = utils.add_slippage("neg", close, self.slippage)
+        #     slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
+
+        # std_dev = utils.getLogStd(log)
         
         # write statistics to console
         print('Exit value: ' + str(conv_position))
@@ -330,15 +325,6 @@ class Trading:
             print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
         #print("Standard deviation of the deltas (how volatile) " + str(std_dev))
         
-        # write to log
-        with open('logs/' + name + '.txt', 'w') as f:
-            for line in log:
-                f.write(line + '\n')
-
-        # write to slippage log
-        with open('slippage_logs/' + name + '.txt', 'w') as f:
-            for line in slippage_log:
-                f.write(line + '\n')
         
         # write stats to dict to send to reports
         stats = dict()
@@ -371,8 +357,9 @@ class Trading:
 
         # execute each strategy on each dataset
         if self.test_param_ranges:
-            self.geneticExecution()
+            #self.geneticExecution()
             #self.genetic_execution_2()
+            self.segmented_genetic_execution()
 
         for x in self.strategies:
             for d in self.dfs:
@@ -525,7 +512,7 @@ class Trading:
                     x.train(dataset)
 
                 # execute the strategy and grab the exit value
-                print("\n\nScore when tested ono validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
+                print("\n\nScore when tested on validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
 
 
     '''
@@ -668,7 +655,9 @@ class Trading:
                         
             # return the final quote position
             return conv_position
-    def genetic_execution_2(self):
+
+
+    def segmented_genetic_execution(self):
         #load genetic configurations specified in genetic.hjson
         genetic_config = load_config("genetic.hjson")
 
@@ -678,7 +667,6 @@ class Trading:
         for x in self.strategies:
             for d in self.dfs:
                 
-                test_pop_number = genetic_config["test_n_population"]
 
                 # grab the indicators for the given strategy
                 indicators = x.indicators
@@ -714,9 +702,11 @@ class Trading:
                         chunk_scores = []
                         for i, chunk in enumerate(df_chunks[:-1]):
                             chunk_scores.append(self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"]))
-                        score = min(chunk_scores)
+                        for i in range(0, 5):
+                            chunk_scores.remove(max(chunk_scores))
+                        score = np.mean(chunk_scores)
                         # store the param values if this is a new high score
-                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
+                        if gen_count != max_generations:
                             if score > new_best_score:
                                 new_best_score = score
                                 padding_count = 0
@@ -729,17 +719,17 @@ class Trading:
                                     ind.storeBestValues()
                     # if the best scorer for this population is less than 0.5% better than the previous best score,
                     # this will be the last generation
-                    if new_best_score < (1 + genetic_config["exit_score"]) * prev_best_score and gen_count % test_pop_number != 0:
+                    if new_best_score < (1 + genetic_config["exit_score"]) * prev_best_score:
                         if padding_count >= genetic_config["padding_num"]:
                             done = True
                         padding_count += 1
                     else:
                         # if not, continue to the next generation and note this generation's best score
-                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
+                        if gen_count != max_generations:
                             prev_best_score = new_best_score
                         else:
                             prev_best_score = test_best_score
-                    print("Best score of the {} generation is: {}".format(gen_count, prev_best_score))
+                    print("Best score of generation {} is: {}".format(gen_count, prev_best_score))
                     gen_count += 1
                 
                 # grab the best param values for each indicator

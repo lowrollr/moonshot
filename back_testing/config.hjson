@@ -7,31 +7,32 @@
     # Base Currencies
     "ex2": ["USD"],
     # Whether or not to test ranges of values for each indicator parameter (genetic algo)
-    "test_param_ranges": true,
+    "test_param_ranges": false,
     # Timespan to fetch data for
     # max = all data
     # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
+    # ["2020.1.1"] = data for Jan. 1, 2020 forwards
     "timespan": "max",
    
     # Candle frequency to retrieve 
     # 1 = 1 minute
     "freq": 1,
     # determining if we are testing on a genetic algorithm or just a single run through
-    "genetic": true,
+    "genetic": false,
     # Fees to subtract from trades (percentage)
-    "fees": 0.0026,
+    "fees": 0.001,
     # Strategy to execute (file name sans version no.)
     "strategy": ["swing"],
     # Version of strategy
     # specifying latest will just grab the highest version number present
     "strategy_version": ["latest"],
     # Indicators to plot on the results graph
-    "indicators_to_graph": ["macd_diff", "signal"],
+    "indicators_to_graph": ["macd_diff", "sma"],
     # Whether or not results should be plotted
-    "plot": false,
+    "plot": true,
     # Slippage to factor into profits
     "slippage": 0,
     # Report movement plots as individual pages or embedded divs (choose 'pages', 'divs', or 'auto')
-    "report_format": "pages"
+    "report_format": "auto"
 }
 
