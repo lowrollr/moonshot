@@ -183,7 +183,7 @@ class Trading:
         -> This function does way too many things...
         -> Is slippage all the way implemented?
     '''
-    def executeStrategy(self, strategy, my_dataset, print_all=True, *args):
+    def executeStrategy(self, strategy, my_dataset, *args):
 
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
@@ -315,15 +315,14 @@ class Trading:
             slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
         
         # write statistics to console
-        if print_all:
-            print('Exit value: ' + str(conv_position))
-            if self.slippage != 0:
-                print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
-            print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
-            print("Total trades made: " + str(len(entries)))
-            if len(entries):
-                print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
-            #print("Standard deviation of the deltas (how volatile) " + str(std_dev))
+        print('Exit value: ' + str(conv_position))
+        if self.slippage != 0:
+            print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
+        print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
+        print("Total trades made: " + str(len(entries)))
+        if len(entries):
+            print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
+        #print("Standard deviation of the deltas (how volatile) " + str(std_dev))
         
         # write to log
         with open('logs/' + name + '.txt', 'w') as f:
@@ -335,7 +334,7 @@ class Trading:
             for line in slippage_log:
                 f.write(line + '\n')
         if self.plot:
-            write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format)
+            write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format, [], self.fees)
         # return the final quote position
         return conv_position
     
@@ -459,7 +458,7 @@ class Trading:
                             score = score_memoize[possible_key]
                         else:
                             # execute the strategy and grab the exit value
-                            score = self.silentExecuteStrategy(x, (dataset, d[1]), genetic_config["print_all"])
+                            score = self.silentExecuteStrategy(x, (dataset, d[1]))
                             score_memoize[possible_key] = score
 
                         # store the param values if this is a new high score
@@ -512,6 +511,30 @@ class Trading:
                 print("\n\nScore when tested ono validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
 
 
+    '''
+    ARGS:
+        -> strategy (Strategy): Strategy object (to call it's entry, exit, and process function)
+        -> my_dataset ((Dataframe, String)): dataset to run the strategy on, and its name
+        -> *args[0] (String) <Optional>: param names to append to log file (if it's useful to specify)
+    RETURN:
+        -> conv_position (Float): Total amount of funds in quote currency held after executing the 
+            strategy on the dataset
+    WHAT: 
+        -> Like the original executeStrategy without the tqdm so that counter does not run for each iteration of GA
+        -> Executes the given strategy on the dataset
+        -> Calls the appropriate strategy procedures each tick
+            i.e. calc_enrty() when looking to enter
+                 calc_exit() when looking to exit
+                 process() every tick
+        -> This assumes that our entire position is converted from currency a to currency b and
+            vice-versa when making a trade
+        -> Optionally plots a candlestick chart showing entry/exit points
+        -> Logs entry and exit points
+        -> Calculates performance metrics and writes them to the console after executing
+    TODO:
+        -> This function does way too many things...
+        -> Is slippage all the way implemented?
+    '''
     def silentExecuteStrategy(self, strategy, my_dataset, print_all=True, *args):
 
             # initialize starting position to 1000000 units
@@ -524,8 +547,6 @@ class Trading:
             
             # the dataset itself will be the first part of the tuple passed
             dataset = my_dataset[0]
-            # the name of the dataset is the second part
-            dataset_name = my_dataset[1]
             
             # this keeps track of fees we incur by entering a postion in the base currency
             # these will be subtracted once we have converted our position back to the quote currency
@@ -583,7 +604,6 @@ class Trading:
                         log.append(str(row.time) + ': bought at ' + str(row.close))
                         
                         
-
                         # do slippage things if we are keeping track of slippage
                         if self.slippage != 0:
                             slippage_fees = slippage_pos_quote * self.fees
@@ -623,47 +643,11 @@ class Trading:
                             slippage_tot += slippage_close - close
                             slippage_pos_base = 0.0
                             slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
-                    
-
-            # build the file name to use for graphs/plots
-            name = 'results-' + strategy.name + '-' + dataset_name
-
-            # append the param string if it was passed
-            if args:
-                name += '-' + args[0]
 
             # convert our position to the quote price if it isn't already in the quote price
             conv_position = position_quote
             if position_base:
                 conv_position = (position_base * close) * (1 - self.fees)
-
-            # compute slippage
-            slippage_conv_pos = slippage_pos_quote
-            if self.slippage != 0:
-                slippage_close = utils.add_slippage("neg", close, self.slippage)
-                slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
-            
-            # write statistics to console
-            if print_all:
-                print('Exit value: ' + str(conv_position))
-                if self.slippage != 0:
-                    print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
-                print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
-                print("Total trades made: " + str(len(entries)))
-                if len(entries):
-                    print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
-                #print("Standard deviation of the deltas (how volatile) " + str(std_dev))
-            
-            # write to log
-            with open('logs/' + name + '.txt', 'w') as f:
-                for line in log:
-                    f.write(line + '\n')
-
-            # write to slippage log
-            with open('slippage_logs/' + name + '.txt', 'w') as f:
-                for line in slippage_log:
-                    f.write(line + '\n')
-            if self.plot:
-                write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format)
+                        
             # return the final quote position
             return conv_position
