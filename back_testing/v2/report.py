@@ -89,6 +89,8 @@ def generate_overall_graph(dataset, entries, exits, indicators_to_graph, name, s
         -> its possible some of this could be abstracted
 '''
 def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, padding=20):
+    if not entries:
+        return None
     # contains plot div strings to embed
     plots = []
 
@@ -213,7 +215,7 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
     filename = name + '_' + 'movement' + str(movement_num) + '.html'
     with open('./reports/' + filename, 'w') as output:
         output.write(str(doc))
-        
+
     return filename
 
 def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format):

@@ -26,10 +26,12 @@
     # specifying latest will just grab the highest version number present
     "strategy_version": ["latest"],
     # Indicators to plot on the results graph
-    "indicators_to_graph": [],
+    "indicators_to_graph": ["macd_diff", "signal"],
     # Whether or not results should be plotted
     "plot": false,
     # Slippage to factor into profits
-    "slippage": 0
+    "slippage": 0,
+    # Report movement plots as individual pages or embedded divs (choose 'pages', 'divs', or 'auto')
+    "report_format": "pages"
 }
 

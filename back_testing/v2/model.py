@@ -88,7 +88,7 @@ class Trading:
         -> quote_currencies ([String]): List of quote currencies to fetch datasets for
         -> freq (Int): The timeframe to fetch datasets for (in minutes)
     RETURN:
-        -> datasets ([Dataframe]): List of pandas dataframes, each containg a dataset
+        -> datasets ([Dataframe]): List of pandas dataframes, each containing a dataset
             for a base/quote pair
     WHAT: 
         -> fetches a dataset for each possible pair of <base currency>/<quote currency> 
@@ -337,7 +337,7 @@ class Trading:
             for line in slippage_log:
                 f.write(line + '\n')
 
-        write_report(dataset, entries, exits, strategy.indicators, name, self.report_format)
+        write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format)
         # return the final quote position
         return conv_position
 
