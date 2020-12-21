@@ -67,46 +67,99 @@ def generate_overall_graph(dataset, entries, exits, indicators_to_graph, name, s
     
 
 
-
+'''
+    ARGS:
+        -> dataframe (Dataframe): contains a dataset for a base/quote currency pair, as well as any indicators applied to the data
+        -> entries ([[int, float]]): time, close pairs for each occurance when a strategy entered a position
+        -> exits ([[int, float]]): time, close pairs for each occurance when a strategy exited a position
+        -> indicators_to_graph [string]: list of indicator names to plot
+        -> name (string): base file name containing information about the currency pair and strategy being used
+        -> padding (int): how much to pad each individual movememnt by (in minutes)
+    RETURN:
+        -> (((string, {string: value}), {string: value})): tuple containing a tuple with a list of strings corresponding to divs to be inserted into the overall report
+            as well as a dictionary containing metrics on the inidividual entry/exit movement, as well as a dictionary containing metrics about the 
+            performance of the strategy on the dataset as a whole
+    WHAT: 
+        -> generates a div element containing an embedded plotly object, as well as generates statistics for individual movements and overall performance
+        -> each embedded plotly object contains the candlesticks for the given timeframe as well as the entry/exit pair
+        -> will also contain any indicators specified
+        -> each timeframe encapsulates the entry/exit point and an additional time periof of padding on each side
+        -> talk to Jacob if you don't understand this, there is a lot going on here
+    TODO:
+        -> its possible some of this could be abstracted
+'''
 def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, padding=20):
+    # contains plot div strings to embed
     plots = []
+
+    # holds overall statistics
     overall_stats = {}
+
+    # list of profits compiled through appending all profits from each individual movement
     overall_profits = []
+
+    # list of hold times compiled through appending all hold times from each individual movement
     overall_hold_times = []
+
+    # consider each entry exit pair (their lengths are identical)
     for i, x in enumerate(entries):
+        # holds stats for the individual movement
         movement_stats = {}
+
+        # get the entry time and price, and use the entry time to calculate the start of the timeframe to be plotted
         time_entry = x[0]
         price_entry = x[1]
         starting_time = time_entry - (padding * 60)
+
+        # plot the entry point
         ent_graph = [go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')]
-        exit_graph = []
-        ending_time = starting_time
+        
+        # make sure we aren't considering an entry point without a corresponding exit point
         if i < len(exits):
+            # get the exit time and price, and use the exit time to calculate the end of the timeframe to be plotted
             time_exit = exits[i][0]
             price_exit = exits[i][1]
             ending_time = time_exit + (padding * 60)
+
+            # plot the exit point
             exit_graph = [go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')]
         
+            # filter the dataframe to only include data from our specified timeframe
             cur_dataframe = dataframe[(dataframe.time >= starting_time) & (dataframe.time <= ending_time)]
+
+            # generate a candlestick for the data
             candle = [go.Candlestick(x=cur_dataframe['time'], open=cur_dataframe['open'], close=cur_dataframe['close'], high=cur_dataframe['high'], low=cur_dataframe['low'], name='Candlesticks')]
+
+            # if we are plotting entries/exits, add the appropriate scatter plots to the graph
             inds = []
             for ind in indicators_to_graph:
                 if ind in cur_dataframe.columns: 
                     # give the indicator a random color
                     rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
                     inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
+
+            # bundle all of our plots together into a single object
             data = candle + inds + ent_graph + exit_graph
+
+            # initialize the plot and save it to a div formatted string that we can embed
             layout = go.Layout(title='Movement ' + str(i))
             fig = go.Figure(data=data, layout=layout)
             plot_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
+
+            # calculate hold time and percent profit for the movement
             hold_time = (time_exit - time_entry) / 60
             profit = (price_exit - price_entry)
             movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
             movement_stats['% Profit'] = str(round(((price_exit / price_entry) * 100) - 100, 2)) + '%'
+
+            # append the hold time and profit to the overall set of hold times and profits
             overall_hold_times.append(hold_time)
             overall_profits.append(profit)
 
+            # append a tuple containing the stringified plot and movement stats
             plots.append((plot_as_div, movement_stats))
+
+    # calculate metrics for the overall performance
     overall_stats['entry_exit_pairs'] = len(overall_hold_times)
     overall_stats['avg_hold_time'] = mean(overall_hold_times)
     overall_stats['max_hold_time'] = max(overall_hold_times)
@@ -117,6 +170,8 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     overall_stats['percent_profitable'] = sum([x > 0 for x in overall_profits]) / len(overall_profits)
     overall_stats['total_profit'] = sum(overall_profits)
     overall_stats['pervent_profit'] = ((1000000 + overall_stats['total_profit']) / 1000000) * 100
+
+    
     return (plots, overall_stats)
 
 
