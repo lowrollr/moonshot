@@ -174,25 +174,46 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     
     return (plots, overall_stats)
 
-
+'''
+    ARGS:
+        -> plot_div (string): stringified div object to embed in the html doc
+        -> plot_stats ({string: value}): a dictionary containing metrics for the movement
+        -> name (string): base file name containing information about the currency pair and strategy being used
+        -> movement_num (int): which movement id to number this as
+    RETURN:
+        -> filename (string): the filename the report was saved at (so we can make a link to it on another page)
+    WHAT: 
+        -> generates a webpage report for an individual movement and saves it to a file
+'''
 def generate_movement_page(plot_div, plot_stats, name, movement_num):
+    # initialize the HTML document object
     doc = dominate.document(title='Movement ' + str(movement_num))
+
+    # link to stylesheets and plotly script (IMPORTANT)
     with doc.head:
         link(rel='stylesheet', href='./reports/style.css')
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
+
+    
     with doc:
         with div():
             attr(cls='body')
+            # embed the plot
             td(raw(plot_div))
+
+            # create a table with statistics about the movement
             with table().add(tbody()):
                 for stat in plot_stats:
                     row = tr()
                     row.add(td(stat))
                     row.add(td(plot_stats[stat]))
+
+    # save the file
     filename = name + '_' + 'movement' + str(movement_num) + '.html'
     with open('./reports/' + filename, 'w') as output:
         output.write(str(doc))
+        
     return filename
 
 def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format):
