@@ -26,8 +26,8 @@ class swing_v(Strategy):
         self.is_ml = False
         self.diff_up = Param(0.01, 0.1, 2, 'diff_up', 0.02)
         self.diff_down = Param(0.01, 0.1, 2, 'diff_down', 0.02)
-        self.up_macd = Param(0.01, 0.1, 2, 'up_macd', 0.09)
-        self.down_macd = Param(0.01, 0.1, 2, 'down_macd', 0.04)
+        self.up_macd = Param(-10, 20, 2, 'up_macd', 5)
+        self.down_macd = Param(-10, 20, 2, 'down_macd', 5)
         self.stop_loss = 0.0
         self.entry = 0.0
         sma_period = Param(5, 10000, 0, 'period', 30.0)
@@ -46,7 +46,7 @@ class swing_v(Strategy):
         pass
 
     def calc_entry(self, data):
-        if data.macd > data.signal + (data.macd * self.up_macd.value):
+        if data.macd_diff > (self.up_macd.value):
             if data.close < (data.sma * (1- self.diff_up.value)):
                 self.entry = data.close
                 return True
@@ -54,7 +54,7 @@ class swing_v(Strategy):
                 return False
 
     def calc_exit(self, data):
-        if data.macd < data.signal - (data.macd * self.down_macd.value):
+        if data.macd_diff < -1 * (self.down_macd.value):
             return True
         elif data.close > (data.sma * (1 + self.diff_down.value)):
             return True

@@ -3,21 +3,21 @@
     # will be fetched from the historical data repository
 
     # Quote Currencies
-    "ex1": ["ETH"],
+    "ex1": ["XBT"],
     # Base Currencies
     "ex2": ["USD"],
     # Whether or not to test ranges of values for each indicator parameter (genetic algo)
-    "test_param_ranges": false,
+    "test_param_ranges": true,
     # Timespan to fetch data for
     # max = all data
     # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
-    "timespan": ["2018.05.07", "2019"],
+    "timespan": "max",
    
     # Candle frequency to retrieve 
     # 1 = 1 minute
     "freq": 1,
     # determining if we are testing on a genetic algorithm or just a single run through
-    "genetic": false,
+    "genetic": true,
     # Fees to subtract from trades (percentage)
     "fees": 0.0026,
     # Strategy to execute (file name sans version no.)

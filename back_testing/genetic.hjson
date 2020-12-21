@@ -11,11 +11,13 @@
     # When testing data should be used. Use this sparsely to then 
     # Help with over fitting of the training data
     # Must not equal one
-    "test_n_population": 3,
+    "test_n_population": 5,
     # Number of organisms to a population
-    "organisms": 100,
+    "organisms": 75,
+    # How generous to be for next generations that they aren't as good as the previous best one
+    "padding_num": 5,
     #how much to shrink the param range after every geneation
-    "param_range_percentage": 0.45,
+    "param_range_percentage": 0.455,
     # This is the percent score of when the algorithm should exit
     # Compares current score against last score, if less than this value, it exits
     "exit_score": 0.001,
