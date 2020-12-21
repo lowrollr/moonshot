@@ -74,9 +74,11 @@ class Param:
             if center - percentage * delta < self.global_low:
                 self.low = self.global_low
                 self.up = self.global_up * percentage * 2
+                self.global_up = self.global_up * percentage * 2
             if center + percentage * delta > self.global_up:
                 self.low = self.global_low + self.global_up * ( 1 - percentage * 2)
                 self.up = self.global_up
+                self.global_low = self.global_low + self.global_up * ( 1 - percentage * 2)
         else:
             raise ValueError("shrink algo is not defined")
         
