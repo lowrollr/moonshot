@@ -338,8 +338,8 @@ class Trading:
         with open('slippage_logs/' + name + '.txt', 'w') as f:
             for line in slippage_log:
                 f.write(line + '\n')
-
-        write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format)
+        if self.plot:
+            write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format)
         # return the final quote position
         return conv_position
 
