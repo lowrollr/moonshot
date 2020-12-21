@@ -14,7 +14,6 @@ RETURN:
 WHAT: 
     -> Parses input from config file (config.config) and reads it into a dictionary
 '''
-def load_config():
-    with open('config.hjson') as config:
-        
+def load_config(config_file):
+    with open(config_file) as config:
         return hjson.load(config)

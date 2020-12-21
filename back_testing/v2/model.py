@@ -7,6 +7,8 @@ WHAT:
     -> This file contains the Trading class and its member functions,
     which implement all core functionaltiy of the backtesting framework
 '''
+import warnings
+warnings.simplefilter(action='ignore')
 
 import pandas as pd
 import os
@@ -18,9 +20,11 @@ from plotly.offline import plot
 from tqdm import tqdm
 from itertools import product
 import random
+import numpy as np
 
 from v2.strategy.strategies.strategy import Strategy
 import v2.utils as utils
+from load_config import load_config
 
 '''
 CLASS: Trading
@@ -68,8 +72,9 @@ class Trading:
         
         self.test_param_ranges = config['test_param_ranges'] 
         
-        
         self.plot = config['plot']
+
+        self.is_genetic = config["genetic"]
         
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
@@ -176,7 +181,7 @@ class Trading:
         -> This function does way too many things...
         -> Is slippage all the way implemented?
     '''
-    def executeStrategy(self, strategy, my_dataset, *args):
+    def executeStrategy(self, strategy, my_dataset, print_all=True, *args):
 
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
@@ -235,6 +240,7 @@ class Trading:
         
         # this is the main loop for iterating through each row of the dataset
         for row in tqdm(dataset.itertuples()):
+        
             # keep track of the close price for the given tick
             close = row.close
             slippage_close = close
@@ -341,14 +347,16 @@ class Trading:
         std_dev = utils.getLogStd(log)
         
         # write statistics to console
-        print('Exit value: ' + str(conv_position))
-        if self.slippage != 0:
-            print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
-        print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
-        print("Total trades made: " + str(len(entries)))
-        if len(entries):
-            print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
-        print("Standard deviation of the deltas (how volatile) " + str(std_dev))
+        if print_all:
+            print('Exit value: ' + str(conv_position))
+            if self.slippage != 0:
+                print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
+            print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
+            print("Total trades made: " + str(len(entries)))
+            if len(entries):
+                print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
+            # for how volitile should be how many are profitable
+            #print("Standard deviation of the deltas (how volatile) " + str(std_dev))
         
         # write to log
         with open('logs/' + name + '.txt', 'w') as f:
@@ -379,77 +387,132 @@ class Trading:
             self.strategies.append(self.importStrategy(self.strategy_list[x], self.version_list[x])())
 
         # execute each strategy on each dataset
+        if self.is_genetic:
+            self.genetic_execution()
+
         for x in self.strategies:
             for d in self.dfs:
+                for ind in x.indicators:
+                    ind.genData(d[0], False)
+                # execute the strategy on the dataset       
+                self.executeStrategy(x, d)
 
-                dataset = d[0]
 
-                if self.test_param_ranges: # if we are using the genetic algorithm to optimize parameters
+    '''
+    ARGS:
+        -> None
+    RETURN:
+        -> None
+    WHAT: 
+        -> uses genetic algorithm to backtest each strategy on each dataset pair
+        -> uses genetic config to load options for genetic algorithm
+    '''
+    def genetic_execution(self):
+        #load genetic configurations specified in genetic.hjson
+        genetic_config = load_config("genetic.hjson")
 
-                    # store the original dataset
-                    original_dataset = d[0]
+        max_generations = genetic_config["max_generations"]
+        population_size = genetic_config["organisms"]
 
-                    # grab the indicators for the given strategy
-                    indicators = x.indicators
+        for x in self.strategies:
+            for d in self.dfs:
+                if np.round(genetic_config["train_data"] + genetic_config["test_data"] + genetic_config["validation_data"], 2) != 1.0:
+                    raise ValueError("The percentages do not add to one for genetic algorithm, please edit genetic.hjson")
+                
+                # store the original dataset
+                original_dataset = d[0]
 
-                    # set population size
-                    pop_size = 80
+                #splitting up the data into train/test/val
+                train_number = int(genetic_config["train_data"] * len(original_dataset))
+                test_number = int(genetic_config["test_data"] * len(original_dataset))
+                
+                #df.loc[1:3, :]
+                train_data = original_dataset.loc[:train_number, :]
+                test_data = original_dataset.loc[train_number:train_number+test_number, :]
+                val_data = original_dataset.loc[train_number + test_number:, :]
 
-                    # flag to keep track of whether or not genetic algorithm has reached threshold 
-                    # necessary to end execution
-                    done = False
+                test_pop_number = genetic_config["test_n_population"]
 
-                    # keep track of best score so far
-                    prev_best_score = 0.0
+                # grab the indicators for the given strategy
+                indicators = x.indicators
 
-                    # run until improvement is small enough to exit
-                    while not done:
-                        new_best_score = prev_best_score
-                        # update the param ranges
+                # flag to keep track of whether or not genetic algorithm has reached threshold 
+                # necessary to end execution
+                done = False
+
+                # keep track of best score so far
+                prev_best_score = 0.0
+
+                # run until improvement is small enough to exit
+                gen_count = 1
+                while not done and gen_count <= max_generations:
+                    new_best_score = prev_best_score
+                    test_best_score = 0
+                    # update the param ranges
+                    for ind in indicators:
+                        ind.shrinkParamRanges(genetic_config["shrink_algo"], genetic_config["param_range_percentage"])
+                    
+                    #if we are going to use the training set
+                    
+                    # each element of the population is a set of parameters the strategy is executed with
+                    for p in range(1, population_size+1):
+
+                        # generate data for the new set of parameters (which have effect on indicators)
+                        dataset = pd.DataFrame
+                        #check to see if this is a generation where we want to run the train or test set
+                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
+                            dataset = train_data
+                        else:
+                            dataset = test_data
+
                         for ind in indicators:
-                            ind.shrinkParamRanges(0.375)
+                            ind.genData(dataset)
                         
-                        # each element of the population is a set of parameters the strategy is executed with
-                        for p in range(0, pop_size):
+                        # retrain the model if the strategy has the model-training built-in
+                        if x.is_ml:
+                            x.train(dataset)
 
-                            # generate data for the new set of parameters (which have effect on indicators)
-                            dataset = original_dataset
-                            for ind in indicators:
-                                ind.genData(dataset)
-                            
-                            # retrain the model if the strategy has the model-training built-in
-                            if x.is_ml:
-                                x.train(dataset)
+                        # execute the strategy and grab the exit value
+                        score = self.executeStrategy(x, (dataset, d[1]), genetic_config["print_all"])
 
-                            # execute the strategy and grab the exit value
-                            score = self.executeStrategy(x, (dataset, d[1]))
-
-                            # store the param values if this is a new high score
+                        # store the param values if this is a new high score
+                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
                             if score > new_best_score:
                                 new_best_score = score
                                 for ind in indicators:
                                     ind.storeBestValues()
-                        # if the best scorer for this population is less than 0.5% better than the previous best score,
-                        # this will be the last generation
-                        if new_best_score < 1.005 * prev_best_score:
-                            done = True
                         else:
-                            # if not, continue to the next generation and note this generation's best score
+                            if score > test_best_score:
+                                test_best_score = score
+                                for ind in indicators:
+                                    ind.storeBestValues()
+                    # if the best scorer for this population is less than 0.5% better than the previous best score,
+                    # this will be the last generation
+                    if new_best_score < (1 + genetic_config["exit_score"]) * prev_best_score and gen_count % test_pop_number != 0:
+                        done = True
+                    else:
+                        # if not, continue to the next generation and note this generation's best score
+                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
                             prev_best_score = new_best_score
-                    
-                    # grab the best param values for each indicator
-                    best_values = []
-                    for ind in indicators:
-                        best_values.append(ind.best_values)
+                        else:
+                            prev_best_score = test_best_score
+                    print("Best score of the {} generation is: {}".format(gen_count, prev_best_score))
+                    gen_count += 1
+                
+                # grab the best param values for each indicator
+                best_values = []
+                for ind in indicators:
+                    best_values.append(ind.best_values)
 
-                    # write the best param values and best overall score to the console
-                    print(best_values)
-                    print(prev_best_score)
+                # write the best param values and best overall score to the console
+                print(best_values)
+                print(prev_best_score)
 
-                else: #if we are not running the genetic algorithm
-                    # add all indicator data to the dataset
-                    for ind in x.indicators:
-                        ind.genData(d[0], False)
-                    # execute the strategy on the dataset       
-                    self.executeStrategy(x, d)
+                dataset = val_data
+                for ind in indicators:
+                    ind.genData(dataset)
+                if x.is_ml:
+                    x.train(dataset)
 
+                # execute the strategy and grab the exit value
+                print("Score when tested ono validation set: {}".format(self.executeStrategy(x, (dataset, d[1]))))

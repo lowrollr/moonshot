@@ -3,7 +3,7 @@
     # will be fetched from the historical data repository
 
     # Quote Currencies
-    "ex1": ["XBT"],
+    "ex1": ["ETH"],
     # Base Currencies
     "ex2": ["USD"],
     # Whether or not to test ranges of values for each indicator parameter (genetic algo)
@@ -11,21 +11,24 @@
     # Timespan to fetch data for
     # max = all data
     # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
-    "timespan": "max",
+    "timespan": ["2018.05.07", "2019"],
+   
     # Candle frequency to retrieve 
     # 1 = 1 minute
     "freq": 1,
+    # determining if we are testing on a genetic algorithm or just a single run through
+    "genetic": false,
     # Fees to subtract from trades (percentage)
     "fees": 0.0026,
     # Strategy to execute (file name sans version no.)
-    "strategy": ["swing", "buy_and_hold"],
+    "strategy": ["swing"],
     # Version of strategy
     # specifying latest will just grab the highest version number present
-    "strategy_version": ["latest", "latest"],
+    "strategy_version": ["latest"],
     # Indicators to plot on the results graph
     "indicators_to_graph": [],
     # Whether or not results should be plotted
-    "plot": true,
+    "plot": false,
     # Slippage to factor into profits
     "slippage": 0
 }

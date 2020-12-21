@@ -9,6 +9,7 @@ WHAT:
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 from v2.strategy.indicators.sma import SMA
+from v2.strategy.indicators.param import Param
 import pandas
 
 '''
@@ -45,6 +46,6 @@ class StochasticOscillator(Indicator):
         dataset['stosc_low_price'] = dataset['high'].rolling(window=int(param_highlow_range.value)).max()
         dataset['stosc_k'] = 100*((dataset['close'] - dataset['stosc_low_price']) / (dataset['stosc_high_price'] - dataset['stosc_low_price']))
 
-        param_k_period_sma.name = 'period'
-        k_period_sma = SMA([param_k_period_sma], _name='stosc_d')
+        param_k_period_sma_simple = Param(_name = "period", _default=param_k_period_sma.value)
+        k_period_sma = SMA([param_k_period_sma_simple], _name='stosc_d')
         k_period_sma.genData(dataset, gen_new_values=gen_new_values, value='stosc_k')
