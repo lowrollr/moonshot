@@ -57,6 +57,7 @@ class Trading:
         self.strategies = []
         self.timespan = []
         self.slippage = float(config["slippage"])
+        self.report_format = config['report_format']
 
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
@@ -330,7 +331,7 @@ class Trading:
             for line in slippage_log:
                 f.write(line + '\n')
 
-        write_report(dataset, entries, exits, strategy.indicators, name)
+        write_report(dataset, entries, exits, strategy.indicators, name, self.report_format)
         # return the final quote position
         return conv_position
 
