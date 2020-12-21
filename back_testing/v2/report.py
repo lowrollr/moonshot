@@ -188,8 +188,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     overall_stats['Max Profit (%)'] = str(round(max(overall_profits), 2)) + '%'
     overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits), 2)) + '%'
     overall_stats['Percentage of Trades Profitable'] = str(sum([x > fees for x in overall_profits]) / len(overall_profits) * 100) + '%'
-    # overall_stats['total_profit'] = sum(overall_profits)
-    # overall_stats['percent_profit'] = ((1000000 + overall_stats['total_profit']) / 1000000) * 100
+    
 
     
     return (plots, overall_stats)
