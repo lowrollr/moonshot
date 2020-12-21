@@ -28,6 +28,7 @@ ALT_AXIS_COLS = {'macd_diff'}
         -> exits ([[int, float]]): time, close pairs for each occurance when a strategy exited a position
         -> indicators_to_graph [string]: list of indicator names to plot
         -> name (string): base file name containing information about the currency pair and strategy being used
+        -> fees (float): fees we pay on each transaction (passed from config)
         -> padding (int): how much to pad each individual movememnt by (in minutes)
     RETURN:
         -> (((string, {string: value}), {string: value})): tuple containing a tuple with a list of strings corresponding to divs to be inserted into the overall report
@@ -37,7 +38,7 @@ ALT_AXIS_COLS = {'macd_diff'}
         -> generates a div element containing an embedded plotly object, as well as generates statistics for individual movements and overall performance
         -> each embedded plotly object contains the candlesticks for the given timeframe as well as the entry/exit pair
         -> will also contain any indicators specified
-        -> each timeframe encapsulates the entry/exit point and an additional time periof of padding on each side
+        -> each timeframe encapsulates the entry/exit point and an additional time period of padding on each side
         -> talk to Jacob if you don't understand this, there is a lot going on here
     TODO:
         -> its possible some of this could be abstracted
@@ -109,6 +110,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             if inds:
                 for ind in inds:
                     fig.add_trace(ind, secondary_y=False)
+            # add any secondary indicators to their own axis
             if secondary_inds:
                 for ind in secondary_inds:
                     fig.add_trace(ind, secondary_y=True)
@@ -195,6 +197,8 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
         -> indicators_to_graph [string]: list of indicator names to plot
         -> name (string): base file name containing information about the currency pair and strategy being used
         -> report_format (string): specifies how to format the report (links to plots or all plots on one page)
+        -> other_stats ({string: value}): specifies other stats about the strategy exection to display
+        -> fees (float): fees we pay on each transaction (passed from config)
     RETURN:
         -> None
     WHAT: 
@@ -237,8 +241,10 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
 
     with doc:
         with div():
+            # add the overall performance graph to the page
             td(raw(overall_as_div))
             attr(cls='body')
+            # create and populate the overall stats table
             h1('Overall Stats')
             with table().add(tbody()):
                 for stat in overall_stats:
@@ -277,9 +283,6 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
                         new_row.add(td(a('Movement #' + str(i), href=f), __pretty=False))
                         for stat in stat_types:
                             new_row.add(td(mp_stats[stat]))
-                            
-                
-
             else:
                 raise Exception('Invalid report format!')
             
