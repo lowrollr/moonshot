@@ -206,11 +206,6 @@ class Trading:
         # keeps track of the current close price (used within the loop as well as after)
         close = 0.0
 
-        # store strings to write to the log here
-        log = []
-
-        # store string to write to the slippage log here
-        slippage_log = []
         old_quote = 0.0
         
         # vars to keep track of slippage
@@ -312,12 +307,12 @@ class Trading:
             conv_position = (position_base * close) * (1 - self.fees)
 
         # compute slippage
-        slippage_conv_pos = slippage_pos_quote
-        if self.slippage != 0:
-            slippage_close = utils.add_slippage("neg", close, self.slippage)
-            slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
+        # slippage_conv_pos = slippage_pos_quote
+        # if self.slippage != 0:
+        #     slippage_close = utils.add_slippage("neg", close, self.slippage)
+        #     slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
 
-        std_dev = utils.getLogStd(log)
+        # std_dev = utils.getLogStd(log)
         
         # write statistics to console
         if print_all:
