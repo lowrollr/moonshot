@@ -9,6 +9,7 @@ WHAT:
 import dominate
 import random
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 from plotly.offline import plot
 from numpy import mean
 from dominate.tags import *
@@ -16,6 +17,8 @@ from dominate.util import raw
 import chart_studio.tools as tls
 import os
 
+
+ALT_AXIS_COLS = {'macd_diff'}
 
 '''
     ARGS:
@@ -114,7 +117,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
         starting_time = time_entry - (padding * 60)
 
         # plot the entry point
-        ent_graph = [go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')]
+        ent_graph = go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')
         
         # make sure we aren't considering an entry point without a corresponding exit point
         if i < len(exits):
@@ -124,28 +127,43 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             ending_time = time_exit + (padding * 60)
 
             # plot the exit point
-            exit_graph = [go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')]
+            exit_graph = go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')
         
             # filter the dataframe to only include data from our specified timeframe
             cur_dataframe = dataframe[(dataframe.time >= starting_time) & (dataframe.time <= ending_time)]
 
             # generate a candlestick for the data
-            candle = [go.Candlestick(x=cur_dataframe['time'], open=cur_dataframe['open'], close=cur_dataframe['close'], high=cur_dataframe['high'], low=cur_dataframe['low'], name='Candlesticks')]
+            candle = go.Candlestick(x=cur_dataframe['time'], open=cur_dataframe['open'], close=cur_dataframe['close'], high=cur_dataframe['high'], low=cur_dataframe['low'], name='Candlesticks')
 
             # if we are plotting entries/exits, add the appropriate scatter plots to the graph
             inds = []
+            secondary_inds = []
             for ind in indicators_to_graph:
                 if ind in cur_dataframe.columns: 
                     # give the indicator a random color
                     rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-                    inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
+                    if ind in ALT_AXIS_COLS:
+                        secondary_inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
+                    else:
+                        inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
 
             # bundle all of our plots together into a single object
-            data = candle + inds + ent_graph + exit_graph
+            # data = candle + inds + ent_graph + exit_graph
 
             # initialize the plot and save it to a div formatted string that we can embed
-            layout = go.Layout(title='Movement ' + str(i))
-            fig = go.Figure(data=data, layout=layout)
+            
+            fig = make_subplots(specs=[[{"secondary_y": True}]])
+            fig.update_layout(title_text='Movement ' + str(i))
+            fig.add_trace(candle, secondary_y=False)
+            if inds:
+                for ind in inds:
+                    fig.add_trace(ind, secondary_y=False)
+            if secondary_inds:
+                for ind in secondary_inds:
+                    fig.add_trace(ind, secondary_y=True)
+                
+            fig.add_trace(ent_graph, secondary_y=False)
+            fig.add_trace(exit_graph, secondary_y=False)
             plot_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
 
             # calculate hold time and percent profit for the movement
