@@ -484,7 +484,7 @@ class Trading:
                             prev_best_score = new_best_score
                         else:
                             prev_best_score = test_best_score
-                    print("Best score of the {} generation is: {}".format(gen_count, prev_best_score))
+                    print("Best score of generation {} is: {}".format(gen_count, prev_best_score))
                     gen_count += 1
                 
                 # grab the best param values for each indicator
@@ -503,7 +503,7 @@ class Trading:
                     x.train(dataset)
 
                 # execute the strategy and grab the exit value
-                print("\n\nScore when tested ono validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
+                print("\n\nScore when tested on validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
 
 
     def segmented_genetic_execution(self):
@@ -516,7 +516,6 @@ class Trading:
         for x in self.strategies:
             for d in self.dfs:
                 
-                test_pop_number = genetic_config["test_n_population"]
 
                 # grab the indicators for the given strategy
                 indicators = x.indicators
@@ -556,7 +555,7 @@ class Trading:
                             chunk_scores.remove(max(chunk_scores))
                         score = np.mean(chunk_scores)
                         # store the param values if this is a new high score
-                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
+                        if gen_count != max_generations:
                             if score > new_best_score:
                                 new_best_score = score
                                 padding_count = 0
@@ -569,17 +568,17 @@ class Trading:
                                     ind.storeBestValues()
                     # if the best scorer for this population is less than 0.5% better than the previous best score,
                     # this will be the last generation
-                    if new_best_score < (1 + genetic_config["exit_score"]) * prev_best_score and gen_count % test_pop_number != 0:
+                    if new_best_score < (1 + genetic_config["exit_score"]) * prev_best_score:
                         if padding_count >= genetic_config["padding_num"]:
                             done = True
                         padding_count += 1
                     else:
                         # if not, continue to the next generation and note this generation's best score
-                        if gen_count % test_pop_number != 0 and gen_count != max_generations:
+                        if gen_count != max_generations:
                             prev_best_score = new_best_score
                         else:
                             prev_best_score = test_best_score
-                    print("Best score of the {} generation is: {}".format(gen_count, prev_best_score))
+                    print("Best score of generation {} is: {}".format(gen_count, prev_best_score))
                     gen_count += 1
                 
                 # grab the best param values for each indicator
