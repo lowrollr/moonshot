@@ -1,3 +1,10 @@
+'''
+FILE: model.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This file contains all functionality associates with generating HTML report pages
+'''
 
 import dominate
 import random
@@ -10,17 +17,37 @@ import chart_studio.tools as tls
 import os
 
 
-
+'''
+    ARGS:
+        -> dataset (Dataframe): contains a dataset for a base/quote currency pair, as well as any indicators applied to the data
+        -> entries ([[int, float]]): time, close pairs for each occurance when a strategy entered a position
+        -> exits ([[int, float]]): time, close pairs for each occurance when a strategy exited a position
+        -> indicators_to_graph [string]: list of indicator names to plot
+        -> name (string): base file name containing information about the currency pair and strategy being used
+        -> stop_loss_plot: (go.Scatter): plot of stop loss from a strategy that can optionally be added to the graph
+    RETURN:
+        -> None
+    WHAT: 
+        -> plots a candlestick graph for the execution of a given strategy on a dataset
+        -> plots entry and exit points, as well as OHCL data for each minute
+        -> outputs the graph to a file, constructed with name
+    TODO:
+        -> figure out whether or not this is still useful (as opposed to the segmented report)
+'''
 def generate_overall_graph(dataset, entries, exits, indicators_to_graph, name, stop_loss_plot=None):
+    # create a candlestick object for the data in the dataset
     candle = go.Candlestick(x=dataset['time'], open=dataset['open'], close=dataset['close'], high=dataset['high'], low=dataset['low'], name='Candlesticks')
     inds = []
     data=[]
+    # create scatter plots for each indicator passed
     for x in indicators_to_graph:
         if x in dataset.columns: 
             # give the indicator a random color
             rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
             inds.append(go.Scatter(x=dataset['time'], y=dataset[x], name=x, line=dict(color=(rand_color))))
-    if entries: # if we are plotting entries/exits, add the appropriate scatter plots to the graph
+
+    # if we are plotting entries/exits, add the appropriate scatter plots to the graph
+    if entries: 
         ent_graph = go.Scatter(x=[item[0] for item in entries], y=[item[1] for item in entries], name='Entries', mode='markers')
         exit_graph = go.Scatter(x=[item[0] for item in exits], y=[item[1] for item in exits], name='Exits', mode='markers')
         # concatenate all our plots into a single list to be displayed
@@ -29,12 +56,15 @@ def generate_overall_graph(dataset, entries, exits, indicators_to_graph, name, s
         # concatenate all our plots into a single list to be displayed
         data = [candle] + inds
 
+    # if we have recieved a stop loss plot, add that to the plot as well
     if stop_loss_plot:
         data.append([stop_loss_plot])
+
+    # initialize the plot and plot the data, save to <name>.html
     layout = go.Layout(title=name)
     fig = go.Figure(data=data, layout=layout)
-    # plot(fig, filename='plots/' + name + '.html')
-    plot_as_div = plot(fig, include_plotlyjs=False, output_type='div')
+    plot(fig, filename='plots/' + name + '.html')
+    
 
 
 
@@ -112,7 +142,7 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
 
 def write_report(dataframe, entries, exits, indicators_to_graph, name, report_format):
     # movement_graphs = generate_movement_graphs(dataset, entries, exits)
-    doc = dominate.document(title='Test Report')
+    doc = dominate.document(title='Overall Report')
     movement_plots, overall_stats = generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name)
 
     if report_format == 'auto':
