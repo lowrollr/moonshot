@@ -211,7 +211,7 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
 
     # link to stylesheets and plotly script (IMPORTANT)
     with doc.head:
-        link(rel='stylesheet', href='./reports/style.css')
+        link(rel='stylesheet', href='style.css')
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
@@ -281,7 +281,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
 
     # link to stylesheets and plotly script (IMPORTANT) 
     with doc.head:
-        link(rel='stylesheet', href='./reports/style.css')
+        link(rel='stylesheet', href='style.css')
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
