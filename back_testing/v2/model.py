@@ -76,8 +76,6 @@ class Trading:
         self.test_param_ranges = config['test_param_ranges'] 
         
         self.plot = config['plot']
-
-        self.is_genetic = config["genetic"]
         
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
@@ -359,7 +357,7 @@ class Trading:
             self.strategies.append(self.importStrategy(self.strategy_list[x], self.version_list[x])())
 
         # execute each strategy on each dataset
-        if self.is_genetic:
+        if self.test_param_ranges:
             self.genetic_execution()
 
         for x in self.strategies:
@@ -424,8 +422,7 @@ class Trading:
                     for ind in indicators:
                         ind.shrinkParamRanges(genetic_config["shrink_algo"], genetic_config["param_range_percentage"])
                     
-                    #if we are going to use the training set
-                    
+                    padding_count = 0
                     # each element of the population is a set of parameters the strategy is executed with
                     for p in range(1, population_size+1):
 
@@ -451,6 +448,7 @@ class Trading:
                         if gen_count % test_pop_number != 0 and gen_count != max_generations:
                             if score > new_best_score:
                                 new_best_score = score
+                                padding_count = 0
                                 for ind in indicators:
                                     ind.storeBestValues()
                         else:
@@ -461,7 +459,9 @@ class Trading:
                     # if the best scorer for this population is less than 0.5% better than the previous best score,
                     # this will be the last generation
                     if new_best_score < (1 + genetic_config["exit_score"]) * prev_best_score and gen_count % test_pop_number != 0:
-                        done = True
+                        if padding_count >= genetic_config["padding_num"]:
+                            done = True
+                        padding_count += 1
                     else:
                         # if not, continue to the next generation and note this generation's best score
                         if gen_count % test_pop_number != 0 and gen_count != max_generations:
@@ -487,4 +487,4 @@ class Trading:
                     x.train(dataset)
 
                 # execute the strategy and grab the exit value
-                print("Score when tested ono validation set: {}".format(self.executeStrategy(x, (dataset, d[1]))))
+                print("\n\nScore when tested ono validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
