@@ -39,19 +39,20 @@ class HeatCounter(Strategy):
         self.name = 'heat_counter'
         self.is_ml = False
         self.hour_queue = deque(maxlen=60)
-        self.little_queue = deque(maxlen=480)
-        self.rolling_little = deque(maxlen=480)
-        self.big_queue = deque(maxlen=1440)
-        self.rolling_big = deque(maxlen=1440)
-        # represents % above or below sma we should buy or sell at
-        self.diff = Param(0.01, 0.1, 2, 'diff', 0.02)
+        self.little_queue = deque(maxlen=50)
+        self.rolling_little = deque(maxlen=50)
+        self.big_queue = deque(maxlen=2000)
+        self.rolling_big = deque(maxlen=2000)
+        
         sma_period = Param(5, 10000, 0, 'period', 37.0)
         self.bear_model = pickle.load(open('./v2/strategy/saved_models/optimal_v2_buy_rf.sav', 'rb'))
         self.bull_model = pickle.load(open('./v2/strategy/saved_models/optimal_v2_sell_rf.sav', 'rb'))
         self.little_avg = 0 
         self.big_avg = 1440
+        self.prev_little_avg = 0
         self.looking_for_exit = False
         self.stop_loss = 0.0
+        
 
 
         stoch_highlow = Param(5, 10000, 0, 'highlow_range', 90.0)
@@ -84,6 +85,7 @@ class HeatCounter(Strategy):
         -> no tick-by-tick processing required
     '''
     def process(self, data):
+        self.prev_little_avg = self.little_avg
         bear_model_data = np.array([data.rsi, data.MACD, data.stosc_k, data.stosc_d, data.slope, data.variance])
         bull_model_data = np.array([data.close, data.rsi, data.MACD, data.stosc_k, data.stosc_d, data.slope, data.variance])
         
@@ -106,20 +108,18 @@ class HeatCounter(Strategy):
             self.hour_queue.append(bull_value - bear_value)
 
         hour_queue_sum = sum(self.hour_queue)
-        if len(self.big_queue) < 1440:
+        if len(self.big_queue) < 2000:
             self.big_queue.append(hour_queue_sum)
         else:
             self.big_queue.popleft()
             self.big_queue.append(hour_queue_sum)
-            self.big_avg = float(sum(self.big_queue)) / 1440.0
-        if len(self.little_queue) < 480:
+            self.big_avg = float(sum(self.big_queue)) / 2000
+        if len(self.little_queue) < 50:
             self.little_queue.append(hour_queue_sum)
         else:
             self.little_queue.popleft()
             self.little_queue.append(hour_queue_sum)
-            self.little_avg = float(sum(self.little_queue)) / 480.0
-        if self.stop_loss:
-            self.stop_loss = max(self.stop_loss, data.close * 0.999)
+            self.little_avg = float(sum(self.little_queue)) / 50
 
     '''
     ARGS:
@@ -130,7 +130,8 @@ class HeatCounter(Strategy):
         -> checks if the current price fulfills the buy condition
     '''
     def calc_entry(self, data):
-        if self.little_avg > self.big_avg:
+        
+        if self.little_avg < self.big_avg and self.prev_little_avg < self.little_avg:
             return True
         else:
             return False
@@ -144,15 +145,9 @@ class HeatCounter(Strategy):
         -> checks if the current price fulfills the sell condition
     '''
     def calc_exit(self, data):
-        # if self.looking_for_exit and (data.close < self.stop_loss):
-        #     self.stop_loss = 0.0
-        #     self.looking_for_exit = False
-        #     return True
-        if self.big_avg > self.little_avg and self.little_avg < 0:
-            # if not self.looking_for_exit:
-            #     self.looking_for_exit = True
-            #     self.stop_loss = data.close * 0.999
-            # return False
+        
+        if self.little_avg > self.big_avg and self.prev_little_avg > self.little_avg:
+            
             return True
         else:
             return False
