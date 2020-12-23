@@ -31,11 +31,11 @@ class Indicator:
         self.params = _params
         # if a new name is given, set the name as that
         if _name:
-            self.name = _name
+            self.name = _name + '_' + _appended_name
         else: # otherwise set the name to be this Indicator instance's class name and append the appended_name (if given)
-            self.name = self.__class__.__name__ + _appended_name
+            self.name = self.__class__.__name__ + '_' + _appended_name
         self.best_values = {}
-
+        self.appended_name = _appended_name
 
     '''
     ARGS:
