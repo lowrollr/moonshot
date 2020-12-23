@@ -220,6 +220,7 @@ class Trading:
         entries = []
         exits = []
         account_history = []
+        starting_base_value = dataset['close'].values[0]
         # this is the main loop for iterating through each row of the dataset
         for row in tqdm(dataset.itertuples()):
         
@@ -295,6 +296,8 @@ class Trading:
                 
         dataset['account_value'] = np.array(account_history)
 
+        ending_value = close
+
         # build the file name to use for graphs/plots
         name = 'results-' + strategy.name + '-' + dataset_name
 
@@ -315,15 +318,7 @@ class Trading:
 
         # std_dev = utils.getLogStd(log)
         
-        # write statistics to console
-        print('Exit value: ' + str(conv_position))
-        if self.slippage != 0:
-            print("Exit value " + str(slippage_conv_pos) + " with slippage value of " + str(self.slippage))
-        print('Delta: ' + str(conv_position - start) + ' ' + str(((conv_position / start) * 100) - 100) + '%')
-        print("Total trades made: " + str(len(entries)))
-        if len(entries):
-            print("Average gain/loss per trade: " + str((conv_position - start) / len(entries)))
-        #print("Standard deviation of the deltas (how volatile) " + str(std_dev))
+        
         
         
         # write stats to dict to send to reports
@@ -332,6 +327,10 @@ class Trading:
         stats['Exit Portfolio Value'] = round(conv_position, 2)
         stats['Portfolio Delta ($)'] = round(conv_position - start, 2)
         stats['Portfolio Delta (%)'] = str(round(((conv_position / start) * 100) - 100, 2)) + '%'
+        stats['Initial Asset Value'] = starting_base_value
+        stats['Final Asset Value'] = ending_value
+        stats['Asset Growth ($)'] = round(ending_value - starting_base_value, 2)
+        stats['Asset Growth (%)'] = str(round(((ending_value / starting_base_value) * 100) - 100, 2)) + '%'
 
 
         if self.plot:

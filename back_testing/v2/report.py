@@ -140,7 +140,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     overall_stats['Average Profit (%)'] = str(round(mean(overall_profits), 2)) + '%'
     overall_stats['Max Profit (%)'] = str(round(max(overall_profits), 2)) + '%'
     overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits), 2)) + '%'
-    overall_stats['Percentage of Trades Profitable'] = str(sum([x > fees for x in overall_profits]) / len(overall_profits) * 100) + '%'
+    overall_stats['Percentage of Trades Profitable'] = str(round(sum([x > fees for x in overall_profits]) / len(overall_profits) * 100, 2)) + '%'
     
 
     
@@ -280,7 +280,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
                     for i,f in enumerate(filenames):
                         mp_stats = movement_plots[i][1]
                         new_row = tr()
-                        new_row.add(td(a('Movement #' + str(i), href=f), __pretty=False))
+                        new_row.add(td(a('Movement #' + str(i), href=f, target='_blank'), __pretty=False))
                         for stat in stat_types:
                             new_row.add(td(mp_stats[stat]))
             else:
