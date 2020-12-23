@@ -183,7 +183,7 @@ class Trading:
         -> This function does way too many things...
         -> Is slippage all the way implemented?
     '''
-    def executeStrategy(self, strategy, my_dataset, *args):
+    def executeStrategy(self, strategy, my_dataset, plot=self.plot, *args):
 
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
@@ -333,7 +333,7 @@ class Trading:
         stats['Asset Growth (%)'] = str(round(((ending_value / starting_base_value) * 100) - 100, 2)) + '%'
 
 
-        if self.plot:
+        if plot:
             print('Generating Report...')
             write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format, stats, self.fees)
         # return the final quote position
@@ -461,7 +461,7 @@ class Trading:
                             score = score_memoize[possible_key]
                         else:
                             # execute the strategy and grab the exit value
-                            score = self.silentExecuteStrategy(x, (dataset, d[1]))
+                            score = self.executeStrategy(x, (dataset, d[1]), plot=False)
                             score_memoize[possible_key] = score
 
                         # store the param values if this is a new high score
@@ -512,148 +512,6 @@ class Trading:
 
                 # execute the strategy and grab the exit value
                 print("\n\nScore when tested on validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
-
-
-    '''
-    ARGS:
-        -> strategy (Strategy): Strategy object (to call it's entry, exit, and process function)
-        -> my_dataset ((Dataframe, String)): dataset to run the strategy on, and its name
-        -> *args[0] (String) <Optional>: param names to append to log file (if it's useful to specify)
-    RETURN:
-        -> conv_position (Float): Total amount of funds in quote currency held after executing the 
-            strategy on the dataset
-    WHAT: 
-        -> Like the original executeStrategy without the tqdm so that counter does not run for each iteration of GA
-        -> Executes the given strategy on the dataset
-        -> Calls the appropriate strategy procedures each tick
-            i.e. calc_enrty() when looking to enter
-                 calc_exit() when looking to exit
-                 process() every tick
-        -> This assumes that our entire position is converted from currency a to currency b and
-            vice-versa when making a trade
-        -> Optionally plots a candlestick chart showing entry/exit points
-        -> Logs entry and exit points
-        -> Calculates performance metrics and writes them to the console after executing
-    TODO:
-        -> This function does way too many things...
-        -> Is slippage all the way implemented?
-    '''
-    def silentExecuteStrategy(self, strategy, my_dataset, print_all=True, *args):
-
-            # initialize starting position to 1000000 units
-            position_quote = 1000000.00
-            start = position_quote
-            # initialize base position to 0 units
-            position_base = 0.00
-            # this will keep track of whether or not we are engaged in a position in the base currency
-            position_taken = False
-            
-            # the dataset itself will be the first part of the tuple passed
-            dataset = my_dataset[0]
-            
-            # this keeps track of fees we incur by entering a postion in the base currency
-            # these will be subtracted once we have converted our position back to the quote currency
-            # (by closing our position or reaching the end of the dataset)
-            inc_fees = 0.0
-
-            # keeps track of the current close price (used within the loop as well as after)
-            close = 0.0
-
-            # store strings to write to the log here
-            log = []
-
-            # store string to write to the slippage log here
-            slippage_log = []
-            old_quote = 0.0
-            
-            # vars to keep track of slippage
-            slippage_tot = 0.0
-            slippage_pos_base = 0.00
-            slippage_pos_quote = position_quote
-            slippage_fees = 0.0
-
-            # stores tuples (time, value) for when we enter/exit a position
-            # these get plotted
-            entries = []
-            exits = []
-            
-            # this is the main loop for iterating through each row of the dataset
-            for row in dataset.itertuples():
-            
-                # keep track of the close price for the given tick
-                close = row.close
-                slippage_close = close
-
-                # run the process function (will execute anything that needs to happen each tick for the strategy)
-                strategy.process(row)
-                
-                if not position_taken: # if we are not entered into a position
-
-                    # run the entry function for our strategy
-                    if strategy.calc_entry(row):
-                        # if the entry function returns True, it is signaling to enter, so take a position
-                        position_taken = True
-
-                        # calculate fees that will be incurred
-                        inc_fees = position_quote * self.fees
-
-                        # convert our position to the base currency
-                        old_quote = position_quote
-                        position_base = position_quote / close
-                        position_quote = 0.0
-
-                        # append entry to entries log for the graph as well as to the text log
-                        entries.append([row.time, close])
-                        log.append(str(row.time) + ': bought at ' + str(row.close))
-                        
-                        
-                        # do slippage things if we are keeping track of slippage
-                        if self.slippage != 0:
-                            slippage_fees = slippage_pos_quote * self.fees
-                            slippage_close = utils.add_slippage("pos", close, self.slippage)
-                            slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
-                            slippage_pos_base = slippage_pos_quote / slippage_close
-                            slippage_tot += close - slippage_close
-                            slippage_pos_quote = 0.0
-                    
-                    
-                else: # otherwise, we are looking to exit a position
-                    
-                    # run the exit function of our strategy
-                    if strategy.calc_exit(row):
-                        # if the exit function returns True, it is signaling to exit, so leave the position
-                        position_taken = False
-
-                        # convert our position to the quote currency
-                        position_quote = position_base * close
-                        position_base = 0.0
-
-                        # subtract fees from this transaction as well as the fees from our entry transaction
-                        position_quote = position_quote * (1 - self.fees)
-                        position_quote -= inc_fees
-                        delta = position_quote - old_quote
-
-                        # append exit to exits log for the graph as well as to the text log
-                        exits.append([row.time, close])
-                        log.append(str(row.time) + ': sold at ' + str(row.close) + ' porfolio value: ' + str(position_quote) + ' delta: ' + str(delta))
-
-                        # do slippage things if we are keeping track of slippage
-                        if self.slippage != 0:
-                            slippage_close = utils.add_slippage("neg", close, self.slippage)
-                            slippage_pos_quote = slippage_pos_base * slippage_close
-                            slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
-                            slippage_pos_quote -= slippage_fees
-                            slippage_tot += slippage_close - close
-                            slippage_pos_base = 0.0
-                            slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
-
-            # convert our position to the quote price if it isn't already in the quote price
-            conv_position = position_quote
-            if position_base:
-                conv_position = (position_base * close) * (1 - self.fees)
-                        
-            # return the final quote position
-            return conv_position
 
 
     def segmented_genetic_execution(self):
