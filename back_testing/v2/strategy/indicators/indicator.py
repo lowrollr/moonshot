@@ -41,7 +41,7 @@ class Indicator:
             else:
                 self.name = self.__class__.__name__
         self.best_values = {}
-        self.appended_name = _appended_name
+        self.appended_name = '_' + _appended_name
 
     '''
     ARGS:
