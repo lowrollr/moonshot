@@ -183,8 +183,8 @@ class Trading:
         -> This function does way too many things...
         -> Is slippage all the way implemented?
     '''
-    def executeStrategy(self, strategy, my_dataset, plot=self.plot, *args):
-
+    def executeStrategy(self, strategy, my_dataset, plot=True, *args):
+        
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
         account_value = position_quote
