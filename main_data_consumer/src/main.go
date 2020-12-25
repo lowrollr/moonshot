@@ -25,10 +25,11 @@ import (
 */
 func main() {
 	fmt.Println("Connectting to database")
-	//Here going to connect to database
+
 	var err error
 	global_db, err = Dumbo.ConnectDB(db_string, dbType)
 	if err != nil {
+		//if we can't connect to db then panic and stop
 		panic(err)
 	}
 	fmt.Println("Connected to database successfully")
@@ -38,6 +39,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	
 	fmt.Println("Consuming Data...")
 	ConsumeData()
 }

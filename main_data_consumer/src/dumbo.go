@@ -34,10 +34,12 @@ type dumbo struct{}
 		-> Verfies that it can connect to the database 
 */
 func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
+	//Trying to connect to database for a minute, otherwise panic
 	const timeout = 1 * time.Minute
 	tries := 0
 
 	deadline := time.Now().Add(timeout)
+	//Iterating through the amount of tries to connect to database
 	for tries = 0; time.Now().Before(deadline); tries++ {
 		db, err := gorm.Open(dbType, database)
 		if err == nil {
@@ -60,6 +62,7 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 		-> Creates the tables in the database
 */
 func (*dumbo) AutoMigrate() error {
+	//Create tables specified in models.go
 	return global_db.AutoMigrate(&HistoricalCrypto{}, &CurrentCryptoPrice{},
 		&PortfolioManager{}).Error
 }
@@ -75,6 +78,7 @@ func (*dumbo) AutoMigrate() error {
 		-> Is there a better way to store Unix timestamp
 */
 func (*dumbo) StoreCrypto(event binance.WsTradeEvent) error {
+	//Getting information needed to store
 	coin_abb := strings.Split(event.Symbol, "USDT")[0]
 	price, err1 := strconv.ParseFloat(event.Price, 32)
 

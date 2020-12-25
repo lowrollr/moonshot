@@ -54,7 +54,7 @@ func EfficientSleep(partition int, prev_time time.Time) {
 			diagnostic, restart service, etc
 */
 func ErrorTradeHandler(err error) {
-	fmt.Println("Was an error " + err.Error())
+	fmt.Println("There error encountered " + err.Error())
 	panic(err)
 }
 
@@ -72,7 +72,6 @@ func ErrorTradeHandler(err error) {
 			channel slices
 */
 func waitFunc(stops, kills []chan struct{}) {
-	fmt.Println("entered the wait func")
 	for true {
 		time.Sleep(1 * time.Minute)
 	}
@@ -92,11 +91,15 @@ func waitFunc(stops, kills []chan struct{}) {
     WHAT: 
 		-> Consumes data and stores in the DB
 		-> Uses binance web socket to obtain data and send to db
+	TODO:
+		-> Change so that it gets coin abreviations from database
+		-> Is tether the best coin to transfer to?
 */
 func ConsumeData() {
+	//want to check if the socket is still connected to if we are running > 24 hrs
 	binance.WebsocketKeepalive = true
+	//function for handling when we receive data from the socket
 	tradeDataConsumer := func(event *binance.WsTradeEvent) {
-		fmt.Println("Entered the trade consume to store data")
 		now := time.Now()
 		fmt.Println(event)
 		// store the event in database
@@ -105,7 +108,7 @@ func ConsumeData() {
 			fmt.Println("Was not able to store crypto information " + err.Error())
 			panic(err)
 		}
-		// sleep to get maximum efficiency
+		// sleep to get maximum efficiency from socket
 		EfficientSleep(1, now)
 	}
 
@@ -115,6 +118,7 @@ func ConsumeData() {
 	stops := []chan struct{}{}
 	kills := []chan struct{}{}
 
+	//Using quote currency as tether to open socket to binance
 	for _, symbol := range symbols {
 		symbol = strings.ToUpper(symbol) + "USDT"
 		stop_chan, kill_chan, err := binance.WsTradeServe(symbol, tradeDataConsumer, ErrorTradeHandler)
@@ -125,5 +129,6 @@ func ConsumeData() {
 		stops = append(stops, stop_chan)
 		kills = append(kills, kill_chan)
 	}
+	//perpetual wait
 	waitFunc(stops, kills)
 }
