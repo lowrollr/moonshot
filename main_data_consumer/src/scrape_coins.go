@@ -17,13 +17,13 @@ import (
 
 /*
 	ARGS:
-        ->
-    RETURN:
         -> N/A
+    RETURN:
+        -> ([]CoinData): slice of coin data parsed from website
     WHAT:
-		->
+		-> This gets coin data from website to dynamically get most popular coins in order
     TODO:
-		->
+		-> Go through multiple pages, instead of just first page (most popular)
 */
 func scrapeWebsite() []CoinData {
 	resp, err := soup.Get(scrape_url)
@@ -55,13 +55,13 @@ func scrapeWebsite() []CoinData {
 
 /*
 	ARGS:
-        ->
+        -> N/A
     RETURN:
-        ->
+        -> N/A
     WHAT:
-		->
+		-> Scrapes and stores coin name and abrvs
     TODO:
-		->
+		-> Get more than just the first 200 on first page
 */
 func StorePopularCoins() {
 	//get all coin names and abrev

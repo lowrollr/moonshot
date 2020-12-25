@@ -67,6 +67,17 @@ func (*dumbo) AutoMigrate() error {
 		&PortfolioManager{}, &CoinData{}).Error
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> (error): Error if coin names were not deleted
+    WHAT:
+		-> Deletes all names and abbreviations of coins
+		-> Used so coin_data does not continually grow
+    TODO:
+		-> Find better way to do this, Unique Abreviation/id
+*/
 func (*dumbo) deleteCoinIndex() error {
 	return global_db.Where("1=1").Delete(&CoinData{}).Error
 }
@@ -99,6 +110,14 @@ func (*dumbo) StoreCrypto(event binance.WsTradeEvent) error {
 		Volume:    float32(volume)}).Error
 }
 
+/*
+	ARGS:
+        -> coin_data (*[]CoinData): list of coin names and abrevs to be stored
+    RETURN:
+        -> (error): returns error if one occurs
+    WHAT:
+		-> Stores the scraped coin data
+*/
 func (*dumbo) storeScraped(coin_data *[]CoinData) error {
 	for _, coin := range *coin_data {
 		err := global_db.Create(&coin).Error
@@ -109,6 +128,14 @@ func (*dumbo) storeScraped(coin_data *[]CoinData) error {
 	return nil
 }
 
+/*
+	ARGS:
+        -> n (int): Number of coins you want to select from indexed coins
+    RETURN:
+        -> (*[]string): returns pointer to slice of coin abrevs
+    WHAT:
+		-> Retrieves coin abrevs from database but only n
+*/
 func (*dumbo) selectCoins(n int) *[]string {
 	var coin_data []CoinData
 	err := global_db.Order("priority asc").Limit(n).Find(&coin_data).Error
