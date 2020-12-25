@@ -130,7 +130,8 @@ func (*dumbo) storeScraped(coin_data *[]CoinData) error {
 
 /*
 	ARGS:
-        -> n (int): Number of coins you want to select from indexed coins
+		-> n (int): Number of coins you want to select from indexed coins
+			-> use -1 if you want all coins in db
     RETURN:
         -> (*[]string): returns pointer to slice of coin abrevs
     WHAT:
@@ -138,7 +139,13 @@ func (*dumbo) storeScraped(coin_data *[]CoinData) error {
 */
 func (*dumbo) selectCoins(n int) *[]string {
 	var coin_data []CoinData
-	err := global_db.Order("priority asc").Limit(n).Find(&coin_data).Error
+	var err error 
+
+	if n != -1 {
+		err = global_db.Order("priority asc").Limit(n).Find(&coin_data).Error
+	} else {
+		err = global_db.Order("priority asc").Find(&coin_data).Error
+	}
 	if err != nil {
 		panic(err)
 	}

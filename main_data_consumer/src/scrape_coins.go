@@ -3,7 +3,7 @@ FILE: scrape_coins.go
 AUTHORS:
     -> Ross Copeland <rhcopeland101@gmail.com>
 WHAT:
-	-> Inserting coins dynamically into database from website on popularity
+	-> Inserting coins dynamically into database scraped from website on popularity
 */
 package main
 
