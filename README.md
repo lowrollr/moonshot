@@ -1,4 +1,4 @@
-![Vivaldi Logo](https://github.com/marshingjay/vivaldi/blob/master/frontend/assets/vivaldi.PNG)
+![Vivaldi Logo](https://github.com/marshingjay/vivaldi/blob/master/docs/vivaldi.PNG)
 
 We are team One Sigma (Ross Copeland, Jacob Marshall).
 
