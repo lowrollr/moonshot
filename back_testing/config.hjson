@@ -7,7 +7,7 @@
     # Base Currencies
     "ex2": ["USD"],
     # Whether or not to test ranges of values for each indicator parameter (genetic algo)
-    "test_param_ranges": false,
+    "test_param_ranges": true,
     # Timespan to fetch data for
     # max = all data
     # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
@@ -27,12 +27,11 @@
     # specifying latest will just grab the highest version number present
     "strategy_version": ["latest"],
     # Indicators to plot on the results graph
-    "indicators_to_graph": ["macd_diff", "sma"],
+    "indicators_to_graph": [],
     # Whether or not results should be plotted
-    "plot": true,
+    "plot": false,
     # Slippage to factor into profits
     "slippage": 0,
     # Report movement plots as individual pages or embedded divs (choose 'pages', 'divs', or 'auto')
     "report_format": "auto"
 }
-

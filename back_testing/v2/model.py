@@ -183,7 +183,7 @@ class Trading:
         -> This function does way too many things...
         -> Is slippage all the way implemented?
     '''
-    def executeStrategy(self, strategy, my_dataset, plot=True, *args):
+    def executeStrategy(self, strategy, my_dataset, should_print=True, plot=True, *args):
         
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
@@ -222,7 +222,12 @@ class Trading:
         account_history = []
         starting_base_value = dataset['close'].values[0]
         # this is the main loop for iterating through each row of the dataset
-        for row in tqdm(dataset.itertuples()):
+        rows = []
+        if should_print:
+            rows = tqdm(dataset.itertuples())
+        else:
+            rows = dataset.itertuples()
+        for row in rows:
         
             # keep track of the close price for the given tick
             close = row.close
@@ -253,8 +258,6 @@ class Trading:
                     # append entry to entries log for the graph as well as to the text log
                     entries.append([row.time, close])
                     
-                    
-
                     # # do slippage things if we are keeping track of slippage
                     # if self.slippage != 0:
                     #     slippage_fees = slippage_pos_quote * self.fees
@@ -318,9 +321,6 @@ class Trading:
 
         # std_dev = utils.getLogStd(log)
         
-        
-        
-        
         # write stats to dict to send to reports
         stats = dict()
         stats['Initial Portfolio Value'] = 1000000.00
@@ -356,16 +356,15 @@ class Trading:
 
         # execute each strategy on each dataset
         if self.test_param_ranges:
-            #self.geneticExecution()
-            #self.genetic_execution_2()
-            self.segmented_genetic_execution()
+            self.geneticExecution()
+            #self.segmented_genetic_execution()
 
         for x in self.strategies:
             for d in self.dfs:
                 for ind in x.indicators:
                     ind.genData(d[0], False)
                 # execute the strategy on the dataset       
-                self.executeStrategy(x, d)
+                self.executeStrategy(x, d, plot=self.plot)
 
 
     '''
@@ -461,7 +460,7 @@ class Trading:
                             score = score_memoize[possible_key]
                         else:
                             # execute the strategy and grab the exit value
-                            score = self.executeStrategy(x, (dataset, d[1]), plot=False)
+                            score = self.executeStrategy(x, (dataset, d[1]), plot=False, should_print=False)
                             score_memoize[possible_key] = score
 
                         # store the param values if this is a new high score
@@ -511,7 +510,7 @@ class Trading:
                     x.train(dataset)
 
                 # execute the strategy and grab the exit value
-                print("\n\nScore when tested on validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
+                print("\n\nScore when tested on validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]), plot=False)))
 
 
     def segmented_genetic_execution(self):
@@ -524,7 +523,6 @@ class Trading:
         for x in self.strategies:
             for d in self.dfs:
                 
-
                 # grab the indicators for the given strategy
                 indicators = x.indicators
 
@@ -548,7 +546,6 @@ class Trading:
                     # each element of the population is a set of parameters the strategy is executed with
                     for p in range(1, population_size+1):
 
-                        
                         for ind in indicators:
                             ind.genData(dataset)
 
@@ -556,7 +553,7 @@ class Trading:
                         df_chunks = [dataset[i:i+n] for i in range(0,dataset.shape[0],n)]
                         chunk_scores = []
                         for i, chunk in enumerate(df_chunks[:-1]):
-                            chunk_scores.append(self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"]))
+                            chunk_scores.append(self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"], plot=False))
                         for i in range(1):
                             chunk_scores.remove(max(chunk_scores))
                         score = np.mean(chunk_scores)
