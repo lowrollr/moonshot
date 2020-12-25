@@ -29,9 +29,9 @@ type dumbo struct{}
 		-> dbType (string): type of database using. Specified through the env file
     RETURN:
         -> (*gorm.DB): returns pointer to object that talks to database
-    WHAT: 
+    WHAT:
 		-> Initial connection to the database
-		-> Verfies that it can connect to the database 
+		-> Verfies that it can connect to the database
 */
 func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 	//Trying to connect to database for a minute, otherwise panic
@@ -58,13 +58,17 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
         -> N/A
     RETURN:
         -> error if there is one in table creation in database
-    WHAT: 
+    WHAT:
 		-> Creates the tables in the database
 */
 func (*dumbo) AutoMigrate() error {
 	//Create tables specified in models.go
 	return global_db.AutoMigrate(&HistoricalCrypto{}, &CurrentCryptoPrice{},
-		&PortfolioManager{}).Error
+		&PortfolioManager{}, &CoinData{}).Error
+}
+
+func (*dumbo) deleteCoinIndex() error {
+	return global_db.Where("1=1").Delete(&CoinData{}).Error
 }
 
 /*
@@ -72,7 +76,7 @@ func (*dumbo) AutoMigrate() error {
         -> event (binance.WsTradeEvent): object that has all binance trade information
     RETURN:
         -> (error): returns if there is one, an error in inserting coin data in the database
-    WHAT: 
+    WHAT:
 		-> Inserts coin data into database
     TODO:
 		-> Is there a better way to store Unix timestamp
@@ -93,4 +97,28 @@ func (*dumbo) StoreCrypto(event binance.WsTradeEvent) error {
 		Tradetime: event.TradeTime,
 		Time:      event.Time,
 		Volume:    float32(volume)}).Error
+}
+
+func (*dumbo) storeScraped(coin_data *[]CoinData) error {
+	for _, coin := range *coin_data {
+		err := global_db.Create(&coin).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (*dumbo) selectCoins(n int) *[]string {
+	var coin_data []CoinData
+	err := global_db.Order("priority asc").Limit(n).Find(&coin_data).Error
+	if err != nil {
+		panic(err)
+	}
+	var coin_abr []string
+
+	for _, coin := range coin_data {
+		coin_abr = append(coin_abr, coin.Abbr)
+	}
+	return &coin_abr
 }

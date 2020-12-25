@@ -27,7 +27,7 @@ type CurrentCryptoPrice struct {
 	gorm.Model
 	CoinAbv   string  `gorm:"Type:varchar(7);not null;unique;primary key;"`
 	Price     float32 `gorm:"Type:real;not null;"`
-	Timestamp int64   `gorm:"Type:bigint;not null;"`
+	Timestamp uint64   `gorm:"Type:bigint;not null;"`
 }
 
 type PortfolioManager struct {
@@ -38,4 +38,10 @@ type PortfolioManager struct {
 	WhenEntered   int64   `gorm:"Type:money;not null;"`
 	StrategyUsing string  `gorm:"Type:varchar(20);not null;unique;primary key"`
 	StopLoss      float32 `gorm:"Type:money;not null;"`
+}
+
+type CoinData struct {
+	Name     string
+	Abbr     string
+	Priority uint8 `gorm:"Type:smallint"`
 }

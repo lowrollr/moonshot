@@ -17,7 +17,7 @@ import (
         -> N/A
     RETURN:
         -> N/A
-    WHAT: 
+    WHAT:
 		-> Connects to DB, creates tables if there aren't
 		-> Consumes data and stores in the DB
     TODO:
@@ -39,7 +39,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
+
+	//filling database with index coins
+	StorePopularCoins()
+	coins := Dumbo.selectCoins(10)
+
 	fmt.Println("Consuming Data...")
-	ConsumeData()
+	ConsumeData(coins)
 }

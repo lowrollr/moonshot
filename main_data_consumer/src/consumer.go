@@ -30,8 +30,8 @@ import (
 		-> Partition time is part of one second ex: 1/2 secoond, 1/3 second etc.
 */
 func EfficientSleep(partition int, prev_time time.Time) {
-	if partition > 5 {
-		panic(errors.New("Must not be longer than 5 or will get rate limited"))
+	if partition > 5 || partition <= 0{
+		panic(errors.New("Must be between 0 and 5 for partition or will get rate limited"))
 	}
 	prev_time_nano := int64(prev_time.Nanosecond())
 	later_nano := int64(time.Now().Nanosecond())
@@ -85,7 +85,7 @@ func waitFunc(stops, kills []chan struct{}) {
 
 /*
 	ARGS:
-        -> N/A
+        -> coins (*[]string) pointer to slice of strings of abrvs of coins
     RETURN:
         -> N/A
     WHAT: 
@@ -94,8 +94,9 @@ func waitFunc(stops, kills []chan struct{}) {
 	TODO:
 		-> Change so that it gets coin abreviations from database
 		-> Is tether the best coin to transfer to?
+		-> Figure out better way to determine stable coins other than manually
 */
-func ConsumeData() {
+func ConsumeData(coins *[]string) {
 	//want to check if the socket is still connected to if we are running > 24 hrs
 	binance.WebsocketKeepalive = true
 	//function for handling when we receive data from the socket
@@ -112,14 +113,25 @@ func ConsumeData() {
 		EfficientSleep(1, now)
 	}
 
-	symbols := []string{"BTC", "ETH", "XRP", "LTC", "BCH", "LINK", "BNB", "ADA", "DOT", "XMR"}
 	fmt.Println("Starting consuming...")
+
+	stable_coins := map[string]bool {
+		"USDT": true,
+		"USDC": true,
+		"DAI": true,
+		"PAX": true,
+		"TUSD": true,
+		"HUSD":true,
+	}
 
 	stops := []chan struct{}{}
 	kills := []chan struct{}{}
 
 	//Using quote currency as tether to open socket to binance
-	for _, symbol := range symbols {
+	for _, symbol := range *coins {
+		if _, ok := stable_coins[symbol]; ok {
+			continue
+		}
 		symbol = strings.ToUpper(symbol) + "USDT"
 		stop_chan, kill_chan, err := binance.WsTradeServe(symbol, tradeDataConsumer, ErrorTradeHandler)
 		if err != nil {
