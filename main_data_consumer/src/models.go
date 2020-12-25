@@ -1,3 +1,13 @@
+/*
+FILE: models.go
+AUTHORS:
+    -> Ross Copeland <rhcopeland101@gmail.com>
+WHAT:
+	-> Definitions of the tables inside the database
+TODO:
+	-> Figure out how to do table for each coin with gorm
+	-> Better way to store unix timestamp other than bigint
+*/
 package main
 
 import (

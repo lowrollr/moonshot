@@ -1,3 +1,10 @@
+/*
+FILE: dumbo.go
+AUTHORS:
+    -> Ross Copeland <rhcopeland101@gmail.com>
+WHAT:
+	-> Functions for interfacing with the database
+*/
 package main
 
 import (
@@ -16,13 +23,22 @@ import (
 
 type dumbo struct{}
 
+/*
+	ARGS:
+		-> database (string): string for connecting to database. Specified through the env file
+		-> dbType (string): type of database using. Specified through the env file
+    RETURN:
+        -> (*gorm.DB): returns pointer to object that talks to database
+    WHAT: 
+		-> Initial connection to the database
+		-> Verfies that it can connect to the database 
+*/
 func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 	const timeout = 1 * time.Minute
 	tries := 0
 
 	deadline := time.Now().Add(timeout)
 	for tries = 0; time.Now().Before(deadline); tries++ {
-		fmt.Println("dbType")
 		db, err := gorm.Open(dbType, database)
 		if err == nil {
 			return db, nil
@@ -35,11 +51,29 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 	return nil, fmt.Errorf("Failed to connect to the database of %d attempts", tries)
 }
 
-func (*dumbo) AutoMigrate(database *gorm.DB) error {
-	return database.AutoMigrate(&HistoricalCrypto{}, &CurrentCryptoPrice{},
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> error if there is one in table creation in database
+    WHAT: 
+		-> Creates the tables in the database
+*/
+func (*dumbo) AutoMigrate() error {
+	return global_db.AutoMigrate(&HistoricalCrypto{}, &CurrentCryptoPrice{},
 		&PortfolioManager{}).Error
 }
 
+/*
+	ARGS:
+        -> event (binance.WsTradeEvent): object that has all binance trade information
+    RETURN:
+        -> (error): returns if there is one, an error in inserting coin data in the database
+    WHAT: 
+		-> Inserts coin data into database
+    TODO:
+		-> Is there a better way to store Unix timestamp
+*/
 func (*dumbo) StoreCrypto(event binance.WsTradeEvent) error {
 	coin_abb := strings.Split(event.Symbol, "USDT")[0]
 	price, err1 := strconv.ParseFloat(event.Price, 32)
@@ -55,24 +89,4 @@ func (*dumbo) StoreCrypto(event binance.WsTradeEvent) error {
 		Tradetime: event.TradeTime,
 		Time:      event.Time,
 		Volume:    float32(volume)}).Error
-
-}
-
-func (*dumbo) AddConstraint(database *gorm.DB) error {
-	err := database.Exec("ALTER TABLE sentiments DROP CONSTRAINT IF EXISTS source_id;").Error
-	if err != nil {
-		return err
-	}
-	err = database.Exec("ALTER TABLE sentiments ADD CONSTRAINT source_id " +
-		" UNIQUE (data_stream, unique_id);").Error
-	if err != nil {
-		return err
-	}
-
-	err = database.Exec("ALTER TABLE stocks DROP CONSTRAINT IF EXISTS unique_stock_point;").Error
-	if err != nil {
-		return err
-	}
-	return database.Exec("ALTER TABLE stocks ADD CONSTRAINT " +
-		"unique_stock_point UNIQUE (symbol, timestamp);").Error
 }
