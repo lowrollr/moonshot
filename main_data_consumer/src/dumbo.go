@@ -137,7 +137,7 @@ func (*dumbo) storeScraped(coin_data *[]CoinData) error {
     WHAT:
 		-> Retrieves coin abrevs from database but only n
 */
-func (*dumbo) selectCoins(n int) *[]string {
+func (*dumbo) SelectCoins(n int) *[]string {
 	var coin_data []CoinData
 	var err error 
 

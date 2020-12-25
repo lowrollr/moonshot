@@ -42,7 +42,7 @@ func main() {
 
 	//filling database with index coins
 	StorePopularCoins()
-	coins := Dumbo.selectCoins(10)
+	coins := Dumbo.SelectCoins(10)
 
 	fmt.Println("Consuming Data...")
 	ConsumeData(coins)
