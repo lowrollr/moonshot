@@ -43,7 +43,7 @@ ALT_AXIS_COLS = {'macd_diff'}
     TODO:
         -> its possible some of this could be abstracted
 '''
-def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, fees, padding=20):
+def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, name, fees, padding=60):
     if not entries:
         return None
     # contains plot div strings to embed

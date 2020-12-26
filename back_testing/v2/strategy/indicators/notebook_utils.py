@@ -17,6 +17,7 @@ from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 from v2.strategy.indicators.macd import MACD
+from v2.strategy.indicators.delta import Delta
 from v2.strategy.indicators.pivot_points import PivotPoints
 from v2.strategy.indicators.variance import Variance
 from v2.strategy.indicators.slope import Slope
@@ -94,7 +95,7 @@ def fetchIndicators(indicator_list, param_specification={}):
         elif indicator == 'stochastic_oscillator':
             stoch_highlow_value = 90
             if 'stochastic_oscillator.highlow' in param_specification:
-                stoch_highlow_value = param_specification['stochastic_ooscillator.highlow']
+                stoch_highlow_value = param_specification['stochastic_oscillator.highlow']
             stoch_highlow = Param(5, 10000, 0, 'highlow_range', stoch_highlow_value)
 
             stoch_k_value = 270
@@ -161,6 +162,13 @@ def fetchIndicators(indicator_list, param_specification={}):
                 wma_period_value = param_specification['wma.period']
             wma_period = Param(5, 10000, 0, 'period', wma_period_value)
             my_ind = WMA(_params=[wma_period])
+        elif indicator == 'delta':
+            delta_period_val = 60
+            if 'delta.period' in param_specification:
+                delta_period_val = param_specification['delta.period']
+            delta_period = Param(30, 90, 1, 'period', delta_period_val)
+
+            my_ind = Delta(_params=[delta_period])
         else:
             raise Exception('Invalid Indicator Name: ' + str(indicator))
 
