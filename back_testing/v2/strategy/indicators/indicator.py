@@ -43,6 +43,8 @@ class Indicator:
         self.best_values = {}
         if _appended_name:
             self.appended_name = '_' + _appended_name
+        else:
+            self.appended_name = ''
 
     '''
     ARGS:

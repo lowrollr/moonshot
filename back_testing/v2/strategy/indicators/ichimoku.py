@@ -37,16 +37,16 @@ class Ichimoku(Indicator):
         short_window, medium_window, long_window = findParams(self.params, ['short_window', 'medium_window', 'long_window'])
         short_period_high = dataset['high'].rolling(window=short_window).max()
         short_period_low = dataset['low'].rolling(window=short_window).min()
-        dataset["tenkan_sen"] = (short_period_high + short_period_low) / 2
+        dataset["tenkan_sen" + self.appended_name] = (short_period_high + short_period_low) / 2
 
         medium_period_high = dataset['high'].rolling(window=medium_window).max()
         medium_period_low = dataset['low'].rolling(window=medium_window).min()
-        dataset['kijun_sen'] = (medium_period_high + medium_period_low) / 2
+        dataset['kijun_sen' + self.appended_name] = (medium_period_high + medium_period_low) / 2
 
-        dataset["senkou_span_a"] = ((dataset["tenkan_sen"] + dataset["kijun_sen"]) / 2).shift(medium_window)
+        dataset["senkou_span_a" + self.appended_name] = ((dataset["tenkan_sen"] + dataset["kijun_sen"]) / 2).shift(medium_window)
 
         long_period_high = dataset['high'].rolling(window=long_window).max()
         long_period_low = dataset['low'].rolling(window=long_window).min()
-        dataset["senkou_span_b"] = ((long_period_high + long_period_low) / 2).shift(medium_window)
+        dataset["senkou_span_b" + self.appended_name] = ((long_period_high + long_period_low) / 2).shift(medium_window)
 
         dataset.dropna()
