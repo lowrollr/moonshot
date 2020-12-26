@@ -16,7 +16,8 @@ import pandas
 CLASS: Delta
 WHAT:
     -> Calculates the delta for the given window and adds the approprite column to the dataset
-    -> What is delta? it's x1 - x2 silly
+    -> What is delta? The percentage difference between points x1 and x2,
+        where x1 is the current point in time, and x1 is a point t minutes ago
     -> Params Required:
         -> 'period'
 '''
@@ -31,7 +32,7 @@ class Delta(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> calculates and adds the delta over the given period from the dataset
+        -> calculates and adds the delta for the given value over the given period to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
         period = findParams(self.params, ['period'])[0]
@@ -39,6 +40,8 @@ class Delta(Indicator):
             period.genValue()
         period_value = int(period.value) 
     
-        dataset[self.name] = (dataset[value] - dataset[value].shift(periods=1*period_value))/dataset[value].shift(1*period_value)
+        # calculate percentage difference between x1 and x2 for every point in the dataset
+        dataset[self.name] = (dataset[value] - dataset[value].shift(periods=1*period_value))/dataset[value].shift(1*period_value)\
+        # points that occur before the period length can just be set to 0
         dataset[self.name][:period_value] = 0
         
