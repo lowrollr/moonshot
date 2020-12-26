@@ -1,0 +1,146 @@
+/*
+FILE: consumer.go
+AUTHORS:
+    -> Ross Copeland <rhcopeland101@gmail.com>
+WHAT:
+	-> Code for actual consumption of data from bianance
+	-> This will collect all information on coins (price, volume, time)
+*/
+package main
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/adshao/go-binance"
+)
+
+/*
+	ARGS:
+		-> partition (int): < 5. how many times per second you want to receive data
+			-> binance does not allow for larger than 5
+		-> prev_time (time.Time) at what time data was received to compute how long to wait
+    RETURN:
+        -> N/A
+    WHAT: 
+		-> Waits the partition time but only that long and no longer
+		-> Makes sure it does not wait less than partition so that IP is not blocked from binance
+		-> Partition time is part of one second ex: 1/2 secoond, 1/3 second etc.
+*/
+func EfficientSleep(partition int, prev_time time.Time) {
+	if partition > 5 || partition <= 0{
+		panic(errors.New("Must be between 0 and 5 for partition or will get rate limited"))
+	}
+	prev_time_nano := int64(prev_time.Nanosecond())
+	later_nano := int64(time.Now().Nanosecond())
+	partition_nano := time.Second.Nanoseconds() / int64(partition)
+	if later_nano-prev_time_nano > 0 {
+		time.Sleep(time.Duration(partition_nano-(later_nano-prev_time_nano)) * time.Nanosecond)
+	}
+}
+
+/*
+	ARGS:
+        -> err (error) the error that was received
+    RETURN:
+        -> N/A
+    WHAT: 
+		-> Function used in other functions to determine how errors should be handled
+		-> ATM it is just panicing 
+    TODO:
+		-> Should have a better way to deal with errors, some sort of logging, 
+			diagnostic, restart service, etc
+*/
+func ErrorTradeHandler(err error) {
+	fmt.Println("There error encountered " + err.Error())
+	panic(err)
+}
+
+/*
+	ARGS:
+		-> stops ([]chan struct{}): slice of channels to stop the socket
+		-> kills ([]chan struct{}): slice of channels to kill the socket
+    RETURN:
+        -> N/A
+    WHAT: 
+		-> Needs some goroutine to constantly be doing something, hence the busy loop here
+    TODO:
+		-> the channel slices aren't really doing anything here, figure out better
+			way to handle errors or failure to gracefully exit say and then deal with 
+			channel slices
+*/
+func waitFunc(stops, kills []chan struct{}) {
+	for true {
+		time.Sleep(1 * time.Minute)
+	}
+	for _, c := range stops {
+		c <- struct{}{}
+	}
+	for _, c := range kills {
+		c <- struct{}{}
+	}
+}
+
+/*
+	ARGS:
+        -> coins (*[]string) pointer to slice of strings of abrvs of coins
+    RETURN:
+        -> N/A
+    WHAT: 
+		-> Consumes data and stores in the DB
+		-> Uses binance web socket to obtain data and send to db
+	TODO:
+		-> Change so that it gets coin abreviations from database
+		-> Is tether the best coin to transfer to?
+		-> Figure out better way to determine stable coins other than manually
+*/
+func ConsumeData(coins *[]string) {
+	//want to check if the socket is still connected to if we are running > 24 hrs
+	binance.WebsocketKeepalive = true
+	//function for handling when we receive data from the socket
+	tradeDataConsumer := func(event *binance.WsTradeEvent) {
+		now := time.Now()
+		fmt.Println(event)
+		// store the event in database
+		err := Dumbo.StoreCrypto(*event)
+		if err != nil {
+			fmt.Println("Was not able to store crypto information " + err.Error())
+			panic(err)
+		}
+		// sleep to get maximum efficiency from socket
+		EfficientSleep(1, now)
+	}
+
+	fmt.Println("Starting consuming...")
+
+	stable_coins := map[string]bool {
+		"USDT": true,
+		"USDC": true,
+		"DAI": true,
+		"PAX": true,
+		"TUSD": true,
+		"HUSD":true,
+	}
+
+	stops := []chan struct{}{}
+	kills := []chan struct{}{}
+
+	//Using quote currency as tether to open socket to binance
+	for _, symbol := range *coins {
+		if _, ok := stable_coins[symbol]; ok {
+			continue
+		}
+		symbol = strings.ToUpper(symbol) + "USDT"
+		stop_chan, kill_chan, err := binance.WsTradeServe(symbol, tradeDataConsumer, ErrorTradeHandler)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+		stops = append(stops, stop_chan)
+		kills = append(kills, kill_chan)
+	}
+	//perpetual wait
+	waitFunc(stops, kills)
+}

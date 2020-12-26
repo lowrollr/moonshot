@@ -1,19 +1,21 @@
-version: "3"
+version: "2"
 
 services:
   crypto_db:
     image: postgres:12.2-alpine
-    env_file: production/env/.env_db
+    env_file: database/.env
     ports:
       - 5432:5432
     restart: "unless-stopped"
+    volumes:
+      - ./data:/var/lib/postgres/data
     
   portoflio_manager:
     build: ./portfolio_manager
     depends_on:
       - crypto_db
     restart: "on-failure"
-    env_file: portfolio_manager/.env_db
+    env_file: portfolio_manager/.env
     ports:
       - 2626:2626
 
@@ -22,7 +24,7 @@ services:
     depends_on: 
       - crypto_db
     restart: "on-failure"
-    env_file: strategy_manager/.env_trade
+    env_file: strategy_manager/.env
     ports:
       - 1234:1234
 
@@ -39,17 +41,16 @@ services:
     build: ./main_data_consumer
     depends_on:
       - crypto_db
-    restart: "on_failure"
-    #env_file
+    restart: "on-failure"
+    env_file: main_data_consumer/.env
     ports:
       - 9090:9090
-
-  
+      
   alt_data_consumer:
     build: ./alt_data_consumer
     depends_on:
       - crypto_db
-    restart: "on_failure"
+    restart: "on-failure"
     #env_file
     ports:
       - 8787:8787
@@ -58,7 +59,7 @@ services:
     build: ./model_land
     depends_on:
       - crypto_db
-    restart: "on_failure"
+    restart: "on-failure"
     #env_file
     ports:
       - 2222:2222
