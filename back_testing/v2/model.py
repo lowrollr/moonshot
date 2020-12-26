@@ -337,7 +337,7 @@ class Trading:
             print('Generating Report...')
             write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format, stats, self.fees)
         # return the final quote position
-        return conv_position
+        return conv_position, entries, exits
     
 
     '''
@@ -461,7 +461,7 @@ class Trading:
                             score = score_memoize[possible_key]
                         else:
                             # execute the strategy and grab the exit value
-                            score = self.executeStrategy(x, (dataset, d[1]), plot=False)
+                            score = self.executeStrategy(x, (dataset, d[1]), plot=False)[0]
                             score_memoize[possible_key] = score
 
                         # store the param values if this is a new high score
@@ -511,7 +511,7 @@ class Trading:
                     x.train(dataset)
 
                 # execute the strategy and grab the exit value
-                print("\n\nScore when tested on validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))))
+                print("\n\nScore when tested on validation set: {}\n\n".format(self.executeStrategy(x, (dataset, d[1]))[0]))
 
 
     def segmented_genetic_execution(self):
@@ -556,9 +556,12 @@ class Trading:
                         df_chunks = [dataset[i:i+n] for i in range(0,dataset.shape[0],n)]
                         chunk_scores = []
                         for i, chunk in enumerate(df_chunks[:-1]):
-                            chunk_scores.append(self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"]))
-                        for i in range(1):
-                            chunk_scores.remove(max(chunk_scores))
+                            total_profit, entries, exits = self.executeStrategy(x, (chunk, 'chunk' + str(i)), genetic_config["print_all"])[0]
+                            num_profitable = 0
+                            for p in range(min(len(entries), len(exits))):
+                                if exits[p] > entries[p] + (exits[p] + entries[p] * self.fees):
+                                    num_profitable += 1
+                            chunk_scores.append(num_profitable / len(exits))
                         score = np.mean(chunk_scores)
                         # store the param values if this is a new high score
                         if gen_count != max_generations:
