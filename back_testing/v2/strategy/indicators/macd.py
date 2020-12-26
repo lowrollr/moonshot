@@ -63,7 +63,7 @@ class MACD(Indicator):
         ema_fast.genData(dataset, gen_new_values=False, value=value)
 
         # add fast - slow diff to dataset
-        dataset['macd_diff_' + self.appended_name] = dataset['ema_fast'] - dataset['ema_slow']
+        dataset['macd_diff' + self.appended_name] = dataset['ema_fast'] - dataset['ema_slow']
 
         # compute signal EMA using fast - slow diff
         # note the value used is the data from the previously added column
@@ -72,4 +72,10 @@ class MACD(Indicator):
         signal.genData(dataset, gen_new_values=False, value=value)
 
         # final macd calculation, now we are finished
-        dataset[self.name] = dataset['macd_diff_' + self.appended_name] - dataset['signal']
+        dataset[self.name] = dataset['macd_diff' + self.appended_name] - dataset['signal']
+
+        # clean up intermediate columns
+        del dataset['ema_fast' + self.appended_name]
+        del dataset['ema_slow' + self.appended_name]
+        del dataset['signal' + self.appended_name]
+        del dataset['macd_diff' + self.appended_name]

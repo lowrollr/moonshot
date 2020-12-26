@@ -49,3 +49,7 @@ class StochasticOscillator(Indicator):
         param_k_period_sma_simple = Param(_name = "period", _default=param_k_period_sma.value)
         k_period_sma = SMA([param_k_period_sma_simple], _name='stosc_d')
         k_period_sma.genData(dataset, gen_new_values=gen_new_values, value='stosc_k')
+
+        # clean up intermediate columns
+        del dataset['stosc_high_price']
+        del dataset['stosc_low_price']

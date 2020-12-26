@@ -35,4 +35,4 @@ class Slope(Indicator):
         if gen_new_values:
             period.genValue()
 
-        dataset['slope'] = (dataset[value].rolling(window=int(period.value)).max() - dataset[value].rolling(window=int(period.value)).min()) / dataset[value].rolling(window=int(period.value)).max()
+        dataset[self.name] = (dataset[value].rolling(window=int(period.value)).max() - dataset[value].rolling(window=int(period.value)).min()) / dataset[value].rolling(window=int(period.value)).max()

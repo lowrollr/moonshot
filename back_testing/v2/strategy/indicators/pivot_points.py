@@ -43,9 +43,15 @@ class PivotPoints(Indicator):
         pp_sma = SMA([period], _name='pp_sma')
         pp_sma.genData(dataset, gen_new_values=False, value=value)
         dataset['pp_pp'] = (dataset['pp_high'] + dataset['pp_low'] + dataset['pp_sma']) / 3
-        dataset['pp_r1'] = (2 * dataset['pp_pp']) - dataset['pp_low']
-        dataset['pp_s1'] = (2 * dataset['pp_pp']) - dataset['pp_high']
-        dataset['pp_r2'] = dataset['pp_pp'] + (dataset['pp_high'] - dataset['pp_low'])
-        dataset['pp_s2'] = dataset['pp_pp'] - (dataset['pp_high'] - dataset['pp_low'])
-        dataset['pp_r3'] = dataset['pp_pp'] + (2 * (dataset['pp_high'] - dataset['pp_low']))
-        dataset['pp_s3'] = dataset['pp_pp'] - (2 * (dataset['pp_high'] - dataset['pp_low']))
+        dataset['pp_r1' + self.appended_name] = (2 * dataset['pp_pp']) - dataset['pp_low']
+        dataset['pp_s1' + self.appended_name] = (2 * dataset['pp_pp']) - dataset['pp_high']
+        dataset['pp_r2' + self.appended_name] = dataset['pp_pp'] + (dataset['pp_high'] - dataset['pp_low'])
+        dataset['pp_s2' + self.appended_name] = dataset['pp_pp'] - (dataset['pp_high'] - dataset['pp_low'])
+        dataset['pp_r3' + self.appended_name] = dataset['pp_pp'] + (2 * (dataset['pp_high'] - dataset['pp_low']))
+        dataset['pp_s3' + self.appended_name] = dataset['pp_pp'] - (2 * (dataset['pp_high'] - dataset['pp_low']))
+
+        # clean up intermediate columns
+        del dataset['pp_pp']
+        del dataset['pp_low']
+        del dataset['pp_high']
+        del dataset['pp_sma']

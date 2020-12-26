@@ -58,4 +58,11 @@ class RSI(Indicator):
 
         # compute RSI
         dataset[self.name] = 100 - (100 / (1 + (dataset['rsi_smma_u'] / dataset['rsi_smma_d'])))
+
+        # clean up intermediate columns
+        del dataset['rsi_u' + self.appended_name]
+        del dataset['rsi_d' + self.appended_name]
+        del dataset['rsi_diff' + self.appended_name]
+        del dataset['rsi_smma_u' + self.appended_name]
+        del dataset['rsi_smma_d' + self.appended_name]
         

@@ -59,7 +59,7 @@ class Variance(Indicator):
         if gen_new_values:
             period.genValue()
 
-        dataset['variance'] = dataset[value].rolling(window=int(period.value)).var()
+        dataset[self.name] = dataset[value].rolling(window=int(period.value)).var()
 
         stop_loss_percentage = findParams(self.params, ['stop_loss_percentage'])[0]
         if stop_loss_percentage:
