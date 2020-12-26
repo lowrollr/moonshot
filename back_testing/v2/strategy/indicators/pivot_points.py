@@ -36,13 +36,13 @@ class PivotPoints(Indicator):
         if gen_new_values:
             period.genValue()
         
-        dataset['pp_high'] = dataset[value].rolling(int(period.value)).max()
-        dataset['pp_low'] = dataset[value].rolling(int(period.value)).min()
+        dataset['pp_high' + self.appended_name] = dataset[value].rolling(int(period.value)).max()
+        dataset['pp_low' + self.appended_name] = dataset[value].rolling(int(period.value)).min()
         # this is the close price IRL but that skews the data when we compute on a rolling basis
         # will see how this goes
-        pp_sma = SMA([period], _name='pp_sma')
+        pp_sma = SMA([period], _name='pp_sma', _appended_name=self.appended_name)
         pp_sma.genData(dataset, gen_new_values=False, value=value)
-        dataset['pp_pp'] = (dataset['pp_high'] + dataset['pp_low'] + dataset['pp_sma']) / 3
+        dataset['pp_pp' + self.appended_name] = (dataset['pp_high'] + dataset['pp_low'] + dataset['pp_sma']) / 3
         dataset['pp_r1' + self.appended_name] = (2 * dataset['pp_pp']) - dataset['pp_low']
         dataset['pp_s1' + self.appended_name] = (2 * dataset['pp_pp']) - dataset['pp_high']
         dataset['pp_r2' + self.appended_name] = dataset['pp_pp'] + (dataset['pp_high'] - dataset['pp_low'])
@@ -51,7 +51,7 @@ class PivotPoints(Indicator):
         dataset['pp_s3' + self.appended_name] = dataset['pp_pp'] - (2 * (dataset['pp_high'] - dataset['pp_low']))
 
         # clean up intermediate columns
-        del dataset['pp_pp']
-        del dataset['pp_low']
-        del dataset['pp_high']
-        del dataset['pp_sma']
+        del dataset['pp_pp' + self.appended_name]
+        del dataset['pp_low' + self.appended_name]
+        del dataset['pp_high' + self.appended_name]
+        del dataset['pp_sma' + self.appended_name]

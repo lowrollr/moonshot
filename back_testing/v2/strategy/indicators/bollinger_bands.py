@@ -36,12 +36,12 @@ class BollingerBands(Indicator):
         
         boll_sma = SMA([period], _name='boll_sma', _appended_name=self.appended_name)
         boll_sma.genData(dataset, gen_new_values=gen_new_values, value=value)
-        dataset['boll_stdev'] = dataset[value].rolling(int(period.value)).std()
-        dataset['boll_upper' + self.appended_name] = dataset['boll_sma'] + (dataset['boll_stdev'] * 2)
-        dataset['boll_lower' + self.appended_name] = dataset['boll_sma'] - (dataset['boll_stdev'] * 2)
+        dataset['boll_stdev' + self.appended_name] = dataset[value].rolling(int(period.value)).std()
+        dataset['boll_upper' + self.appended_name] = dataset['boll_sma'] + (dataset['boll_stdev' + self.appended_name] * 2)
+        dataset['boll_lower' + self.appended_name] = dataset['boll_sma'] - (dataset['boll_stdev' + self.appended_name] * 2)
 
         # clean up intermediate columns
-        del dataset['boll_stdev']
+        del dataset['boll_stdev' + self.appended_name]
         del dataset['boll_sma' + self.appended_name]
 
         
