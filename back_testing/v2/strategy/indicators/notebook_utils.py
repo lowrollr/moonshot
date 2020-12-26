@@ -12,6 +12,7 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.smma import SMMA
 from v2.strategy.indicators.sma import SMA
 from v2.strategy.indicators.ema import EMA
+from v2.strategy.indicators.wma import WMA
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
@@ -46,17 +47,17 @@ def fetchIndicators(indicator_list, param_specification={}):
     for indicator in indicator_list:
         my_ind = None
         if indicator == 'macd':
-            ema_slow_value = 120
+            ema_slow_value = 395
             if 'macd.ema_slow' in param_specification:
                 ema_slow_value = param_specification['macd.ema_slow']
             macd_ema_slow = Param(5, 10000, 0, 'ema_slow', ema_slow_value)
 
-            ema_fast_value = 60
+            ema_fast_value = 285
             if 'macd.ema_fast' in param_specification:
                 ema_fast_value = param_specification['macd.ema_fast']
             macd_ema_fast = Param(5, 10000, 0, 'ema_fast', ema_fast_value)
 
-            macd_signal_value = 90
+            macd_signal_value = 315
             if 'macd.signal' in param_specification:
                 macd_signal_value = param_specification['macd.signal']
             macd_signal = Param(5, 10000, 0, 'signal', macd_signal_value)
@@ -154,6 +155,12 @@ def fetchIndicators(indicator_list, param_specification={}):
             my_ind = Ichimoku(_params=[short_window, medium_window, long_window])
         elif indicator == 'optimal_v2':
             my_ind = Optimal_v2(_params=[])
+        elif indicator == "wma":
+            wma_period_value = 90
+            if 'wma.period' in param_specification:
+                wma_period_value = param_specification['wma.period']
+            wma_period = Param(5, 10000, 0, 'period', wma_period_value)
+            my_ind = WMA(_params=[wma_period])
         else:
             raise Exception('Invalid Indicator Name: ' + str(indicator))
 
