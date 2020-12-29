@@ -51,7 +51,5 @@ class PivotPoints(Indicator):
         dataset['pp_s3' + self.appended_name] = dataset['pp_pp'] - (2 * (dataset['pp_high'] - dataset['pp_low']))
 
         # clean up intermediate columns
-        del dataset['pp_pp' + self.appended_name]
-        del dataset['pp_low' + self.appended_name]
-        del dataset['pp_high' + self.appended_name]
-        del dataset['pp_sma' + self.appended_name]
+        dataset.drop(['pp_pp' + self.appended_name, 'pp_low' + self.appended_name,\
+            'pp_high' + self.appended_name, 'pp_sma' + self.appended_name], axis=1, inplace=True)

@@ -45,7 +45,7 @@ class CCI(Indicator):
             period.genValue()
         
         dataset["cci_high"] = dataset[value].rolling(window=int(period.value)).max()
-        dataset["cci_low"] = dataset[value].rolling(windoow=int(period.value)).min()
+        dataset["cci_low"] = dataset[value].rolling(window=int(period.value)).min()
         dataset["cci_tp"] = (dataset["cci_high"] + dataset["cci_low"] + dataset[value]) / 3
 
         cci_mean_dev = np.mean(np.absolute(dataset["cci_tp"] - np.mean(dataset["cci_tp"])))

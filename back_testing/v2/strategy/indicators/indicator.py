@@ -6,8 +6,6 @@ WHAT:
     -> This file contains the Indicator superclass
 '''
 
-import random
-
 '''
 CLASS: Indicator
 WHAT:

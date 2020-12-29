@@ -5,7 +5,7 @@ AUTHORS:
 WHAT:
     -> This file contains the HMA (Hull Moving Average) Indicator
 '''
-from v2.utils import findParams
+from v2.utils import findParams, calcSlope
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.wma import WMA
@@ -58,6 +58,8 @@ class HMA(Indicator):
         final_period_param = Param(_name="period", _default=final_period)
         final_period_wma = WMA([final_period_param], _name=self.name)
         final_period_wma.genData(dataset, gen_new_values=False, value="difference")
+
+        # dataset[self.name + "_slope"] = dataset[self.name].rolling(window=3, min_periods=2).apply(calcSlope, raw=True)
 
         #clean up
         dataset.drop(["difference", "half_period_wma", "normal_wma"], inplace=True, axis=1)

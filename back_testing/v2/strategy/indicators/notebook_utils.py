@@ -25,6 +25,8 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
 from v2.strategy.indicators.ichimoku import Ichimoku
+from v2.strategy.indicators.cci import CCI
+from v2.strategy.indicators.hma import HMA
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -169,6 +171,19 @@ def fetchIndicators(indicator_list, param_specification={}):
             delta_period = Param(30, 90, 1, 'period', delta_period_val)
 
             my_ind = Delta(_params=[delta_period])
+        elif indicator == 'cci':
+            cci_period_val = 60
+            if 'cci.period' in param_specification:
+                cci_period_val = param_specification['cci.periood']
+            cci_period = Param(5, 1000, 0, 'period', cci_period_val)
+
+            my_ind = CCI(_params=[cci_period])
+        elif indicator == 'hma':
+            hma_period_value = 90
+            if 'hma.period' in param_specification:
+                hma_period_value = param_specification['hma.period']
+            hma_period = Param(5, 10000, 0, 'period', hma_period_value)
+            my_ind = HMA(_params=[hma_period])
         else:
             raise Exception('Invalid Indicator Name: ' + str(indicator))
 

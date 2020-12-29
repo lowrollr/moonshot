@@ -51,5 +51,4 @@ class StochasticOscillator(Indicator):
         k_period_sma.genData(dataset, gen_new_values=gen_new_values, value='stosc_k')
 
         # clean up intermediate columns
-        del dataset['stosc_high_price']
-        del dataset['stosc_low_price']
+        dataset.drop(["stosc_high_price", "stosc_low_price"], inplace=True, axis=1)

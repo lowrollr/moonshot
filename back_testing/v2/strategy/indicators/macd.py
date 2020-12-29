@@ -75,7 +75,5 @@ class MACD(Indicator):
         dataset[self.name] = dataset['macd_diff' + self.appended_name] - dataset['signal']
 
         # clean up intermediate columns
-        del dataset['ema_fast' + self.appended_name]
-        del dataset['ema_slow' + self.appended_name]
-        del dataset['signal' + self.appended_name]
-        del dataset['macd_diff' + self.appended_name]
+        dataset.drop(['ema_fast' + self.appended_name, 'ema_slow' + self.appended_name,\
+            'signal' + self.appended_name, 'macd_diff' + self.appended_name], axis=1, inplace=True)

@@ -5,7 +5,7 @@ AUTHORS:
 WHAT:
     -> This file contains the SMA (Simple Moving Average) Indicator
 '''
-from v2.utils import findParams
+from v2.utils import findParams, calcSlope
 from v2.strategy.indicators.indicator import Indicator
 
 '''
@@ -39,3 +39,5 @@ class SMA(Indicator):
         
         # compute simple moving average and add to the dataset
         dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
+        
+        # dataset[self.name + "_slope"] = dataset[self.name].rolling(window=3, min_periods=2).apply(calcSlope, raw=True)

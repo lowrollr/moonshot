@@ -12,10 +12,7 @@ from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
 
 
-
-
 class Optimal_v2(Indicator):
-
 
     def genData(self, dataset, gen_new_values=True, value='close'):
         dataset[value] = dataset[value].ewm(span=3).mean()

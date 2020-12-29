@@ -41,7 +41,6 @@ class BollingerBands(Indicator):
         dataset['boll_lower' + self.appended_name] = dataset['boll_sma'] - (dataset['boll_stdev' + self.appended_name] * 2)
 
         # clean up intermediate columns
-        del dataset['boll_stdev' + self.appended_name]
-        del dataset['boll_sma' + self.appended_name]
+        dataset.drop(['boll_stdev' + self.appended_name, 'boll_sma' + self.appended_name], axis=1, inplace=True)
 
         
