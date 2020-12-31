@@ -24,7 +24,7 @@ import (
         -> General review of this code since it is pretty critical
 */
 func main() {
-	fmt.Println("Connectting to database")
+	fmt.Println("Connecting to database")
 
 	var err error
 	global_db, err = Dumbo.ConnectDB(db_string, dbType)
@@ -40,8 +40,6 @@ func main() {
 		panic(err)
 	}
 
-	//filling database with index coins
-	StorePopularCoins()
 	coins := Dumbo.SelectCoins(10)
 
 	fmt.Println("Consuming Data...")

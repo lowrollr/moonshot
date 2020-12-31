@@ -14,20 +14,39 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type HistoricalCrypto struct {
+type OrderBook struct {
 	gorm.Model
-	CoinAbv   string  `gorm:"Type:varchar(7);not null;"`
-	Price     float32 `gorm:"Type:real;not null;"`
-	Time      int64   `gorm:"Type:bigint;not null;"`
-	Tradetime int64   `gorm:"Type:bigint;not null;"`
-	Volume    float32 `gorm:"not null"`
+	BidPrice    float32 `gorm:"Type:real;not null;"`
+	BidVolume   float32 `gorm:"Type:real;not null;"`
+	AskPrice    float32 `gorm:"Type:real;not null;"`
+	AskVolume   float32 `gorm:"Type:real;not null;"`
+	Time        int64   `gorm:"type:int;not null"`
+	PriorityVal int8    `gorm:"type:not null;"`
+	coinName    string  `gorm:"-"`
 }
+
+type CoinVolume struct {
+	gorm.Model
+	Volume   float32 `gorm:"Type:real;not null;"`
+	Trades   uint32  `gorm:"not null";`
+	coinName string  `gorm:"-"`
+	Time     int64   `gorm:"type:int;not null"`
+}
+
+// type AllCoinData struct {
+// 	gorm.Model
+// 	CoinAbv   string  `gorm:"Type:varchar(7);not null;"`
+// 	Price     float32 `gorm:"Type:real;not null;"`
+// 	Time      int64   `gorm:"Type:bigint;not null;"`
+// 	Tradetime int64   `gorm:"Type:bigint;not null;"`
+// 	Volume    float32 `gorm:"not null"`
+// }
 
 type CurrentCryptoPrice struct {
 	gorm.Model
 	CoinAbv   string  `gorm:"Type:varchar(7);not null;unique;primary key;"`
 	Price     float32 `gorm:"Type:real;not null;"`
-	Timestamp uint64   `gorm:"Type:bigint;not null;"`
+	Timestamp uint64  `gorm:"Type:bigint;not null;"`
 }
 
 type PortfolioManager struct {

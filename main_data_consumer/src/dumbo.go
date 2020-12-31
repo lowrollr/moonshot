@@ -8,14 +8,13 @@ WHAT:
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/adshao/go-binance"
+	"github.com/adshao/go-binance/v2"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -63,24 +62,27 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 */
 func (*dumbo) AutoMigrate() error {
 	//Create tables specified in models.go
-	return global_db.AutoMigrate(&HistoricalCrypto{}, &CurrentCryptoPrice{},
-		&PortfolioManager{}, &CoinData{}).Error
+	//get coins
+	var err error
+	coins := Dumbo.SelectCoins(-1)
+	for _, coin := range *coins {
+		temp_order := OrderBook{coinName: coin}
+		temp_volume := CoinVolume{coinName: coin}
+		err = global_db.AutoMigrate(&temp_order, &temp_volume).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-/*
-	ARGS:
-        -> N/A
-    RETURN:
-        -> (error): Error if coin names were not deleted
-    WHAT:
-		-> Deletes all names and abbreviations of coins
-		-> Used so coin_data does not continually grow
-    TODO:
-		-> Find better way to do this, Unique Abreviation/id
-*/
-func (*dumbo) deleteCoinIndex() error {
-	return global_db.Where("1=1").Delete(&CoinData{}).Error
-}
+func (o OrderBook) TableName() string {
+	// double check here, make sure the table does exist!!
+	if o.coinName != "" {
+	  return o.coinName
+	}
+	return "" // default table name
+  }
 
 /*
 	ARGS:
@@ -92,40 +94,48 @@ func (*dumbo) deleteCoinIndex() error {
     TODO:
 		-> Is there a better way to store Unix timestamp
 */
-func (*dumbo) StoreCrypto(event binance.WsTradeEvent) error {
+func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 	//Getting information needed to store
 	coin_abb := strings.Split(event.Symbol, "USDT")[0]
-	price, err1 := strconv.ParseFloat(event.Price, 32)
 
-	volume, err2 := strconv.ParseFloat(event.Quantity, 32)
+	update_time := event.LastUpdateID
 
-	if err1 != nil || err2 != nil {
-		fmt.Println("could not turn string into float")
-		return errors.New(err1.Error() + err2.Error())
-	}
-	return global_db.Create(&HistoricalCrypto{CoinAbv: coin_abb,
-		Price:     float32(price),
-		Tradetime: event.TradeTime,
-		Time:      event.Time,
-		Volume:    float32(volume)}).Error
-}
+	for i := 0; i < len(event.Bids); i++ {
+		bidPrice, err := strconv.ParseFloat(event.Bids[i].Price, 32)
+		bidVol, err := strconv.ParseFloat(event.Bids[i].Quantity, 32)
+		askPrice, err := strconv.ParseFloat(event.Asks[i].Price, 32)
+		askVol, err := strconv.ParseFloat(event.Asks[i].Quantity, 32)
 
-/*
-	ARGS:
-        -> coin_data (*[]CoinData): list of coin names and abrevs to be stored
-    RETURN:
-        -> (error): returns error if one occurs
-    WHAT:
-		-> Stores the scraped coin data
-*/
-func (*dumbo) storeScraped(coin_data *[]CoinData) error {
-	for _, coin := range *coin_data {
-		err := global_db.Create(&coin).Error
+		temp_order_entry := OrderBook{
+			BidPrice:    float32(bidPrice),
+			BidVolume:   float32(bidVol),
+			AskPrice:    float32(askPrice),
+			AskVolume:   float32(askVol),
+			Time:        update_time,
+			PriorityVal: int8(i),
+		}
+		err = global_db.Table(coin_abb).Create(&temp_order_entry).Error
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
+}
+
+var t binance.WsKline
+
+func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
+	coin_abb := strings.Split(event.Symbol, "USDT")[0]
+
+	kline_time := event.Time
+
+	base_vol, _ := strconv.ParseFloat(event.Kline.Volume, 32)
+	// num_trades, err := strconv.ParseInt(event.Kline.TradeNum, 10, 16 )
+
+	temp_kline := CoinVolume{Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
+
+	return global_db.Table(coin_abb).Create(&temp_kline).Error
 }
 
 /*
@@ -139,7 +149,7 @@ func (*dumbo) storeScraped(coin_data *[]CoinData) error {
 */
 func (*dumbo) SelectCoins(n int) *[]string {
 	var coin_data []CoinData
-	var err error 
+	var err error
 
 	if n != -1 {
 		err = global_db.Order("priority asc").Limit(n).Find(&coin_data).Error
