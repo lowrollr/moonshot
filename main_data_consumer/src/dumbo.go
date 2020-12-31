@@ -13,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"io/ioutil"
+	"os"
+	"bufio"
 
 	"github.com/adshao/go-binance/v2"
 
@@ -148,21 +151,30 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 		-> Retrieves coin abrevs from database but only n
 */
 func (*dumbo) SelectCoins(n int) *[]string {
-	var coin_data []CoinData
-	var err error
-
-	if n != -1 {
-		err = global_db.Order("priority asc").Limit(n).Find(&coin_data).Error
-	} else {
-		err = global_db.Order("priority asc").Find(&coin_data).Error
-	}
+	f, err := os.Open("coins.csv")
 	if err != nil {
 		panic(err)
 	}
-	var coin_abr []string
 
-	for _, coin := range coin_data {
-		coin_abr = append(coin_abr, coin.Abbr)
+	defer f.Close()
+	var coin_abr []string
+	scanner := bufio.NewScanner(f)
+	if n == -1 {
+		for scanner.Scan() {
+			coin_abr = append(coin_abr, scanner.Text())
+		}
+	} else {
+		counter := 0
+		for scanner.Scan() {
+			if counter < n {
+				coin_abr = append(coin_abr, scanner.Text())
+				counter += 1
+			} else {
+				break
+			}
+			
+		}
 	}
+	
 	return &coin_abr
 }
