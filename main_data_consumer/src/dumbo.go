@@ -8,14 +8,13 @@ WHAT:
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"time"
-	"io/ioutil"
-	"os"
-	"bufio"
 
 	"github.com/adshao/go-binance/v2"
 
@@ -66,12 +65,11 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 func (*dumbo) AutoMigrate() error {
 	//Create tables specified in models.go
 	//get coins
-	var err error
 	coins := Dumbo.SelectCoins(-1)
 	for _, coin := range *coins {
-		temp_order := OrderBook{coinName: coin}
-		temp_volume := CoinVolume{coinName: coin}
-		err = global_db.AutoMigrate(&temp_order, &temp_volume).Error
+		temp_order := OrderBook{coinName: strings.ToLower(coin) + "_order_book"}
+		temp_volume := CoinVolume{coinName: strings.ToLower(coin) + "_volume_data"}
+		err := global_db.AutoMigrate(&temp_order, &temp_volume).Error
 		if err != nil {
 			return err
 		}
@@ -79,13 +77,21 @@ func (*dumbo) AutoMigrate() error {
 	return nil
 }
 
+func (cv CoinVolume) TableName() string {
+	// double check here, make sure the table does exist!!
+	if cv.coinName != "" {
+		return strings.ToLower(cv.coinName)
+	}
+	return "coin_volume" // default table name
+}
+
 func (o OrderBook) TableName() string {
 	// double check here, make sure the table does exist!!
 	if o.coinName != "" {
-	  return o.coinName
+		return strings.ToLower(o.coinName)
 	}
-	return "" // default table name
-  }
+	return "order_book" // default table name
+}
 
 /*
 	ARGS:
@@ -117,7 +123,7 @@ func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 			Time:        update_time,
 			PriorityVal: int8(i),
 		}
-		err = global_db.Table(coin_abb).Create(&temp_order_entry).Error
+		err = global_db.Table(strings.ToLower(coin_abb) + "_order_book").Create(&temp_order_entry).Error
 		if err != nil {
 			return err
 		}
@@ -138,7 +144,7 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 
 	temp_kline := CoinVolume{Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
 
-	return global_db.Table(coin_abb).Create(&temp_kline).Error
+	return global_db.Table(strings.ToLower(coin_abb) + "_volume_data").Create(&temp_kline).Error
 }
 
 /*
@@ -151,7 +157,7 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 		-> Retrieves coin abrevs from database but only n
 */
 func (*dumbo) SelectCoins(n int) *[]string {
-	f, err := os.Open("coins.csv")
+	f, err := os.Open("./coins.csv")
 	if err != nil {
 		panic(err)
 	}
@@ -172,9 +178,9 @@ func (*dumbo) SelectCoins(n int) *[]string {
 			} else {
 				break
 			}
-			
+
 		}
 	}
-	
+
 	return &coin_abr
 }

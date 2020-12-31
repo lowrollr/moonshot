@@ -15,22 +15,20 @@ import (
 )
 
 type OrderBook struct {
-	gorm.Model
 	BidPrice    float32 `gorm:"Type:real;not null;"`
 	BidVolume   float32 `gorm:"Type:real;not null;"`
 	AskPrice    float32 `gorm:"Type:real;not null;"`
 	AskVolume   float32 `gorm:"Type:real;not null;"`
-	Time        int64   `gorm:"type:int;not null"`
-	PriorityVal int8    `gorm:"type:not null;"`
+	Time        int64   `gorm:"type:bigint;not null"`
+	PriorityVal int8    `gorm:"not null;"`
 	coinName    string  `gorm:"-"`
 }
 
 type CoinVolume struct {
-	gorm.Model
 	Volume   float32 `gorm:"Type:real;not null;"`
-	Trades   uint32  `gorm:"not null";`
+	Trades   uint32  `gorm:"not null;"`
 	coinName string  `gorm:"-"`
-	Time     int64   `gorm:"type:int;not null"`
+	Time     int64   `gorm:"type:bigint;not null"`
 }
 
 // type AllCoinData struct {

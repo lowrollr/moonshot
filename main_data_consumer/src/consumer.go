@@ -147,6 +147,9 @@ func ConsumeData(coins *[]string) {
 		symbol = strings.ToUpper(symbol) + "USDT"
 		stop_order_chan, kill_order_chan, err := binance.WsPartialDepthServe100Ms(symbol, order_book_depth, tradeOrderDataConsumer, ErrorTradeHandler)
 		stop_candle_chan, kill_candle_chan, err := binance.WsKlineServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
+
+		time.Sleep(1 * time.Second)
+		
 		if err != nil {
 			fmt.Println(err)
 			panic(err)
