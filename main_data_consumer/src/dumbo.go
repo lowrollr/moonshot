@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adshao/go-binance/v2"
+	"github.com/shaolinjehzu/go-binance"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -105,9 +105,12 @@ func (o OrderBook) TableName() string {
 */
 func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 	//Getting information needed to store
-	coin_abb := strings.Split(event.Symbol, "USDT")[0]
+	fmt.Println("The event symbol is: " + event.Symbol)
+	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
 
-	update_time := event.LastUpdateID
+	fmt.Println("The coin_abb is: " + coin_abb)
+
+	update_time := time.Now().Unix()
 
 	for i := 0; i < len(event.Bids); i++ {
 		bidPrice, err := strconv.ParseFloat(event.Bids[i].Price, 32)
@@ -135,7 +138,7 @@ func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 var t binance.WsKline
 
 func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
-	coin_abb := strings.Split(event.Symbol, "USDT")[0]
+	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
 
 	kline_time := event.Time
 
