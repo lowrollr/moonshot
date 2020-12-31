@@ -55,7 +55,6 @@ func EfficientSleep(partition int, prev_time time.Time) {
 func ErrorTradeHandler(err error) {
 	fmt.Println("There error encountered " + err.Error())
 	fmt.Println(err)
-	panic(err)
 }
 
 /*
