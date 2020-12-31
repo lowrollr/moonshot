@@ -82,7 +82,7 @@ func waitFunc(stops, kills []chan struct{}) {
 }
 
 var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event *binance.WsPartialDepthEvent) {
-	times_per_min := 1
+	times_per_min := 3
 
 	now := time.Now()
 	fmt.Println(event)
