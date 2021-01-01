@@ -105,10 +105,7 @@ func (o OrderBook) TableName() string {
 */
 func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 	//Getting information needed to store
-	fmt.Println("The event symbol is: " + event.Symbol)
 	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
-
-	fmt.Println("The coin_abb is: " + coin_abb)
 
 	update_time := time.Now().Unix()
 

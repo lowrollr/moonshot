@@ -10,6 +10,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 /*
@@ -40,7 +41,9 @@ func main() {
 		panic(err)
 	}
 
-	coins := Dumbo.SelectCoins(10)
+	coins := Dumbo.SelectCoins(1)
+
+	fmt.Println("Coins collected: " + strings.Join(*coins, " "))
 
 	fmt.Println("Consuming Data...")
 	ConsumeData(coins)

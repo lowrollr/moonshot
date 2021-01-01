@@ -32,8 +32,9 @@ func EfficientSleep(partition int, prev_time time.Time) {
 	// if partition > 5 || partition <= 0{
 	// 	panic(errors.New("Must be between 0 and 5 for partition or will get rate limited"))
 	// }
-	prev_time_nano := int64(prev_time.Nanosecond())
-	later_nano := int64(time.Now().Nanosecond())
+
+	prev_time_nano := int64(prev_time.UnixNano())
+	later_nano := int64(time.Now().UnixNano())
 	partition_nano := time.Minute.Nanoseconds() / int64(partition)
 	if prev_time_nano-(later_nano-prev_time_nano) > 0 {
 		time.Sleep(time.Duration(partition_nano-(later_nano-prev_time_nano)) * time.Nanosecond)
@@ -70,14 +71,11 @@ func ErrorTradeHandler(err error) {
 			way to handle errors or failure to gracefully exit say and then deal with
 			channel slices
 */
-func waitFunc(stops, kills []chan struct{}) {
+func waitFunc(stops []chan struct{}) {
 	time.Sleep(23 * time.Hour)
 	for _, c := range stops {
 		c <- struct{}{}
 	}
-	// for _, c := range kills {
-	// 	c <- struct{}{}
-	// }
 }
 
 var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event *binance.WsPartialDepthEvent) {
@@ -136,14 +134,13 @@ func ConsumeData(coins *[]string) {
 	fmt.Println("Starting consuming...")
 
 	stops := []chan struct{}{}
-	kills := []chan struct{}{}
 
-	//Using quote currency as tether to open socket to binance
 	for {
 		for _, symbol := range *coins {
+			//Using quote currency as tether to open socket to binance
 			symbol = strings.ToLower(symbol) + "usdt"
-			stop_order_chan, kill_order_chan, err := binance.WsPartialDepthServe(symbol, order_book_depth, tradeOrderDataConsumer, ErrorTradeHandler)
-			stop_candle_chan, kill_candle_chan, err := binance.WsKlineFeatureServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
+			stop_order_chan, _, err := binance.WsPartialDepthServe(symbol, order_book_depth, tradeOrderDataConsumer, ErrorTradeHandler)
+			stop_candle_chan, _, err := binance.WsKlineFeatureServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
 
 			time.Sleep(1 * time.Second)
 
@@ -153,13 +150,10 @@ func ConsumeData(coins *[]string) {
 			}
 
 			stops = append(stops, stop_order_chan)
-			kills = append(kills, kill_order_chan)
 			stops = append(stops, stop_candle_chan)
-			kills = append(kills, kill_candle_chan)
-
 		}
 
 		//perpetual wait
-		waitFunc(stops, kills)
+		waitFunc(stops)
 	}
 }
