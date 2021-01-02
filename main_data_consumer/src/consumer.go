@@ -61,7 +61,6 @@ func ErrorTradeHandler(err error) {
 /*
 	ARGS:
 		-> stops ([]chan struct{}): slice of channels to stop the socket
-		-> kills ([]chan struct{}): slice of channels to kill the socket
     RETURN:
         -> N/A
     WHAT:
@@ -76,7 +75,7 @@ func waitFunc(stops []chan struct{}) {
 
 /*
 	ARGS:
-		-> event (*binance.WsPartialDepthEvent): 
+		-> event (*binance.WsPartialDepthEvent):
     RETURN:
         -> N/A
     WHAT:
@@ -84,6 +83,12 @@ func waitFunc(stops []chan struct{}) {
 		-> Passes data to the database storing function
 */
 var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event *binance.WsPartialDepthEvent) {
+	the_time := time.Now()
+	if the_time.Minute()%3 == 2 {
+		binance.WebsocketKeepalive = true
+	} else if the_time.Minute()%3 == 1 {
+		binance.WebsocketKeepalive = false
+	}
 	times_per_min := 3
 
 	now := time.Now()
@@ -108,6 +113,12 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 		-> Passes data to the database storing function
 */
 var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsKlineEvent) {
+	the_time := time.Now()
+	if the_time.Minute()%3 == 2 {
+		binance.WebsocketKeepalive = true
+	} else if the_time.Minute()%3 == 1 {
+		binance.WebsocketKeepalive = false
+	}
 	//Time to wait: 1 / 1 minute
 	times_per_min := 1
 
