@@ -77,6 +77,14 @@ func (*dumbo) AutoMigrate() error {
 	return nil
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> (string): name of the coin for the database table
+    WHAT:
+		-> Returns the name of the coin so that it is a dynamic table names
+*/
 func (cv CoinVolume) TableName() string {
 	// double check here, make sure the table does exist!!
 	if cv.coinName != "" {
@@ -85,6 +93,14 @@ func (cv CoinVolume) TableName() string {
 	return "coin_volume" // default table name
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> (string): name of the coin for the database table
+    WHAT:
+		-> Returns the name of the coin so that it is a dynamic table names
+*/
 func (o OrderBook) TableName() string {
 	// double check here, make sure the table does exist!!
 	if o.coinName != "" {
@@ -100,8 +116,6 @@ func (o OrderBook) TableName() string {
         -> (error): returns if there is one, an error in inserting coin data in the database
     WHAT:
 		-> Inserts coin data into database
-    TODO:
-		-> Is there a better way to store Unix timestamp
 */
 func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 	//Getting information needed to store
@@ -132,8 +146,14 @@ func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 	return nil
 }
 
-var t binance.WsKline
-
+/*
+	ARGS:
+        -> event (*binance.WsKlineEvent): pointer to object that has all kline information
+    RETURN:
+        -> (error): returns if there is one, an error in inserting coin data in the database
+    WHAT:
+		-> Inserts volume and trade coin data into database
+*/
 func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
 

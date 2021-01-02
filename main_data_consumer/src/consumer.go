@@ -66,10 +66,6 @@ func ErrorTradeHandler(err error) {
         -> N/A
     WHAT:
 		-> Needs some goroutine to constantly be doing something, hence the busy loop here
-    TODO:
-		-> the channel slices aren't really doing anything here, figure out better
-			way to handle errors or failure to gracefully exit say and then deal with
-			channel slices
 */
 func waitFunc(stops []chan struct{}) {
 	time.Sleep(23 * time.Hour)
@@ -78,6 +74,15 @@ func waitFunc(stops []chan struct{}) {
 	}
 }
 
+/*
+	ARGS:
+		-> event (*binance.WsPartialDepthEvent): 
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Function passed into binance websocket function on how to handle received orderbook data
+		-> Passes data to the database storing function
+*/
 var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event *binance.WsPartialDepthEvent) {
 	times_per_min := 3
 
@@ -93,6 +98,15 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 	EfficientSleep(times_per_min, now)
 }
 
+/*
+	ARGS:
+		-> event (*binance.WsKlineEvent): pointer to kline candlestick data
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Function passed into binance websocket function on how to handle received candlestick data
+		-> Passes data to the database storing function
+*/
 var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsKlineEvent) {
 	//Time to wait: 1 / 1 minute
 	times_per_min := 1
