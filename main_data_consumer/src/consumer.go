@@ -150,8 +150,7 @@ var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsK
 func ConsumeData(coins *[]string) {
 	//want to check if the socket is still connected to if we are running > 24 hrs
 	// binance.WebsocketKeepalive = true
-	// binance.WebsocketTimeout = time.Second * 45
-	binance.WebsocketKeepalive = false
+	binance.WebsocketTimeout = time.Minute * 3
 
 	kline_interval := "1m"
 	order_book_depth := "10"

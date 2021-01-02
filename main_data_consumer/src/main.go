@@ -41,7 +41,7 @@ func main() {
 		panic(err)
 	}
 
-	coins := Dumbo.SelectCoins(1)
+	coins := Dumbo.SelectCoins(-1)
 
 	fmt.Println("Coins collected: " + strings.Join(*coins, " "))
 
