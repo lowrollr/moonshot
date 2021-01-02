@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shaolinjehzu/go-binance"
+	"github.com/adshao/go-binance/v2"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"

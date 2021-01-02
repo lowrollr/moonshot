@@ -45,7 +45,7 @@ class Trading:
     WHAT: 
         -> initializes and configures the Trading class using the values read in from the config file
     '''
-    def __init__(self, config):
+    def __init__(self, config, dataSource="kraken"):
         
         # Ensure logging/plotting directories are set up correctly
         utils.checkLogPlotDir()
@@ -63,6 +63,7 @@ class Trading:
         self.timespan = []
         self.slippage = float(config["slippage"])
         self.report_format = config['report_format']
+        self.data_source = dataSource
 
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
@@ -109,12 +110,18 @@ class Trading:
                     filenames.append(filename)
                     # grab the dataset from the csv file
         for f in filenames:
-            my_df = pd.read_csv('historical_data/' + f)
-            my_df.columns = ['time', 'open', 'high', 'low', 'close', 'volume', 'trades']
-            # filter dataset to only include data from the configured timespan 
-            my_df = my_df[(my_df.time > self.timespan[0]) & (my_df.time < self.timespan[1])]
-            name = f.split('_')[0]
-            datasets.append((my_df, name))
+            if self.data_source == "kraken":
+                my_df = pd.read_csv('historical_data/' + self.data_source + '/' + f, header=None)
+                my_df.columns = ['time', 'open', 'high', 'low', 'close', 'volume', 'trades']
+                # filter dataset to only include data from the configured timespan 
+                my_df = my_df[(my_df.time > self.timespan[0]) & (my_df.time < self.timespan[1])]
+                name = f.split('_')[0]
+                datasets.append((my_df, name))
+            elif self.data_source == "kaggle":
+                f = f.split("_")[0].lower() + '.csv'
+                my_df = pd.read_csv('historical_data/' + self.data_source + '/' + f)
+                name = f.split('.csv')[0]
+                datasets.append((my_df, name))
                 
         return datasets
 

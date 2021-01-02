@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shaolinjehzu/go-binance"
+	"github.com/adshao/go-binance/v2"
 )
 
 /*
@@ -165,7 +165,7 @@ func ConsumeData(coins *[]string) {
 			//Using quote currency as tether to open socket to binance
 			symbol = strings.ToLower(symbol) + "usdt"
 			stop_order_chan, _, err := binance.WsPartialDepthServe(symbol, order_book_depth, tradeOrderDataConsumer, ErrorTradeHandler)
-			stop_candle_chan, _, err := binance.WsKlineFeatureServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
+			stop_candle_chan, _, err := binance.WsKlineServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
 
 			time.Sleep(1 * time.Second)
 
