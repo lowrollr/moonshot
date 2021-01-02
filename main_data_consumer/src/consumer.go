@@ -115,6 +115,7 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsKlineEvent) {
 	the_time := time.Now()
 	if the_time.Minute()%3 == 2 {
+		fmt.Println("ASLDKFJSALKDJFLASKJDVLQIWJFLASDLIASJFLDJKASLKF")
 		binance.WebsocketKeepalive = true
 	} else if the_time.Minute()%3 == 1 {
 		binance.WebsocketKeepalive = false
