@@ -14,7 +14,7 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.macd import MACD
-from v2.strategy.indicators.slope import Slope
+from v2.strategy.indicators.mmroc import MinMaxRateOfChange
 from v2.strategy.indicators.variance import Variance
 from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 
@@ -67,14 +67,14 @@ class HeatCounter(Strategy):
         signal = Param(5, 10001, 0, 'signal', 90)
         macd_ = MACD(_params=[ema_fast, ema_slow, signal])
 
-        slope_period = Param(5, 10001, 0, 'period', 30)
-        slope = Slope(_params=[slope_period])
+        mmroc_period = Param(5, 10001, 0, 'period', 30)
+        mmroc = MinMaxRateOfChange(_params=[mmroc_period])
 
         var_period = Param(5, 10001, 0, 'period', 60)
         variance = Variance(_params=[var_period])
 
 
-        self.indicators = [macd_, rsi_, slope, stoch_oscillator, variance]
+        self.indicators = [macd_, rsi_, mmroc, stoch_oscillator, variance]
 
     '''
     ARGS:
@@ -86,8 +86,8 @@ class HeatCounter(Strategy):
     '''
     def process(self, data):
         self.prev_little_avg = self.little_avg
-        bear_model_data = np.array([data.rsi, data.MACD, data.stosc_k, data.stosc_d, data.slope, data.variance])
-        bull_model_data = np.array([data.close, data.rsi, data.MACD, data.stosc_k, data.stosc_d, data.slope, data.variance])
+        bear_model_data = np.array([data.rsi, data.MACD, data.stosc_k, data.stosc_d, data.mmroc, data.variance])
+        bull_model_data = np.array([data.close, data.rsi, data.MACD, data.stosc_k, data.stosc_d, data.mmroc, data.variance])
         
         bear_value = 0
         if not np.isnan(np.sum(bear_model_data)):

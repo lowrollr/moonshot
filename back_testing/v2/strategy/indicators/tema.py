@@ -55,8 +55,6 @@ class TEMA(Indicator):
         triple_ema.genData(dataset, gen_new_values=False, value="double_ema")
 
         dataset[self.name] = ((3 * dataset["normal_ema"]) - ( 3 * dataset["double_ema"])) + dataset["temp_triple_ema"]
-
-        # dataset[self.name + "_slope"] = dataset[self.name].rolling(window=3, min_periods=2).apply(calcSlope)
-
+        
         #clean up
         dataset.drop(["normal_ema", "double_ema", "temp_triple_ema"], inplace=True, axis=1)

@@ -58,8 +58,6 @@ class HMA(Indicator):
         final_period_param = Param(_name="period", _default=final_period)
         final_period_wma = WMA([final_period_param], _name=self.name)
         final_period_wma.genData(dataset, gen_new_values=False, value="difference")
-
-        # dataset[self.name + "_slope"] = dataset[self.name].rolling(window=3, min_periods=2).apply(calcSlope, raw=True)
-
+        
         #clean up
         dataset.drop(["difference", "half_period_wma", "normal_wma"], inplace=True, axis=1)

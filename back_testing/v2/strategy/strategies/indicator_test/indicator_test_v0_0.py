@@ -16,7 +16,6 @@ from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 from v2.strategy.indicators.macd import MACD
 from v2.strategy.indicators.pivot_points import PivotPoints
 from v2.strategy.indicators.variance import Variance
-from v2.strategy.indicators.slope import Slope
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2

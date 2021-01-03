@@ -9,7 +9,7 @@ from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.macd import MACD
-from v2.strategy.indicators.slope import Slope
+from v2.strategy.indicators.mmroc import MinMaxRateOfChange
 from v2.strategy.indicators.variance import Variance
 from tensorflow.keras.models import load_model
 
@@ -34,19 +34,19 @@ class trough_v1(Strategy):
         ema_slow= Param(6, 10001, 0, 'ema_slow', 120)
         signal = Param(5, 10001, 0, 'signal', 90)
         macd_ = MACD(_params=[ema_fast, ema_slow, signal], _name='macd')
-        slope_period = Param(5, 10001, 0, 'period', 30)
-        slope = Slope(_params=[slope_period], _name='slope')
+        mmroc_period = Param(5, 10001, 0, 'period', 30)
+        mmroc = MinMaxRateOfChange(_params=[mmroc_period], _name='mmroc')
         #var_period = Param(5, 10001, 0, 'period', 60)
         #stop_loss_param = Param(0, 0, 0, 'stop_loss_percentage', 0)
         #variance = Variance(_params=[var_period, stop_loss_param], _name='variance')
-        self.indicators = [macd_, rsi_, stoch_oscillator, slope]#, variance]
+        self.indicators = [macd_, rsi_, stoch_oscillator, mmroc]#, variance]
 
 
     def process(self, data):
         self.stop_loss = self.stop_loss * data.close
 
     def calc_entry(self, data):
-        rf_model_data = np.array([data.stosc_k, data.slope, data.macd_diff, data.rsi, data.ema_fast, data.ema_slow])
+        rf_model_data = np.array([data.stosc_k, data.mmroc, data.macd_diff, data.rsi, data.ema_fast, data.ema_slow])
         
         if not np.isnan(np.sum(rf_model_data)):
             rf_model_data = rf_model_data.reshape(1, -1)
@@ -56,7 +56,7 @@ class trough_v1(Strategy):
             rf_pred = 0.0
             rf_model_prediction = 0.0
 
-        boost_model_data = np.array([data.stosc_k, data.slope, data.macd_diff, data.rsi, data.ema_fast, data.ema_slow, rf_pred, rf_model_prediction])
+        boost_model_data = np.array([data.stosc_k, data.mmroc, data.macd_diff, data.rsi, data.ema_fast, data.ema_slow, rf_pred, rf_model_prediction])
         if not np.isnan(np.sum(boost_model_data)):
             boost_model_data = boost_model_data.reshape(1, -1)
             prediction = self.model.predict_proba(boost_model_data)[0][1]
