@@ -2,10 +2,14 @@
     # All possible pairs of the given quote/base currencies 
     # will be fetched from the historical data repository
 
-    # Quote Currencies
-    "ex1": ["XBT"],
-    # Base Currencies
-    "ex2": ["USD"],
+    # directory to pull data from
+    "data_source": "binance",
+    # Currencies to trade against Tether (USDT)
+    "currencies": ["BTC"],
+    # Whether or not to daisy chain all data chunks for a particular coin
+    "daisy_chain": true,
+    # If daisy_chain is false, the user must specify a chunk id to run on
+    "chunk_ids": [1],
     # Whether or not to test ranges of values for each indicator parameter (genetic algo)
     "test_param_ranges": false,
     # Timespan to fetch data for
