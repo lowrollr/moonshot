@@ -45,15 +45,16 @@ class Trading:
     WHAT: 
         -> initializes and configures the Trading class using the values read in from the config file
     '''
-    def __init__(self, config, dataSource="kraken"):
+    def __init__(self, config):
         
         # Ensure logging/plotting directories are set up correctly
         utils.checkLogPlotDir()
 
         # We need to read in the fields from our config file and turn them into actionable parameters
         # Parse each field as needed and construct the proper paremeters
-        self.base_cs = config['ex1']
-        self.quote_cs = config['ex2']
+        self.currencies = config['currencies']
+        self.daisy_chain = config['daisy_chain']
+        self.chunk_ids = config['chunk_ids']
         self.freq = config['freq']
         self.fees = float(config['fees'])
         self.indicators_to_graph = config['indicators_to_graph']
@@ -63,8 +64,7 @@ class Trading:
         self.timespan = []
         self.slippage = float(config["slippage"])
         self.report_format = config['report_format']
-        self.data_source = dataSource
-
+        self.data_source = config['data_source']
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
@@ -81,7 +81,7 @@ class Trading:
         
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
-        self.dfs = self.getPairDatasets(self.base_cs, self.quote_cs, self.freq)
+        self.dfs = self.getDatasets(self.currencies, self.freq)
 
 
     '''
@@ -95,33 +95,28 @@ class Trading:
     WHAT: 
         -> fetches a dataset for each possible pair of <base currency>/<quote currency> 
             for the given timeframe
+    TODO:
+        -> fix retrieve all to account for dataset refactor
     '''
-    def getPairDatasets(self, base_currencies, quote_currencies, freq):
-        filenames = []
+    def getDatasets(self, currencies, freq):
         datasets = []
-        if base_currencies == ['all']:
-            filenames = utils.retrieveAll(quote_currencies, freq)
+        if currencies == ['all']:
+            pass
+            # filenames = utils.retrieveAll(freq)
         else:
-            for b in base_currencies:
-                for q in quote_currencies:
-                    # construct the appropriate filename 
-                    name = b + q
-                    filename = name + '_' + str(freq) + '.csv'
-                    filenames.append(filename)
-                    # grab the dataset from the csv file
-        for f in filenames:
-            if self.data_source == "kraken":
-                my_df = pd.read_csv('historical_data/' + self.data_source + '/' + f, header=None)
-                my_df.columns = ['time', 'open', 'high', 'low', 'close', 'volume', 'trades']
-                # filter dataset to only include data from the configured timespan 
-                my_df = my_df[(my_df.time > self.timespan[0]) & (my_df.time < self.timespan[1])]
-                name = f.split('_')[0]
-                datasets.append((my_df, name))
-            elif self.data_source == "kaggle":
-                f = f.split("_")[0].lower() + '.csv'
-                my_df = pd.read_csv('historical_data/' + self.data_source + '/' + f)
-                name = f.split('.csv')[0]
-                datasets.append((my_df, name))
+            for i,b in enumerate(currencies):
+                b_dir = f'historical_data/{self.data_source}/{b}/{freq}m/'
+                files = os.listdir(b_dir)
+                if self.daisy_chain:
+                    for f in files:
+                        b_file = f'{b_dir}{f}'
+                        datasets.append([pd.read_csv(b_file), f[:-4]])
+                else:
+                    try:
+                        b_file = f'{b_dir}{b}USDT-{freq}m-data_chunk{self.chunk_ids[i]}.csv'
+                        datasets.append([pd.read_csv(b_file), f[:-4]])
+                    except Exception:
+                        raise Exception(f"The specified chunk ({self.chunk_ids[i]}) for {b} does not exist!\n")
                 
         return datasets
 
