@@ -113,7 +113,8 @@ class Trading:
                         cur_group.append(my_df)
                 else:
                     try:
-                        b_file = f'{b_dir}{b}USDT-{self.freq}m-data_chunk{self.chunk_ids[i]}.csv'
+                        zero_str = '0'
+                        b_file = f'{b_dir}{b}USDT-{self.freq}m-data_chunk{zero_str * (6 - len(str(self.chunk_ids[i])))}{self.chunk_ids[i]}.csv'
                         my_df = pd.read_csv(b_file)
                         my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
                         my_df.rename(columns={'close_time': 'time'}, inplace=True)
@@ -232,11 +233,10 @@ class Trading:
         account_history = []
         starting_base_value = dataset['close'].values[0]
         # this is the main loop for iterating through each row of the dataset
-        rows = []
+        rows = dataset.itertuples()
         if should_print:
-            rows = tqdm(dataset.itertuples())
-        else:
-            rows = dataset.itertuples()
+            rows = tqdm(rows)
+
         for row in rows:
             if not position_quote and row.time in first_times:
                 position_quote = old_quote
