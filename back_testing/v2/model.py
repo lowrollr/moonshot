@@ -332,8 +332,8 @@ class Trading:
         stats = dict()
         stats['Initial Portfolio Value'] = 1000000.00
         stats['Exit Portfolio Value'] = round(conv_position, 2)
-        stats['Portfolio Delta ($)'] = round(conv_position - start, 2)
-        stats['Portfolio Delta (%)'] = str(round(((conv_position / start) * 100) - 100, 2)) + '%'
+        stats['Portfolio RateOfChange ($)'] = round(conv_position - start, 2)
+        stats['Portfolio RateOfChange (%)'] = str(round(((conv_position / start) * 100) - 100, 2)) + '%'
         stats['Initial Asset Value'] = starting_base_value
         stats['Final Asset Value'] = ending_value
         stats['Asset Growth ($)'] = round(ending_value - starting_base_value, 2)
