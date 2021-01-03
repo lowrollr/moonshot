@@ -3,24 +3,25 @@ FILE: cmo.py
 AUTHORS:
     -> Ross Copeland (rhcopeland101@gmail.com)
 WHAT:
-    -> This file contains the CMO (Chande Momentum Oscilator) Indicator
+    -> This file contains the NATR (Normalized Average True Range) Indicator
 '''
 from v2.utils import findParams
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.sma import SMA
 import numpy as np
-from talib import CMO as talib_CMO
+from talib import NATR as talib_NATR
 
 '''
-CLASS: CMO
+CLASS: NATR
 WHAT:
-    -> Implements the CMO Indicator and adds the approprite columns to the dataset
-    -> What is CMO? --> https://www.investopedia.com/terms/c/commoditychannelindex.asp
+    -> Implements the NATR Indicator and adds the approprite columns to the dataset
+    -> Indicator to measure the volatility of the asset
+    -> What is NATR? --> https://tulipindicators.org/natr
     -> Params Required:
         -> 'period'
 '''
-class CMO(Indicator):
+class NATR(Indicator):
     
     '''
     ARGS:
@@ -31,7 +32,7 @@ class CMO(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> computes the CMO of the specified value over the given period
+        -> computes the NATR of the specified value over the given period
     TODO:
         -> This has not been tested
     '''
@@ -43,5 +44,4 @@ class CMO(Indicator):
         if gen_new_values:
             period.genValue()
         
-        dataset[self.name] = talib_CMO(dataset[value], timeperiod=period.value)
-        
+        dataset[self.name] = talib_NATR(dataset.high, dataset.low, dataset.close, timeperiod=period.value)

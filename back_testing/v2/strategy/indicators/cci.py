@@ -10,6 +10,7 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.sma import SMA
 import numpy as np
+from talib import CCI as talib_CCI
 
 '''
 CLASS: CCI
@@ -44,16 +45,17 @@ class CCI(Indicator):
         if gen_new_values:
             period.genValue()
         
-        dataset["cci_high"] = dataset[value].rolling(window=int(period.value)).max()
-        dataset["cci_low"] = dataset[value].rolling(window=int(period.value)).min()
-        dataset["cci_tp"] = (dataset["cci_high"] + dataset["cci_low"] + dataset[value]) / 3
+        # dataset["cci_high"] = dataset[value].rolling(window=int(period.value)).max()
+        # dataset["cci_low"] = dataset[value].rolling(window=int(period.value)).min()
+        # dataset["cci_tp"] = (dataset["cci_high"] + dataset["cci_low"] + dataset[value]) / 3
 
-        cci_mean_dev = np.mean(np.absolute(dataset["cci_tp"] - np.mean(dataset["cci_tp"])))
+        # cci_mean_dev = np.mean(np.absolute(dataset["cci_tp"] - np.mean(dataset["cci_tp"])))
 
-        sma_tp = SMA([period], _name="cci_sma_tp")
-        sma_tp.genData(dataset, gen_new_values=False, value="cci_tp")
+        # sma_tp = SMA([period], _name="cci_sma_tp")
+        # sma_tp.genData(dataset, gen_new_values=False, value="cci_tp")
 
-        dataset[self.name] = (dataset["cci_tp"] - dataset["cci_sma_tp"]) / (0.015 * cci_mean_dev)
+        # dataset[self.name] = (dataset["cci_tp"] - dataset["cci_sma_tp"]) / (0.015 * cci_mean_dev)
 
-        #clean up
-        dataset.drop(["cci_high", "cci_low", "cci_tp", "cci_sma_tp"], inplace=True, axis=1)
+        # #clean up
+        # dataset.drop(["cci_high", "cci_low", "cci_tp", "cci_sma_tp"], inplace=True, axis=1)
+        dataset[self.name] = talib_CCI(dataset.high, dataset.low, dataset.close, timeperiod=period.value)

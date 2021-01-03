@@ -27,6 +27,7 @@ from v2.strategy.indicators.optimal_v2 import Optimal_v2
 from v2.strategy.indicators.ichimoku import Ichimoku
 from v2.strategy.indicators.cci import CCI
 from v2.strategy.indicators.hma import HMA
+from v2.strategy.indicators.psar import PSAR
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -184,6 +185,11 @@ def fetchIndicators(indicator_list, param_specification={}):
                 hma_period_value = param_specification['hma.period']
             hma_period = Param(5, 10000, 0, 'period', hma_period_value)
             my_ind = HMA(_params=[hma_period])
+
+        elif indicator == 'psar':
+            not_used_period_val = 100
+            psar_period = Param(5, 100, 0, 'period', not_used_period_val)
+            my_ind = PSAR(_params=[psar_period])
         else:
             raise Exception('Invalid Indicator Name: ' + str(indicator))
 

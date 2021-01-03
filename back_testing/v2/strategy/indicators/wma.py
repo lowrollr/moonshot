@@ -8,6 +8,7 @@ WHAT:
 from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
 import numpy as np
+from talib import WMA as talib_WMA
 
 '''
 CLASS: WMA
@@ -40,6 +41,8 @@ class WMA(Indicator):
         if gen_new_values:
             period.genValue()
         
-        weights = np.arange(1, period.value + 1)
-        # compute simple moving average and add to the dataset
-        dataset[self.name] = dataset[value].rolling(window=int(period.value)).apply(lambda prices: np.dot(prices, weights)/weights.sum(), raw=True)
+        # weights = np.arange(1, period.value + 1)
+        # # compute simple moving average and add to the dataset
+        # dataset[self.name] = dataset[value].rolling(window=int(period.value)).apply(lambda prices: np.dot(prices, weights)/weights.sum(), raw=True)
+
+        dataset[self.name] = talib_WMA(dataset[value], timeperiod=period.value)

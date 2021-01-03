@@ -11,6 +11,7 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.ema import EMA
 from v2.utils import calcSlope
 import numpy as np
+from talib import TEMA as talib_TEMA
 
 '''
 CLASS: TEMA
@@ -39,22 +40,24 @@ class TEMA(Indicator):
     def genData(self, dataset, gen_new_values=True, value='close'):
 
         # param named 'period' must be present
-        tema_period = findParams(self.params, ['period'])[0]
+        period = findParams(self.params, ['period'])[0]
         # generate a new period value, if necessary
         if gen_new_values:
-            tema_period.genValue()
+            period.genValue()
         
-        ema_param = Param(_name="period", _default=tema_period.value)
-        normal_ema = EMA([ema_param], _name="normal_ema")
-        normal_ema.genData(dataset, gen_new_values=False, value=value)
+        # ema_param = Param(_name="period", _default=tema_period.value)
+        # normal_ema = EMA([ema_param], _name="normal_ema")
+        # normal_ema.genData(dataset, gen_new_values=False, value=value)
 
-        double_ema = EMA([ema_param], _name="double_ema")
-        double_ema.genData(dataset, gen_new_values=False, value="normal_ema")
+        # double_ema = EMA([ema_param], _name="double_ema")
+        # double_ema.genData(dataset, gen_new_values=False, value="normal_ema")
 
-        triple_ema = EMA([ema_param], _name="temp_triple_ema")
-        triple_ema.genData(dataset, gen_new_values=False, value="double_ema")
+        # triple_ema = EMA([ema_param], _name="temp_triple_ema")
+        # triple_ema.genData(dataset, gen_new_values=False, value="double_ema")
 
-        dataset[self.name] = ((3 * dataset["normal_ema"]) - ( 3 * dataset["double_ema"])) + dataset["temp_triple_ema"]
+        # dataset[self.name] = ((3 * dataset["normal_ema"]) - ( 3 * dataset["double_ema"])) + dataset["temp_triple_ema"]
         
-        #clean up
-        dataset.drop(["normal_ema", "double_ema", "temp_triple_ema"], inplace=True, axis=1)
+        # #clean up
+        # dataset.drop(["normal_ema", "double_ema", "temp_triple_ema"], inplace=True, axis=1)
+
+        dataset[self.name] = talib_TEMA(dataset[value], timeperiod=period.value)

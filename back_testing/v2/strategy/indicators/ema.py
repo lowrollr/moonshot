@@ -10,6 +10,7 @@ import pandas
 
 from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
+from talib import EMA as talib_EMA
 
 '''
 CLASS: EMA
@@ -40,5 +41,7 @@ class EMA(Indicator):
         if gen_new_values:
             period.genValue()
 
-        # compute EMA and add to the dataset
-        dataset[self.name] = dataset[value].ewm(span=period.value, adjust=False).mean()
+        # # compute EMA and add to the dataset
+        # dataset[self.name] = dataset[value].ewm(span=period.value, adjust=False).mean()
+        
+        dataset[self.name] = talib_EMA(dataset[value], timeperiod=period.value)
