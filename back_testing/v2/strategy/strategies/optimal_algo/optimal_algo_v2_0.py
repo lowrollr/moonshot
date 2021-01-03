@@ -10,7 +10,7 @@ from v2.strategy.indicators.indicator import Indicator
 
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.macd import MACD
-from v2.strategy.indicators.delta import Delta
+from v2.strategy.indicators.roc import RateOfChange
 from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
 
@@ -39,24 +39,24 @@ class optimal_algo_v2_0(Strategy):
         signal = Param(5, 10001, 0, 'signal', 360)
         macd_ = MACD(_params=[ema_fast, ema_slow, signal])
 
-        delta_5_rsi = Delta(_params=[Param(0,0,0,'period', 5)], _appended_name='RSI_5')
-        delta_1_rsi = Delta(_params=[Param(0,0,0,'period', 1)], _appended_name='RSI_1')
-        delta_10_rsi = Delta(_params=[Param(0,0,0,'period',10)], _appended_name='RSI_10')
-        delta_60_rsi = Delta(_params=[Param(0,0,0,'period', 60)], _appended_name='RSI_60')
+        roc_5_rsi = RateOfChange(_params=[Param(0,0,0,'period', 5)], _appended_name='RSI_5')
+        roc_1_rsi = RateOfChange(_params=[Param(0,0,0,'period', 1)], _appended_name='RSI_1')
+        roc_10_rsi = RateOfChange(_params=[Param(0,0,0,'period',10)], _appended_name='RSI_10')
+        roc_60_rsi = RateOfChange(_params=[Param(0,0,0,'period', 60)], _appended_name='RSI_60')
         
-        delta_5_macd = Delta(_params=[Param(0,0,0,'period', 5)], _appended_name='MACD_5')
-        delta_1_macd = Delta(_params=[Param(0,0,0,'period', 1)], _appended_name='MACD_1')
-        delta_10_macd = Delta(_params=[Param(0,0,0,'period',10)], _appended_name='MACD_10')
-        delta_60_macd = Delta(_params=[Param(0,0,0,'period', 60)], _appended_name='MACD_60')
+        roc_5_macd = RateOfChange(_params=[Param(0,0,0,'period', 5)], _appended_name='MACD_5')
+        roc_1_macd = RateOfChange(_params=[Param(0,0,0,'period', 1)], _appended_name='MACD_1')
+        roc_10_macd = RateOfChange(_params=[Param(0,0,0,'period',10)], _appended_name='MACD_10')
+        roc_60_macd = RateOfChange(_params=[Param(0,0,0,'period', 60)], _appended_name='MACD_60')
 
-        delta_5_close = Delta(_params=[Param(0,0,0,'period', 5)], _appended_name='close_5')
-        delta_1_close = Delta(_params=[Param(0,0,0,'period', 1)], _appended_name='close_1')
-        delta_10_close = Delta(_params=[Param(0,0,0,'period',10)], _appended_name='close_10')
-        delta_60_close = Delta(_params=[Param(0,0,0,'period', 60)], _appended_name='close_60')
+        roc_5_close = RateOfChange(_params=[Param(0,0,0,'period', 5)], _appended_name='close_5')
+        roc_1_close = RateOfChange(_params=[Param(0,0,0,'period', 1)], _appended_name='close_1')
+        roc_10_close = RateOfChange(_params=[Param(0,0,0,'period',10)], _appended_name='close_10')
+        roc_60_close = RateOfChange(_params=[Param(0,0,0,'period', 60)], _appended_name='close_60')
 
         opt_v2 = Optimal_v2(_params=[])
 
-        self.indicators = [macd_, rsi_, stoch_oscillator, opt_v2, delta_1_macd, delta_5_macd, delta_10_macd, delta_60_macd, delta_1_rsi, delta_5_rsi, delta_10_rsi, delta_60_rsi, delta_1_close, delta_5_close, delta_10_close, delta_60_close]
+        self.indicators = [macd_, rsi_, stoch_oscillator, opt_v2, roc_1_macd, roc_5_macd, roc_10_macd, roc_60_macd, roc_1_rsi, roc_5_rsi, roc_10_rsi, roc_60_rsi, roc_1_close, roc_5_close, roc_10_close, roc_60_close]
         self.looking_for_exit = False
         self.looking_for_entry = False
         self.stop_loss = 0.0
@@ -75,7 +75,7 @@ class optimal_algo_v2_0(Strategy):
         if self.looking_for_entry and (data.close > self.trailing_entry):
             self.looking_for_entry = False
             return True
-        buy_model_data = np.array([data.RSI, data.MACD, data.stosc_k, data.stosc_d, data.Delta_MACD_1, data.Delta_MACD_5, data.Delta_MACD_10, data.Delta_MACD_60, data.Delta_RSI_1, data.Delta_RSI_5, data.Delta_RSI_10, data.Delta_RSI_60, data.Delta_close_1, data.Delta_close_5, data.Delta_close_10, data.Delta_close_60])
+        buy_model_data = np.array([data.RSI, data.MACD, data.stosc_k, data.stosc_d, data.RateOfChange_MACD_1, data.RateOfChange_MACD_5, data.RateOfChange_MACD_10, data.RateOfChange_MACD_60, data.RateOfChange_RSI_1, data.RateOfChange_RSI_5, data.RateOfChange_RSI_10, data.RateOfChange_RSI_60, data.RateOfChange_close_1, data.RateOfChange_close_5, data.RateOfChange_close_10, data.RateOfChange_close_60])
         
         if not np.isnan(np.sum(buy_model_data)):
             buy_model_data = buy_model_data.reshape(1, -1)
@@ -97,7 +97,7 @@ class optimal_algo_v2_0(Strategy):
         if self.looking_for_exit and (data.close < self.stop_loss):
             self.looking_for_exit = False
             return True
-        sell_model_data = np.array([data.RSI, data.MACD, data.stosc_k, data.stosc_d, data.Delta_MACD_1, data.Delta_MACD_5, data.Delta_MACD_10, data.Delta_MACD_60, data.Delta_RSI_1, data.Delta_RSI_5, data.Delta_RSI_10, data.Delta_RSI_60, data.Delta_close_1, data.Delta_close_5, data.Delta_close_10, data.Delta_close_60])
+        sell_model_data = np.array([data.RSI, data.MACD, data.stosc_k, data.stosc_d, data.RateOfChange_MACD_1, data.RateOfChange_MACD_5, data.RateOfChange_MACD_10, data.RateOfChange_MACD_60, data.RateOfChange_RSI_1, data.RateOfChange_RSI_5, data.RateOfChange_RSI_10, data.RateOfChange_RSI_60, data.RateOfChange_close_1, data.RateOfChange_close_5, data.RateOfChange_close_10, data.RateOfChange_close_60])
         
         if not np.isnan(np.sum(sell_model_data)):
             sell_model_data = sell_model_data.reshape(1, -1)

@@ -43,7 +43,7 @@ class indicator_test(Strategy):
     def __init__(self):
         self.name = 'indicator_test'
         self.is_ml = False
-        self.indicators = fetchIndicators(indicator_list=['delta'])
+        self.indicators = fetchIndicators(indicator_list=['roc'])
 
     
         

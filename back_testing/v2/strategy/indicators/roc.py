@@ -1,9 +1,9 @@
 '''
-FILE: delta.py
+FILE: roc.py
 AUTHORS:
     -> Jacob Marshall (marshingjay@gmail.com)
 WHAT:
-    -> This file contains the Delta Indicator
+    -> This file contains the RateOfChange Indicator
 '''
 import numpy as np
 import pandas as pd
@@ -13,16 +13,16 @@ import pandas
 
 
 '''
-CLASS: Delta
+CLASS: RateOfChange
 WHAT:
-    -> Calculates the delta for the given window and adds the approprite column to the dataset
-    -> What is delta? The percentage difference between points x1 and x2,
+    -> Calculates the rate of change for the given window and adds the approprite column to the dataset
+    -> What is RateOfChange? The percentage difference between points x1 and x2,
         where x1 is the current point in time, and x1 is a point t minutes ago
     -> Params Required:
         -> 'period'
 '''
 
-class Delta(Indicator):
+class RateOfChange(Indicator):
     '''
     ARGS:
         -> dataset (DataFrame): dataset to add the indicator values as a column to
@@ -32,7 +32,7 @@ class Delta(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> calculates and adds the delta for the given value over the given period to the dataset
+        -> calculates and adds the rate of change with a respect to a given point in the past for the given value to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
         period = findParams(self.params, ['period'])[0]

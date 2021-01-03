@@ -17,7 +17,7 @@ from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.stochastic_oscillator import StochasticOscillator
 from v2.strategy.indicators.macd import MACD
-from v2.strategy.indicators.delta import Delta
+from v2.strategy.indicators.roc import RateOfChange
 from v2.strategy.indicators.pivot_points import PivotPoints
 from v2.strategy.indicators.variance import Variance
 from v2.strategy.indicators.slope import Slope
@@ -164,13 +164,13 @@ def fetchIndicators(indicator_list, param_specification={}):
                 wma_period_value = param_specification['wma.period']
             wma_period = Param(5, 10000, 0, 'period', wma_period_value)
             my_ind = WMA(_params=[wma_period])
-        elif indicator == 'delta':
-            delta_period_val = 60
-            if 'delta.period' in param_specification:
-                delta_period_val = param_specification['delta.period']
-            delta_period = Param(30, 90, 1, 'period', delta_period_val)
+        elif indicator == 'roc':
+            roc_period_val = 60
+            if 'roc.period' in param_specification:
+                roc_period_val = param_specification['roc.period']
+            roc_period = Param(30, 90, 1, 'period', roc_period_val)
 
-            my_ind = Delta(_params=[delta_period])
+            my_ind = RateOfChange(_params=[roc_period])
         elif indicator == 'cci':
             cci_period_val = 60
             if 'cci.period' in param_specification:
