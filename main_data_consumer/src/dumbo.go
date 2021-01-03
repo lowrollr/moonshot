@@ -159,10 +159,20 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 
 	kline_time := event.Time
 
-	base_vol, _ := strconv.ParseFloat(event.Kline.Volume, 32)
+	kline := event.Kline
+
+	open, _ := strconv.ParseFloat(kline.Open, 32)
+	high, _ := strconv.ParseFloat(kline.High, 32)
+	low, _ := strconv.ParseFloat(kline.Low, 32)
+	close, _ := strconv.ParseFloat(kline.Close, 32)
+
+	base_vol, _ := strconv.ParseFloat(kline.Volume, 32)
+
 	// num_trades, err := strconv.ParseInt(event.Kline.TradeNum, 10, 16 )
 
-	temp_kline := CoinVolume{Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
+	temp_kline := CoinVolume{StartTime: kline.StartTime, EndTime: kline.EndTime,
+		Open: float32(open), High: float32(high), Low: float32(low), Close: float32(close),
+		Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
 
 	return global_db.Table(strings.ToLower(coin_abb) + "_volume_data").Create(&temp_kline).Error
 }

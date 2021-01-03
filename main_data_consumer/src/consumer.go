@@ -28,11 +28,7 @@ import (
 		-> Makes sure it does not wait less than partition so that IP is not blocked from binance
 		-> Partition time is part of one second ex: 1/2 minute, 1/3 minute etc.
 */
-func EfficientSleep(partition int, prev_time time.Time) {
-	// if partition > 5 || partition <= 0{
-	// 	panic(errors.New("Must be between 0 and 5 for partition or will get rate limited"))
-	// }
-
+func EfficientSleep(partition int, prev_time time.Time, duration time.Duration) {
 	prev_time_nano := int64(prev_time.UnixNano())
 	later_nano := int64(time.Now().UnixNano())
 	partition_nano := time.Minute.Nanoseconds() / int64(partition)
@@ -60,16 +56,15 @@ func ErrorTradeHandler(err error) {
 
 /*
 	ARGS:
-		-> stops ([]chan struct{}): slice of channels to stop the socket
-    RETURN:
+		-> N/A
+	RETURN:
         -> N/A
     WHAT:
 		-> Needs some goroutine to constantly be doing something, hence the busy loop here
 */
-func waitFunc(stops []chan struct{}) {
-	time.Sleep(23 * time.Hour)
-	for _, c := range stops {
-		c <- struct{}{}
+func waitFunc() {
+	for {
+		time.Sleep(24 * time.Hour)
 	}
 }
 
@@ -100,7 +95,7 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 		panic(err)
 	}
 	// sleep to get maximum efficiency from socket
-	EfficientSleep(times_per_min, now)
+	EfficientSleep(times_per_min, now, time.Minute)
 }
 
 /*
@@ -115,7 +110,6 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsKlineEvent) {
 	the_time := time.Now()
 	if the_time.Minute()%3 == 2 {
-		fmt.Println("ASLDKFJSALKDJFLASKJDVLQIWJFLASDLIASJFLDJKASLKF")
 		binance.WebsocketKeepalive = true
 	} else if the_time.Minute()%3 == 1 {
 		binance.WebsocketKeepalive = false
@@ -132,8 +126,29 @@ var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsK
 		panic(err)
 	}
 	// sleep to get maximum efficiency from socket
-	EfficientSleep(times_per_min, now)
+	EfficientSleep(times_per_min, now, time.Minute)
 }
+
+func OrderBookGoRoutine(symbol string, depth string) {
+	for {
+		stop_order_chan, _, err := binance.WsPartialDepthServe(symbol, depth, tradeOrderDataConsumer, ErrorTradeHandler)
+		if err != nil {
+			panic(err)
+		}
+		<-stop_order_chan
+	}
+}
+
+func KlineGoRoutine(symbol string, kline_interval string) {
+	for {
+		stop_candle_chan, _, err := binance.WsKlineServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
+		if err != nil {
+			panic(err)
+		}
+		<-stop_candle_chan
+	}
+}
+
 
 /*
 	ARGS:
@@ -149,36 +164,21 @@ var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsK
 		-> Figure out better way to determine stable coins other than manually
 */
 func ConsumeData(coins *[]string) {
-	//want to check if the socket is still connected to if we are running > 24 hrs
 	// binance.WebsocketKeepalive = true
 	binance.WebsocketTimeout = time.Minute * 3
 
 	kline_interval := "1m"
-	order_book_depth := "10"
+	order_book_depth := "20"
 
 	fmt.Println("Starting consuming...")
 
-	stops := []chan struct{}{}
-
-	for {
-		for _, symbol := range *coins {
-			//Using quote currency as tether to open socket to binance
-			symbol = strings.ToLower(symbol) + "usdt"
-			stop_order_chan, _, err := binance.WsPartialDepthServe(symbol, order_book_depth, tradeOrderDataConsumer, ErrorTradeHandler)
-			stop_candle_chan, _, err := binance.WsKlineServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
-
-			time.Sleep(1 * time.Second)
-
-			if err != nil {
-				fmt.Println(err)
-				panic(err)
-			}
-
-			stops = append(stops, stop_order_chan)
-			stops = append(stops, stop_candle_chan)
-		}
-
-		//perpetual wait
-		waitFunc(stops)
+	for _, symbol := range *coins {
+		//Using quote currency as tether to open socket to binance
+		symbol = strings.ToLower(symbol) + "usdt"
+		go OrderBookGoRoutine(symbol, order_book_depth)
+		go KlineGoRoutine(symbol, kline_interval)
 	}
+
+	//perpetual wait
+	waitFunc()
 }
