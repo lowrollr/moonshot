@@ -66,7 +66,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
         # get the entry time and price, and use the entry time to calculate the start of the timeframe to be plotted
         time_entry = x[0]
         price_entry = x[1]
-        starting_time = time_entry - (padding * 60)
+        starting_time = time_entry - (padding * 60000)
 
         # plot the entry point
         ent_graph = go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')
@@ -76,7 +76,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             # get the exit time and price, and use the exit time to calculate the end of the timeframe to be plotted
             time_exit = exits[i][0]
             price_exit = exits[i][1]
-            ending_time = time_exit + (padding * 60)
+            ending_time = time_exit + (padding * 60000)
 
             # plot the exit point
             exit_graph = go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')
@@ -120,7 +120,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
             plot_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
 
             # calculate hold time and percent profit for the movement
-            hold_time = (time_exit - time_entry) / 60
+            hold_time = (time_exit - time_entry) / 60000
             profit = round(((price_exit / price_entry) * 100) - 100, 2)
             movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
             movement_stats['% Profit'] = str(profit) + '%'

@@ -25,14 +25,14 @@
     # Fees to subtract from trades (percentage)
     "fees": 0.001,
     # Strategy to execute (file name sans version no.)
-    "strategy": ["indicator_test"],
+    "strategy": ["swing"],
     # Version of strategy
     # specifying latest will just grab the highest version number present
-    "strategy_version": ["latest"],
+    "strategy_version": ["1_0"],
     # Indicators to plot on the results graph
     "indicators_to_graph": [],
     # Whether or not results should be plotted
-    "plot": false,
+    "plot": true,
     # Slippage to factor into profits
     "slippage": 0,
     # Report movement plots as individual pages or embedded divs (choose 'pages', 'divs', or 'auto')
