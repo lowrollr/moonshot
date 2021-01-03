@@ -129,6 +129,16 @@ var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsK
 	EfficientSleep(times_per_min, now, time.Minute)
 }
 
+/*
+	ARGS:
+		-> symbol (string): string of the symbol ex: btcusdt
+		-> depth (string): string of how deep to look in the order book ex: 20
+    RETURN:
+        -> N/A
+    WHAT:
+		-> funciton for goroutine for getting the order book data
+		-> Uses binance web socket to obtain data and send to db
+*/
 func OrderBookGoRoutine(symbol string, depth string) {
 	for {
 		stop_order_chan, _, err := binance.WsPartialDepthServe(symbol, depth, tradeOrderDataConsumer, ErrorTradeHandler)
@@ -139,6 +149,16 @@ func OrderBookGoRoutine(symbol string, depth string) {
 	}
 }
 
+/*
+	ARGS:
+		-> symbol (string): representing the symbol. ex: btcusdt
+		-> kline_interval (string): how big a kline to get. ex: 1m
+    RETURN:
+        -> N/A
+    WHAT:
+		-> funciton for goroutine for getting the kline candlestick data
+		-> Uses binance web socket to obtain data and send to db
+*/
 func KlineGoRoutine(symbol string, kline_interval string) {
 	for {
 		stop_candle_chan, _, err := binance.WsKlineServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
@@ -158,10 +178,6 @@ func KlineGoRoutine(symbol string, kline_interval string) {
     WHAT:
 		-> Consumes data and stores in the DB
 		-> Uses binance web socket to obtain data and send to db
-	TODO:
-		-> Change so that it gets coin abreviations from database
-		-> Is tether the best coin to transfer to?
-		-> Figure out better way to determine stable coins other than manually
 */
 func ConsumeData(coins *[]string) {
 	// binance.WebsocketKeepalive = true
