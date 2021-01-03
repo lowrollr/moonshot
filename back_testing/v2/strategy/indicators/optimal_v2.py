@@ -76,7 +76,7 @@ class Optimal_v2(Indicator):
             cur_buy = x[0][1][0]
             cur_sell = x[-1][1][1]
             cur_enter_time = x[0][0][0]
-            if prev_buy < cur_buy and prev_sell < cur_sell and cur_enter_time - 600 < prev_exit_time:
+            if prev_buy < cur_buy and prev_sell < cur_sell and cur_enter_time - 600000 < prev_exit_time:
                 final_joined_movements.append(prev_movement + x)
                 prev_movement = prev_movement + x
                 was_join_last = True
