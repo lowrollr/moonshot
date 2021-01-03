@@ -10,9 +10,10 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.sma import SMA
 import numpy as np
+from talib import CMO as talib_CMO
 
 '''
-CLASS: CCI
+CLASS: CMO
 WHAT:
     -> Implements the CMO Indicator and adds the approprite columns to the dataset
     -> What is CMO? --> https://www.investopedia.com/terms/c/commoditychannelindex.asp
@@ -30,9 +31,7 @@ class CMO(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> computes the commodity channel index of the specified value over the given period
-        -> Formula: CCI = (TP - SMA(TP)) / (0.015 * Mean Deviation)
-            TP = High+Low+Close) ÷ 3
+        -> computes the CMO of the specified value over the given period
     TODO:
         -> This has not been tested
     '''
@@ -44,4 +43,5 @@ class CMO(Indicator):
         if gen_new_values:
             period.genValue()
         
+        dataset[self.name] = talib_CMO(dataset[value], timeperiod=period.value)
         

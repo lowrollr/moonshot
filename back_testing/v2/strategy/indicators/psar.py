@@ -17,8 +17,6 @@ WHAT:
     -> What is PSAR? --> https://www.investopedia.com/trading/introduction-to-parabolic-sar/
     -> Params Required:
         -> 'period'
-TODO:
-    -> replace pyti implementation
 '''
 class PSAR(Indicator):
 
@@ -36,10 +34,14 @@ class PSAR(Indicator):
     def genData(self, dataset, gen_new_values=True, value='close'):
 
         # param named 'period' must be present
-        period = findParams(self.params, ['period'])[0]
+        acceleration, maxiumum = findParams(self.params, ['acceleration', 'maxiumum'])[0]
         # generate a new period value, if necessary
         if gen_new_values:
-            period.genValue()
+            acceleration.genValue()
+            maxiumum.genValue()
 
         # compute SAR
-        dataset[self.name] = SAR(dataset.high, dataset.close, acceleration=0.2, maxiumum=0.2)
+        dataset["intermediate_psar"] = SAR(dataset.high, dataset.close, acceleration=acceleration.value, maximum=maxiumum.value)
+        dataset[self.name] = dataset["intermediate_psar"] = dataset[value]
+
+        dataset.drop(["intermediate_psar"], inplace=True, axis=1)

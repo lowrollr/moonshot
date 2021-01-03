@@ -114,7 +114,7 @@ class Trading:
                 else:
                     try:
                         b_file = f'{b_dir}{b}USDT-{freq}m-data_chunk{self.chunk_ids[i]}.csv'
-                        datasets.append([pd.read_csv(b_file), f[:-4]])
+                        datasets.append([pd.read_csv(b_file), b_file[:-4]])
                     except Exception:
                         raise Exception(f"The specified chunk ({self.chunk_ids[i]}) for {b} does not exist!\n")
                 

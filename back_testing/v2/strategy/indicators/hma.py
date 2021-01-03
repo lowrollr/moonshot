@@ -5,7 +5,7 @@ AUTHORS:
 WHAT:
     -> This file contains the HMA (Hull Moving Average) Indicator
 '''
-from v2.utils import findParams, calcSlope
+from v2.utils import findParams
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.wma import WMA

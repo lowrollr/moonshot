@@ -6,6 +6,9 @@ WHAT:
     -> This file contains the SMA (Simple Moving Average) Indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
+from v2.utils import findParams
+
+from talib import SMA as talib_SMA
 
 '''
 CLASS: SMA
@@ -37,4 +40,5 @@ class SMA(Indicator):
             period.genValue()
         
         # compute simple moving average and add to the dataset
-        dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
+        dataset[self.name] = talib_SMA(dataset[value], timeperiod=period.value)
+        # dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
