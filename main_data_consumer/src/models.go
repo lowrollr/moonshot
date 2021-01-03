@@ -25,10 +25,16 @@ type OrderBook struct {
 }
 
 type CoinVolume struct {
-	Volume   float32 `gorm:"Type:real;not null;"`
-	Trades   uint32  `gorm:"not null;"`
-	coinName string  `gorm:"-"`
-	Time     int64   `gorm:"type:bigint;not null"`
+	StartTime int64   `gorm:"Type:bigint;not null;"`
+	EndTime   int64   `gorm:"Type:bigint;not null;"`
+	Open      float32 `gorm:"Type:real;not null;"`
+	High      float32 `gorm:"Type:real;not null;"`
+	Low       float32 `gorm:"Type:real;not null;"`
+	Close     float32 `gorm:"Type:real;not null;"`
+	Volume    float32 `gorm:"Type:real;not null;"`
+	Trades    uint32  `gorm:"not null;"`
+	coinName  string  `gorm:"-"`
+	Time      int64   `gorm:"type:bigint;not null"`
 }
 
 // type AllCoinData struct {
