@@ -10,7 +10,6 @@ import pandas
 
 from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
-from v2.utils import calcSlope
 
 '''
 CLASS: EMA
@@ -43,5 +42,3 @@ class EMA(Indicator):
 
         # compute EMA and add to the dataset
         dataset[self.name] = dataset[value].ewm(span=period.value, adjust=False).mean()
-
-        # dataset[self.name + "_slope"] = dataset[self.name].rolling(window=3, min_periods=2).apply(calcSlope, raw=True)

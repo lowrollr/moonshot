@@ -10,7 +10,6 @@ from pyti.smoothed_moving_average import smoothed_moving_average as smma
 
 from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
-from v2.utils import calcSlope
 
 '''
 CLASS: SMMA
@@ -46,5 +45,3 @@ class SMMA(Indicator):
         new_smma = smma(dataset[value].tolist(), int(period.value))
         # add to dataset
         dataset[self.name] = new_smma
-
-        # dataset[self.name + "_slope"] = dataset[self.name].rolling(window=3, min_periods=2).apply(calcSlope, raw=True)

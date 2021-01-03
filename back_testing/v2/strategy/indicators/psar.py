@@ -1,22 +1,27 @@
 '''
-FILE: sma.py
+FILE: psar.py
 AUTHORS:
-    -> Jacob Marshall (marshingjay@gmail.com)
+    -> Ross Copeland (rhcopeland101@gmail.com)
 WHAT:
-    -> This file contains the SMA (Simple Moving Average) Indicator
+    -> This file contains the PSAR (Parabolic SAR) Indicator
 '''
+
+from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
+from talib import SAR
 
 '''
-CLASS: SMA
+CLASS: PSAR
 WHAT:
-    -> Implements the SMA Indicator and adds the approprite columns to the dataset
-    -> What is SMA? --> https://www.investopedia.com/terms/s/sma.asp
+    -> Implements the PSAR Indicator and adds the approprite columns to the dataset
+    -> What is PSAR? --> https://www.investopedia.com/trading/introduction-to-parabolic-sar/
     -> Params Required:
         -> 'period'
+TODO:
+    -> replace pyti implementation
 '''
-class SMA(Indicator):
-    
+class PSAR(Indicator):
+
     '''
     ARGS:
         -> dataset (DataFrame): dataset to add the indicator values as a column to
@@ -26,7 +31,7 @@ class SMA(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> computes the simple moving average of the specified value over the given period
+        -> computes the parabolic sar of the specified value over the given period
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
 
@@ -35,6 +40,6 @@ class SMA(Indicator):
         # generate a new period value, if necessary
         if gen_new_values:
             period.genValue()
-        
-        # compute simple moving average and add to the dataset
-        dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
+
+        # compute SAR
+        dataset[self.name] = SAR(dataset.high, dataset.close, acceleration=0.2, maxiumum=0.2)

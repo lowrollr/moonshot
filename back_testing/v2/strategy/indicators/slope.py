@@ -1,9 +1,9 @@
 '''
 FILE: slope.py
 AUTHORS:
-    -> Jacob Marshall (marshingjay@gmail.com)
+    -> Ross Copeland (rhcopeland101@gmail.com)
 WHAT:
-    -> This file contains the Slope Indicator
+    -> This file contains the slope indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
@@ -28,11 +28,11 @@ class Slope(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> calculates and adds the slope of the specified value over the given period to the dataset
+        -> calculates and adds the rate of change of the specified value over the given period to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()
 
-        dataset[self.name] = (dataset[value].rolling(window=int(period.value)).max() - dataset[value].rolling(window=int(period.value)).min()) / dataset[value].rolling(window=int(period.value)).max()
+        dataset[self.name] = (dataset[value].rolling(window=int(period.value)).apply(lambda x: (x[-1] - x[0])/ period.value)) 

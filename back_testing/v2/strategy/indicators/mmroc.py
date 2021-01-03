@@ -1,22 +1,25 @@
 '''
-FILE: sma.py
+FILE: mmroc.py
 AUTHORS:
     -> Jacob Marshall (marshingjay@gmail.com)
+    -> Ross Copeland (rhcopeland101@gmail.com)
 WHAT:
-    -> This file contains the SMA (Simple Moving Average) Indicator
+    -> This file contains the MinMax Rate of Change Indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
+from v2.utils import findParams
+import pandas
 
 '''
-CLASS: SMA
+CLASS: MinMaxRateOfChange
 WHAT:
-    -> Implements the SMA Indicator and adds the approprite columns to the dataset
-    -> What is SMA? --> https://www.investopedia.com/terms/s/sma.asp
+    -> Calculates the min max rate of change for the given window and adds the approprite column to the dataset
+    -> What is slope? --> https://www.investopedia.com/terms/r/rateofchange.asp
     -> Params Required:
         -> 'period'
 '''
-class SMA(Indicator):
-    
+
+class MinMaxRateOfChange(Indicator):
     '''
     ARGS:
         -> dataset (DataFrame): dataset to add the indicator values as a column to
@@ -26,15 +29,11 @@ class SMA(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> computes the simple moving average of the specified value over the given period
+        -> calculates and adds the rate of change of the specified value over the given period to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
-
-        # param named 'period' must be present
         period = findParams(self.params, ['period'])[0]
-        # generate a new period value, if necessary
         if gen_new_values:
             period.genValue()
-        
-        # compute simple moving average and add to the dataset
-        dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
+
+        dataset[self.name] = (dataset[value].rolling(window=int(period.value)).max() - dataset[value].rolling(window=int(period.value)).min()) / dataset[value].rolling(window=int(period.value)).max()

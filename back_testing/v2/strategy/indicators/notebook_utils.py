@@ -20,7 +20,7 @@ from v2.strategy.indicators.macd import MACD
 from v2.strategy.indicators.delta import Delta
 from v2.strategy.indicators.pivot_points import PivotPoints
 from v2.strategy.indicators.variance import Variance
-from v2.strategy.indicators.slope import Slope
+from v2.strategy.indicators.mmroc import MinMaxRateOfChange
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
@@ -113,13 +113,13 @@ def fetchIndicators(indicator_list, param_specification={}):
             rsi_period = Param(5, 10000, 0, 'period', rsi_period_value)
 
             my_ind = RSI(_params=[rsi_period])
-        elif indicator == 'slope':
-            slope_period_value = 60
-            if 'slope.period' in param_specification:
-                slope_period_value = param_specification['slope.period']
-            slope_period = Param(5, 10001, 0, 'period', slope_period_value)
+        elif indicator == 'mmroc':
+            mmroc_period_value = 60
+            if 'mmroc.period' in param_specification:
+                mmroc_period_value = param_specification['mmroc.period']
+            mmroc_period = Param(5, 10001, 0, 'period', mmroc_period_value)
 
-            my_ind = Slope(_params=[slope_period])
+            my_ind = MinMaxRateOfChange(_params=[mmroc_period])
         elif indicator == 'variance':
             var_period_value = 90
             if 'variance.period' in param_specification:
