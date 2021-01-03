@@ -19,7 +19,7 @@ import plotly.graph_objs as go
 from plotly.offline import plot
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from itertools import product
+from itertools import product, takewhile
 import random
 import numpy as np
 from multiprocessing import Pool
@@ -78,47 +78,51 @@ class Trading:
         self.test_param_ranges = config['test_param_ranges'] 
         
         self.plot = config['plot']
-        
+        self.df_groups = []
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
-        self.dfs = self.getDatasets(self.currencies, self.freq)
+        self.getDatasets()
 
 
     '''
     ARGS:
-        -> base_currencies ([String]): List of base currencies to fetch datasets for
-        -> quote_currencies ([String]): List of quote currencies to fetch datasets for
-        -> freq (Int): The timeframe to fetch datasets for (in minutes)
+        -> None
     RETURN:
-        -> datasets ([Dataframe]): List of pandas dataframes, each containing a dataset
-            for a base/quote pair
+        -> None
     WHAT: 
-        -> fetches a dataset for each possible pair of <base currency>/<quote currency> 
-            for the given timeframe
+        -> fetches groups of datasets for each currency and stores it in the class's list of dataset groups
     TODO:
         -> fix retrieve all to account for dataset refactor
     '''
-    def getDatasets(self, currencies, freq):
-        datasets = []
-        if currencies == ['all']:
+    def getDatasets(self):
+        
+        if self.currencies == ['all']:
             pass
             # filenames = utils.retrieveAll(freq)
         else:
-            for i,b in enumerate(currencies):
-                b_dir = f'historical_data/{self.data_source}/{b}/{freq}m/'
+            for i,b in enumerate(self.currencies):
+                cur_group = []
+                b_dir = f'historical_data/{self.data_source}/{b}/{self.freq}m/'
                 files = os.listdir(b_dir)
                 if self.daisy_chain:
-                    for f in files:
+                    for j,f in enumerate(sorted(files)):
                         b_file = f'{b_dir}{f}'
-                        datasets.append([pd.read_csv(b_file), f[:-4]])
+                        my_df = pd.read_csv(b_file)
+                        my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
+                        my_df.rename(columns={'close_time': 'time'}, inplace=True)
+                        cur_group.append(my_df)
                 else:
                     try:
-                        b_file = f'{b_dir}{b}USDT-{freq}m-data_chunk{self.chunk_ids[i]}.csv'
-                        datasets.append([pd.read_csv(b_file), f[:-4]])
+                        b_file = f'{b_dir}{b}USDT-{self.freq}m-data_chunk{self.chunk_ids[i]}.csv'
+                        my_df = pd.read_csv(b_file)
+                        my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
+                        my_df.rename(columns={'close_time': 'time'}, inplace=True)
+                        cur_group.append(my_df)
                     except Exception:
                         raise Exception(f"The specified chunk ({self.chunk_ids[i]}) for {b} does not exist!\n")
                 
-        return datasets
+                self.df_groups.append([cur_group, f'{b}USDT-{self.freq}m'])
+                
 
 
     '''
@@ -185,7 +189,14 @@ class Trading:
         -> This function does way too many things...
         -> Is slippage all the way implemented?
     '''
-    def executeStrategy(self, strategy, my_dataset, should_print=True, plot=True, *args):
+    def executeStrategy(self, strategy, my_dataset_group, should_print=True, plot=True, *args):
+        first_times = set()
+        dataset_name = my_dataset_group[1]
+        dataset = pd.DataFrame()
+        for d in my_dataset_group[0]:
+            dataset = dataset.append(d)
+    
+            first_times.add(d.head(1).time[0])
         
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
@@ -196,10 +207,7 @@ class Trading:
         # this will keep track of whether or not we are engaged in a position in the base currency
         position_taken = False
         
-        # the dataset itself will be the first part of the tuple passed
-        dataset = my_dataset[0]
-        # the name of the dataset is the second part
-        dataset_name = my_dataset[1]
+        
         
         # this keeps track of fees we incur by entering a postion in the base currency
         # these will be subtracted once we have converted our position back to the quote currency
@@ -230,7 +238,12 @@ class Trading:
         else:
             rows = dataset.itertuples()
         for row in rows:
-        
+            if not position_quote and row.time in first_times:
+                position_quote = old_quote
+                position_base = 0.0
+                entries.pop()
+                position_taken = False
+
             # keep track of the close price for the given tick
             close = row.close
             slippage_close = close
@@ -302,7 +315,7 @@ class Trading:
         dataset['account_value'] = np.array(account_history)
 
         ending_value = close
-
+        
         # build the file name to use for graphs/plots
         name = 'results-' + strategy.name + '-' + dataset_name
 
@@ -334,7 +347,7 @@ class Trading:
         stats['Asset Growth ($)'] = round(ending_value - starting_base_value, 2)
         stats['Asset Growth (%)'] = str(round(((ending_value / starting_base_value) * 100) - 100, 2)) + '%'
 
-
+        
         if plot:
             print('Generating Report...')
             write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format, stats, self.fees)
@@ -362,11 +375,12 @@ class Trading:
             #self.segmented_genetic_execution()
 
         for x in self.strategies:
-            for d in self.dfs:
-                for ind in x.indicators:
-                    ind.genData(d[0], False)
+            for group in self.df_groups:
+                for d in group[0]:
+                    for ind in x.indicators:
+                        ind.genData(d, False)
                 # execute the strategy on the dataset       
-                self.executeStrategy(x, d, plot=self.plot)
+                self.executeStrategy(x, group, plot=self.plot)
 
 
     '''
@@ -394,7 +408,7 @@ class Trading:
                     raise ValueError("The percentages do not add to one for genetic algorithm, please edit genetic.hjson")
                 
                 # store the original dataset
-                original_dataset = d[0]
+                original_dataset = d
 
                 #splitting up the data into train/test/val
                 train_number = int(genetic_config["train_data"] * len(original_dataset))
@@ -535,7 +549,7 @@ class Trading:
                 # keep track of best score so far
                 prev_best_score = 0.0
 
-                dataset = d[0]
+                dataset = d
                 # run until improvement is small enough to exit
                 gen_count = 1
                 while not done and gen_count <= max_generations:

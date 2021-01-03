@@ -8,7 +8,6 @@ WHAT:
 from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
 import numpy as np
-from v2.utils import calcSlope
 
 '''
 CLASS: WMA
