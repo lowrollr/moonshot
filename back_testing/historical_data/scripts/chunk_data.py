@@ -4,7 +4,7 @@ import os
 import sys
 
 
-filename = 'ETHUSDT-1m-data.csv'
+filename = 'ADAUSDT-1m-data.csv'
 timestamp_label = 'close_time'
 good_amount = 64800
 
