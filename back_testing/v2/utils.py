@@ -248,17 +248,3 @@ def retrieveAll(quote_currencies, frequency):
                 base_currencies.append(match[0])
 
     return base_currencies
-
-'''
-ARGS:
-    -> x ([float]): list of floats
-RETURN:
-    -> (float): slope between the first and last item
-WHAT:
-    -> Computes slope between first and last item of list. 
-    -> Can also use polyfit, but it takes a very long time to compute
-'''
-def calcSlope(x):
-    slope = (x[len(x) - 1] - x[0]) / len(x)
-    #slope = np.polyfit(range(len(x)), x, 1)[0]
-    return slope
