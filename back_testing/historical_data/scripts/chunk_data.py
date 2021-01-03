@@ -4,7 +4,7 @@ import os
 import sys
 
 
-filename = 'ADAUSDT-1m-data.csv'
+filename = 'ETCUSDT-1m-data.csv'
 timestamp_label = 'close_time'
 good_amount = 64800
 
@@ -20,6 +20,6 @@ for x in gaps:
     chunk_size = x - cur_chunk_start
     if chunk_size > good_amount:
         chunk = data.iloc[cur_chunk_start:x+1][['close_time', 'open', 'high', 'low', 'close', 'volume']]
-        chunk.to_csv(filename[:-4] + '_chunk' + str(chunk_num) + '.csv')
+        chunk.to_csv(filename[:-4] + '_chunk' + '0'*(6 -len(str(chunk_num))) + str(chunk_num) + '.csv')
         chunk_num += 1
         cur_chunk_start = x + 2
