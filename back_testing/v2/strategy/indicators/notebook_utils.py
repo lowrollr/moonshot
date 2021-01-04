@@ -28,6 +28,8 @@ from v2.strategy.indicators.ichimoku import Ichimoku
 from v2.strategy.indicators.cci import CCI
 from v2.strategy.indicators.hma import HMA
 from v2.strategy.indicators.psar import PSAR
+from v2.strategy.indicators.natr import NATR
+from v2.strategy.indicators.beta import Beta
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -187,9 +189,25 @@ def fetchIndicators(indicator_list, param_specification={}):
             my_ind = HMA(_params=[hma_period])
 
         elif indicator == 'psar':
-            not_used_period_val = 100
-            psar_period = Param(5, 100, 0, 'period', not_used_period_val)
-            my_ind = PSAR(_params=[psar_period])
+            psar_acceleration_val = 0.0
+            psar_maxiumum_val = 0.2
+
+            psar_acceleration = Param(0, 0.2, 2, 'acceleration', psar_acceleration_val)
+            psar_maxiumum = Param(0, 0.3, 2, 'maxiumum', psar_maxiumum_val)
+
+            my_ind = PSAR(_params=[psar_acceleration, psar_maxiumum])
+
+        elif indicator == "beta":
+            timeperiod = 5
+            beta_period = Param(2, 1000, 0, 'period', timeperiod)
+
+            my_ind = Beta(_params=[beta_period])
+
+        elif indicator == "natr":
+            timeperiod = 15
+            natr_period = Param(2, 100, 0, 'period', timeperiod)
+
+            my_ind = NATR(_params=[natr_period])
         else:
             raise Exception('Invalid Indicator Name: ' + str(indicator))
 
