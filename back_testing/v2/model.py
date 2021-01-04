@@ -104,6 +104,7 @@ class Trading:
                 cur_group = []
                 b_dir = f'historical_data/{self.data_source}/{b}/{self.freq}m/'
                 files = os.listdir(b_dir)
+                # if daisy chaining is enabled, append all datasets for the given currency to the group list
                 if self.daisy_chain:
                     for j,f in enumerate(sorted(files)):
                         b_file = f'{b_dir}{f}'
@@ -111,16 +112,24 @@ class Trading:
                         my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
                         my_df.rename(columns={'close_time': 'time'}, inplace=True)
                         cur_group.append(my_df)
+                # otherwise, find the specified chunk in the config file and add the single dataframe corresponding to that chunk to the group list
                 else:
                     try:
-                        b_file = f'{b_dir}{b}USDT-{self.freq}m-data_chunk{self.chunk_ids[i]}.csv'
+                        # construct the appropriate filename to fetch given a chunk id and frequency
+                        zero_str = '0'
+                        b_file = f'{b_dir}{b}USDT-{self.freq}m-data_chunk{zero_str * (6 - len(str(self.chunk_ids[i])))}{self.chunk_ids[i]}.csv'
                         my_df = pd.read_csv(b_file)
+                        # grab the appropriate columns
                         my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
+                        # this will need to be adapted to other datasets (other than binance), probably should standardize how we pass dataframes in but this is fine for now
                         my_df.rename(columns={'close_time': 'time'}, inplace=True)
+
                         cur_group.append(my_df)
                     except Exception:
+                        # will be raised if the chunk id given in the config file doesn't exist
                         raise Exception(f"The specified chunk ({self.chunk_ids[i]}) for {b} does not exist!\n")
                 
+                # append the group to the master group list, paired with the dataset name
                 self.df_groups.append([cur_group, f'{b}USDT-{self.freq}m'])
                 
 
@@ -174,24 +183,28 @@ class Trading:
     RETURN:
         -> conv_position (Float): Total amount of funds in quote currency held after executing the 
             strategy on the dataset
+        -> entries ((Int, Float)): tuples (time, value) pretaining to when a position was entered
+        -> exits ((Int, Float)): tuples (time, value) pretaining to when a position was exited
     WHAT: 
-        -> Executes the given strategy on the dataset
+        -> Executes the given strategy on the dataset group
         -> Calls the appropriate strategy procedures each tick
             i.e. calc_enrty() when looking to enter
                  calc_exit() when looking to exit
                  process() every tick
         -> This assumes that our entire position is converted from currency a to currency b and
             vice-versa when making a trade
-        -> Optionally plots a candlestick chart showing entry/exit points
-        -> Logs entry and exit points
-        -> Calculates performance metrics and writes them to the console after executing
+        -> Sends trade statistics to the reporting module so a report can be generated
+        -> Concatenates all dataset chunks in dataset group but ensures trades do not occur between chunks
     TODO:
-        -> This function does way too many things...
         -> Is slippage all the way implemented?
     '''
     def executeStrategy(self, strategy, my_dataset_group, should_print=True, plot=True, *args):
+        # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
         first_times = set()
+        # store the dataset name to use later
         dataset_name = my_dataset_group[1]
+
+        # construct a single dataframe from all of the individual dataframes in the group, and construct the first_times set
         dataset = pd.DataFrame()
         for d in my_dataset_group[0]:
             dataset = dataset.append(d)
@@ -204,6 +217,7 @@ class Trading:
         start = position_quote
         # initialize base position to 0 units
         position_base = 0.00
+
         # this will keep track of whether or not we are engaged in a position in the base currency
         position_taken = False
         
@@ -217,9 +231,10 @@ class Trading:
         # keeps track of the current close price (used within the loop as well as after)
         close = 0.0
 
+        # keeps track of the last quote position we were engaged in (useful for backtracking to last quote position when reached end of time window)
         old_quote = 0.0
         
-        # vars to keep track of slippage
+        # keep track of slippage
         slippage_tot = 0.0
         slippage_pos_base = 0.00
         slippage_pos_quote = position_quote
@@ -230,17 +245,22 @@ class Trading:
         entries = []
         exits = []
         account_history = []
+
+
         starting_base_value = dataset['close'].values[0]
-        # this is the main loop for iterating through each row of the dataset
-        rows = []
+        # grab all the rows in the dataset as Series objects
+        rows = dataset.itertuples()
         if should_print:
-            rows = tqdm(dataset.itertuples())
-        else:
-            rows = dataset.itertuples()
+            rows = tqdm(rows)
+
+        # execute the strategy row by row (tick by tick)
         for row in rows:
+
+            # if we are currently in a position in the base currency and reach the end of the chunk, revert to our last quote position
             if not position_quote and row.time in first_times:
                 position_quote = old_quote
                 position_base = 0.0
+                # remove the last entry so entries/exits stay paired up
                 entries.pop()
                 position_taken = False
 
@@ -347,11 +367,12 @@ class Trading:
         stats['Asset Growth ($)'] = round(ending_value - starting_base_value, 2)
         stats['Asset Growth (%)'] = str(round(((ending_value / starting_base_value) * 100) - 100, 2)) + '%'
 
-        
+        # write the report
         if plot:
             print('Generating Report...')
             write_report(dataset, entries, exits, self.indicators_to_graph, name, self.report_format, stats, self.fees)
-        # return the final quote position
+
+        # return the final quote position, as well as the list of entries and exits
         return conv_position, entries, exits
     
 
@@ -369,13 +390,15 @@ class Trading:
         for x in range(len(self.strategy_list)):
             self.strategies.append(self.importStrategy(self.strategy_list[x], self.version_list[x])())
 
-        # execute each strategy on each dataset
+        # run genetic algorithm if specified by config
         if self.test_param_ranges:
             self.geneticExecution()
-            #self.segmented_genetic_execution()
 
+        # execute each strategy
         for x in self.strategies:
+            # execute the strategy on each dataset group
             for group in self.df_groups:
+                # generate data for each dataset in the group
                 for d in group[0]:
                     for ind in x.indicators:
                         ind.genData(d, False)
