@@ -98,17 +98,22 @@ def fetchIndicators(indicator_list, param_specification={}):
 
             my_ind = PivotPoints(_params=[pp_period])
         elif indicator == 'stochastic_oscillator':
-            stoch_highlow_value = 90
-            if 'stochastic_oscillator.highlow' in param_specification:
-                stoch_highlow_value = param_specification['stochastic_oscillator.highlow']
-            stoch_highlow = Param(5, 10000, 0, 'highlow_range', stoch_highlow_value)
+            slowk_value = 270
+            if 'stochastic_oscillator.slowkperiod' in param_specification:
+                slowk_value = param_specification['stochastic_oscillator.slowkperiod']
+            slowk = Param(5, 10000, 0, 'slowkperiod', slowk_value)
 
-            stoch_k_value = 270
-            if 'stochastic_oscillator.k' in param_specification:
-                stoch_k_value = param_specification['stochastic_oscillator.k']
-            stoch_k = Param(5, 10000, 0, 'k_period', stoch_k_value)
+            fastk_value = 90
+            if 'stochastic_oscillator.fastkperiod' in param_specification:
+                fastk_value = param_specification['stochastic_oscillator.fastkperiod']
+            fastk = Param(5, 10000, 0, 'fastkperiod', fastk_value)
 
-            my_ind = StochasticOscillator(_params=[stoch_highlow, stoch_k])
+            slowd_value = 270
+            if 'stochastic_oscillator.slowdperiod' in param_specification:
+                slowd_value = param_specification['stochastic_oscillator.slowdperiod']
+            slowd = Param(5, 10000, 0, 'slowdperiod', slowd_value)
+
+            my_ind = StochasticOscillator(_params=[slowk, fastk, slowd])
         elif indicator == 'rsi':
             rsi_period_value = 90
             if 'rsi.period' in param_specification:
