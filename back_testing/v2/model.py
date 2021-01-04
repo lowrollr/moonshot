@@ -402,6 +402,7 @@ class Trading:
                 for d in group[0]:
                     for ind in x.indicators:
                         ind.genData(d, False)
+                        d.dropna(inplace=True)
                 # execute the strategy on the dataset       
                 self.executeStrategy(x, group, plot=self.plot)
 
