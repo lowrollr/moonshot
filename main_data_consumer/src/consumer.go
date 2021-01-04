@@ -10,10 +10,13 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/adshao/go-binance/v2"
+	log "github.com/sirupsen/logrus"
 )
 
 /*
@@ -31,7 +34,7 @@ import (
 func EfficientSleep(partition int, prev_time time.Time, duration time.Duration) {
 	prev_time_nano := int64(prev_time.UnixNano())
 	later_nano := int64(time.Now().UnixNano())
-	partition_nano := time.Minute.Nanoseconds() / int64(partition)
+	partition_nano := duration.Nanoseconds() / int64(partition)
 	if prev_time_nano-(later_nano-prev_time_nano) > 0 {
 		time.Sleep(time.Duration(partition_nano-(later_nano-prev_time_nano)) * time.Nanosecond)
 	}
@@ -78,21 +81,20 @@ func waitFunc() {
 		-> Passes data to the database storing function
 */
 var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event *binance.WsPartialDepthEvent) {
-	the_time := time.Now()
-	if the_time.Minute()%3 == 2 {
+	now := time.Now()
+	if now.Minute()%3 == 2 {
 		binance.WebsocketKeepalive = true
-	} else if the_time.Minute()%3 == 1 {
+	} else if now.Minute()%3 == 1 {
 		binance.WebsocketKeepalive = false
 	}
 	times_per_min := 3
 
-	now := time.Now()
-	fmt.Println(event)
+	// fmt.Println(event)
 	// store the event in database
 	err := Dumbo.StoreCryptoBidAsk(event)
 	if err != nil {
-		fmt.Println("Was not able to store crypto information " + err.Error())
-		panic(err)
+		// fmt.Println("Was not able to store crypto information " + err.Error())
+		log.Warn("Was not able to store order data with error:" + err.Error())
 	}
 	// sleep to get maximum efficiency from socket
 	EfficientSleep(times_per_min, now, time.Minute)
@@ -108,25 +110,84 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 		-> Passes data to the database storing function
 */
 var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsKlineEvent) {
-	the_time := time.Now()
-	if the_time.Minute()%3 == 2 {
+	now := time.Now()
+	if now.Minute()%3 == 2 {
 		binance.WebsocketKeepalive = true
-	} else if the_time.Minute()%3 == 1 {
+	} else if now.Minute()%3 == 1 {
 		binance.WebsocketKeepalive = false
 	}
 	//Time to wait: 1 / 1 minute
 	times_per_min := 1
 
-	now := time.Now()
-	fmt.Println(event)
+	// fmt.Println(event)
 	// store the event in database
 	err := Dumbo.StoreCryptoKline(event)
 	if err != nil {
-		fmt.Println("Was not able to store crypto information " + err.Error())
-		panic(err)
+		// fmt.Println("Was not able to store crypto information " + err.Error())
+		//panic(err)
+		log.Warn("Was not able to store kline data with error: " + err.Error())
+		
 	}
 	// sleep to get maximum efficiency from socket
 	EfficientSleep(times_per_min, now, time.Minute)
+}
+
+/*
+	ARGS:
+		-> event (*binance.WsTradeEvent): pointer to kline candlestick data
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Function passed into binance websocket function on how to handle received candlestick data
+		-> Passes data to the database storing function
+	TODO:
+		-> initialize and sleep at the same time so not wasting time, use channels
+*/
+var singularTradeDataConsumer func(*binance.WsTradeEvent) = func(event *binance.WsTradeEvent) {
+	//toggle for the ping/pong
+	times_per_duration := 4
+	now := time.Now()
+	if now.Minute()%3 == 2 {
+		binance.WebsocketKeepalive = true
+	} else if now.Minute()%3 == 1 {
+		binance.WebsocketKeepalive = false
+	}
+	// fmt.Println(event)
+	volume, err1 := strconv.ParseFloat(event.Quantity, 32)
+	curPrice, err2 := strconv.ParseFloat(event.Price, 32)
+	symbol := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
+
+	if err1 != nil || err2 != nil {
+		fmt.Println(err1.Error() + err2.Error())
+	}
+
+	if err1 == nil && err2 == nil {
+		if shortCandleStickData[symbol].StartTime == 0 {
+			shortCandleStickData[symbol].StartTime = event.Time
+		}
+		if shortCandleStickData[symbol].Open == 0 {
+			shortCandleStickData[symbol].Open = float32(curPrice)
+		}
+
+		shortCandleStickData[symbol].EndTime = event.Time
+		shortCandleStickData[symbol].Close = float32(curPrice)
+
+		shortCandleStickData[symbol].High = Float32Max(shortCandleStickData[symbol].High, float32(curPrice))
+		shortCandleStickData[symbol].Low = Float32Min(shortCandleStickData[symbol].Close, float32(curPrice))
+
+		shortCandleStickData[symbol].Volume += float32(volume)
+
+		if now.Second()%20 == 0 {
+			err := Dumbo.StoreCryptosCandle(shortCandleStickData)
+			if err != nil {
+				fmt.Println("Was not able to store crypto information " + err.Error())
+				fmt.Println(shortCandleStickData)
+			}
+		}
+	}
+	ZeroShortCandleStick(symbol)
+	// sleep to get maximum efficiency from socket
+	EfficientSleep(times_per_duration, now, time.Second)
 }
 
 /*
@@ -143,7 +204,8 @@ func OrderBookGoRoutine(symbol string, depth string) {
 	for {
 		stop_order_chan, _, err := binance.WsPartialDepthServe(symbol, depth, tradeOrderDataConsumer, ErrorTradeHandler)
 		if err != nil {
-			panic(err)
+			// panic(err)
+			log.Warn("Was not able to open websocket to the orderbook data with error: " + err.Error())
 		}
 		<-stop_order_chan
 	}
@@ -163,12 +225,33 @@ func KlineGoRoutine(symbol string, kline_interval string) {
 	for {
 		stop_candle_chan, _, err := binance.WsKlineServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
 		if err != nil {
-			panic(err)
+			// panic(err)
+			log.Warn("Was not able to open websocket to the kline data with error: " + err.Error())
 		}
 		<-stop_candle_chan
 	}
 }
 
+/*
+	ARGS:
+		-> symbol (string): representing the symbol. ex: btcusdt
+		-> kline_interval (string): how big a kline to get. ex: 1m
+    RETURN:
+        -> N/A
+    WHAT:
+		-> funciton for goroutine for getting the kline candlestick data
+		-> Uses binance web socket to obtain data and send to db
+*/
+func TradeGoRoutine(symbol string) {
+	for {
+		stop_candle_chan, _, err := binance.WsTradeServe(symbol, singularTradeDataConsumer, ErrorTradeHandler)
+		if err != nil {
+			// panic(err)
+			log.Warn("Wasa not able to open websocket to the trade data information with error: " + err.Error())
+		}
+		<-stop_candle_chan
+	}
+}
 
 /*
 	ARGS:
@@ -193,8 +276,34 @@ func ConsumeData(coins *[]string) {
 		symbol = strings.ToLower(symbol) + "usdt"
 		go OrderBookGoRoutine(symbol, order_book_depth)
 		go KlineGoRoutine(symbol, kline_interval)
+		// trade feature not implemented correctly yet
+		// go TradeGoRoutine(symbol)
 	}
-
 	//perpetual wait
 	waitFunc()
+}
+
+func ZeroShortCandleStick(symbol string) {
+	shortCandleStickData[strings.ToLower(symbol)] = &OHCLData{}
+	shortCandleStickData[strings.ToLower(symbol)].StartTime = 0
+	shortCandleStickData[strings.ToLower(symbol)].EndTime = 0
+	shortCandleStickData[strings.ToLower(symbol)].Open = 0
+	shortCandleStickData[strings.ToLower(symbol)].High = 0
+	shortCandleStickData[strings.ToLower(symbol)].Low = math.MaxFloat32
+	shortCandleStickData[strings.ToLower(symbol)].Close = 0
+	shortCandleStickData[strings.ToLower(symbol)].Volume = 0
+}
+
+func InitializeShortCandleStick(coins *[]string) {
+	shortCandleStickData = make(map[string]*OHCLData)
+	for _, coin := range *coins {
+		shortCandleStickData[strings.ToLower(coin)] = &OHCLData{}
+		shortCandleStickData[strings.ToLower(coin)].StartTime = 0
+		shortCandleStickData[strings.ToLower(coin)].EndTime = 0
+		shortCandleStickData[strings.ToLower(coin)].Open = 0
+		shortCandleStickData[strings.ToLower(coin)].High = 0
+		shortCandleStickData[strings.ToLower(coin)].Low = math.MaxFloat32
+		shortCandleStickData[strings.ToLower(coin)].Close = 0
+		shortCandleStickData[strings.ToLower(coin)].Volume = 0
+	}
 }
