@@ -11,6 +11,8 @@ from v2.strategy.indicators.ema import EMA
 from v2.utils import findParams
 from v2.strategy.indicators.param import Param
 
+from talib import MACD as talib_MACD
+
 '''
 CLASS: MACD
 WHAT:
@@ -71,9 +73,11 @@ class MACD(Indicator):
         signal = EMA([signal_param_simple], _name='signal', _appended_name=self.appended_name)
         signal.genData(dataset, gen_new_values=False, value=value)
 
-        # final macd calculation, now we are finished
-        dataset[self.name] = dataset['macd_diff' + self.appended_name] - dataset['signal']
+        # # final macd calculation, now we are finished
+        # dataset[self.name] = dataset['macd_diff' + self.appended_name] - dataset['signal']
 
-        # clean up intermediate columns
-        dataset.drop(['ema_fast' + self.appended_name, 'ema_slow' + self.appended_name,\
-            'signal' + self.appended_name, 'macd_diff' + self.appended_name], axis=1, inplace=True)
+        # # clean up intermediate columns
+        # dataset.drop(['ema_fast' + self.appended_name, 'ema_slow' + self.appended_name,\
+        #     'signal' + self.appended_name, 'macd_diff' + self.appended_name], axis=1, inplace=True)
+
+        dataset[[self.name, self.name + "_signal", self.name + "_hist"]] = talib_MACD(dataset[value], ema_slow.value, ema_fast.value, signal.value)
