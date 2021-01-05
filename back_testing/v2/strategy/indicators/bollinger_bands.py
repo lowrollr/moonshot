@@ -8,6 +8,7 @@ WHAT:
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 from v2.strategy.indicators.sma import SMA
+from talib import BBANDS
 import pandas
 
 '''
@@ -32,15 +33,16 @@ class BollingerBands(Indicator):
         -> calculates and adds the Bollinger Bands of the specified value over the given period to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
-        period = findParams(self.params, ['period'])[0]
+        dev_down, dev_up, period = findParams(self.params, ['nbdevup', 'nbdevdn', 'period'])
         
-        boll_sma = SMA([period], _name='boll_sma', _appended_name=self.appended_name)
-        boll_sma.genData(dataset, gen_new_values=gen_new_values, value=value)
-        dataset['boll_stdev' + self.appended_name] = dataset[value].rolling(int(period.value)).std()
-        dataset['boll_upper' + self.appended_name] = dataset['boll_sma'] + (dataset['boll_stdev' + self.appended_name] * 2)
-        dataset['boll_lower' + self.appended_name] = dataset['boll_sma'] - (dataset['boll_stdev' + self.appended_name] * 2)
-
-        # clean up intermediate columns
-        dataset.drop(['boll_stdev' + self.appended_name, 'boll_sma' + self.appended_name], axis=1, inplace=True)
+        if gen_new_values:
+            if dev_down and dev_up:
+                dev_down.genValue()
+                dev_up.genValue()
+            period.genValue()
+        if dev_down and dev_up:
+            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[value], timeperiod=period.value, nbdevup=dev_up.value, nbdevdown=dev_down.value)
+        else:
+            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[value], timeperiod=period.value)
 
         
