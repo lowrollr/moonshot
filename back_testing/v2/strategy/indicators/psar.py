@@ -35,7 +35,7 @@ class PSAR(Indicator):
     def genData(self, dataset, gen_new_values=True, value='close'):
 
         # param named 'period' must be present
-        acceleration, maxiumum = findParams(self.params, ['acceleration', 'maxiumum'])
+        acceleration, maxiumum = findParams(self.params, ['acceleration', 'maximum'])
         # generate a new period value, if necessary
         if gen_new_values:
             acceleration.genValue()
@@ -49,9 +49,6 @@ class PSAR(Indicator):
 
     def setDefaultParams(self):
         self.params = [
-            Param(0,5,0,'acceleration',0),
-            Param(0,5,0,'maximum',0)
+            Param(0,0.2,2,'acceleration',0.01),
+            Param(0,0.2,2,'maximum',0.2)
         ]
-
-
-    
