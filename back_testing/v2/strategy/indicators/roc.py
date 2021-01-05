@@ -43,8 +43,7 @@ class RateOfChange(Indicator):
     
         # calculate percentage difference between x1 and x2 for every point in the dataset
         dataset[self.name] = (dataset[value] - dataset[value].shift(periods=1*period_value))/dataset[value].shift(1*period_value)\
-        # points that occur before the period length can just be set to 0
-        dataset[self.name][:period_value] = 0
+        
 
     def setDefaultParams(self):
         self.params = [
