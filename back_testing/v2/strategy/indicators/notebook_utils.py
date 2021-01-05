@@ -7,6 +7,7 @@ WHAT:
         and manipulation of indicators for research notebooks
     -> Backtesting code should avoid calling these if possible
 '''
+from pandas import concat
 from pyclbr import readmodule
 from importlib import import_module
 from inspect import isclass, getmembers
@@ -68,7 +69,8 @@ WHAT:
 def genDataForAll(dataset, indicators):
     names = []
     for x in indicators:
-        names.append(x.genData(dataset, gen_new_values=False))
+        new_names = x.genData(dataset, gen_new_values=False)
+        names.extend(new_names)
     return names
 
 
@@ -85,14 +87,61 @@ def generateSpans(dataset, indicator_name, column_name, param_name, param_values
     return names
 
 
-def load_data(indicators, param_spec={}, spans={}, scale=''):
+def filter_optimal(optimal, threshold, mode):
+    if mode == 'buy':
+        if optimal > threshold:
+            return 1.0
+        else:
+            return 0.0
+    else:
+        if optimal < threshold:
+            return 1.0
+        else:
+            return 0.0
+
+def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy', spans={}, scale=''):
     features = []
     model = Trading(load_config('config.hjson'))
     dataset_list = []
+    compiling_features = True
     for g,n in model.df_groups:
         print(f'Loading data from {n}...')
-        
         for i,d in enumerate(g):
             print(f'Loading data from chunk {i}...')
-            with alive_bar(length=len(d), spinner='vertical') as bar:
-                features.extend(genDataForAll(fetchIndicators(indicators, param_spec)))
+            new_features = genDataForAll(dataset=d, indicators=fetchIndicators(indicators, param_spec))
+            if 'Optimal_v2' in new_features:
+                new_features.remove('Optimal_v2')
+                d['Optimal_v2'] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold, optimal_mode),  axis=1)
+            if 'Optimal' in new_features:
+                new_features.remove('Optimal')
+                d['Optimal'] = d.apply(lambda x: filter_optimal(x.filter_Optimal, optimal_threshold, optimal_mode),  axis=1)
+            if compiling_features:
+                features.extend(new_features)
+            for span in spans:
+                new_features.extend(generateSpans(dataset=d, 
+                                            indicator_name=span['indicator_name'],
+                                            column_name=span['column_name'],
+                                            param_name=span['param_name'],
+                                            param_values=span['param_values']))
+                if compiling_features:
+                    features.extend(new_features)
+            if scale:
+                scaler = None
+                if scale == 'minmax':
+                    scaler = MinMaxScaler()
+
+                elif scale == 'quartile':
+                    scaler = QuantileTransformer(n_quantiles=100)
+                else:
+                    raise Exception(f'Unknown scaler: {scaler}')
+
+                d[features] = scaler.fit_transform(d[features])
+
+
+            compiling_features = False
+            dataset_list.append(d)
+    dataset = concat(dataset_list)
+    dataset.reset_index(inplace=True, drop=True)
+        
+
+    return dataset, features
