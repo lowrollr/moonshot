@@ -74,19 +74,45 @@ def genDataForAll(dataset, indicators):
     return names
 
 
+'''
+ARGS:
+    -> dataset (DataFrame): dataset to add indicator spans to
+    -> indicator_name (String): indicator applied to column, name corresponds to filename for dynamic importing
+    -> column_name (String): column already in the dataframe to apply the indicator to
+    -> param_name (String): parameter of the indicator to vary
+    -> param_values (String): values for the given param, a dataframe column will be generated for each
+
+RETURN:
+    -> names (String): list of column names generated
+WHAT: 
+    -> Generates data for each the given indicator applied to a column for each given param value
+'''
 def generateSpans(dataset, indicator_name, column_name, param_name, param_values, gen_data=True):
     names = []
     for x in param_values:
+        # grab new instantiated indicator objects corresponding to each name passed, set the param accordingly
         ind = fetchIndicators([indicator_name], param_specification={indicator_name:{param_name: x}})[0]
+        # construct the column name
         name = f'{type(ind).__name__}_{column_name}_{param_name}_{x}'
         ind.name = name
         names.append(name)
+        # generate the data and add it to the dataset
         if gen_data:
             ind.genData(dataset, gen_new_values=False, value=column_name)
 
     return names
 
-
+'''
+ARGS:
+    -> optimal (Float): optimal score from an optimal buy/sell points algorithm implementation
+    -> threshold (Float): Value between 0 and 1 to accept optimal scores for
+    -> mode (String): 'buy' or 'sell' corresponding to whether to consider buy or sell values
+RETURN:
+    -> (Float): 1.0 if the point should be specified as buy/sell point, 0.0 if not
+WHAT: 
+    -> Determines whether or not a given point should be considered an optimal buy/sell point
+        by filtering out scores over a certain threshold
+'''
 def filter_optimal(optimal, threshold, mode):
     if mode == 'buy':
         if optimal > threshold:
@@ -94,11 +120,28 @@ def filter_optimal(optimal, threshold, mode):
         else:
             return 0.0
     else:
-        if optimal < threshold:
+        if optimal < -1*(threshold):
             return 1.0
         else:
             return 0.0
 
+'''
+ARGS:
+    -> indicators ([String]): list of indicators to add to the dataset
+    -> param_spec ({String:{String:Value}}): dictionary defining parameter values to set,
+        maps indicator names to Param:Value pairs
+    -> optimal_threshold (Float): threshold for considering optimal scores, if using an optimal indicator
+    -> optimal_mode (String): should be either 'buy' or 'sell' (whether we are considering buy or sell points)
+    -> spans ([{String: Value}]): list of dictionarires defining arguments to be passed to the generateSpans function
+    -> scale (String): specifies which scaler to use
+RETURN:
+    -> dataset (Dataframe): dataset with all specified features added to it, linking together chunks from each currency 
+    -> names ([String]): list of strings corresponding to non-optimal features added
+WHAT: 
+    -> wrapper for the common operations necessary to configure a dataset in a notebook
+    -> returns the generated dataset and a list of the features added
+    -> will add optimal features if specified but those will NOT be included in the returned features list
+'''
 def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy', spans={}, scale=''):
     features = []
     model = Trading(load_config('config.hjson'))
