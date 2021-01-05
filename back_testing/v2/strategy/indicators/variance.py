@@ -11,6 +11,7 @@ import pandas
 import numpy as np
 
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 
 '''
@@ -66,3 +67,8 @@ class Variance(Indicator):
             var_std = np.std(dataset['variance'])
             avg_var = np.mean(dataset['variance'])
             dataset['stop_loss_percentage'] = dataset.apply(lambda x: self.process_variance(var_std, avg_var, x.variance), axis=1)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

@@ -9,6 +9,7 @@ WHAT:
 import pandas
 
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 from v2.strategy.indicators.smma import SMMA
 
@@ -45,24 +46,9 @@ class RSI(Indicator):
         if gen_new_values:
             period.genValue()
 
-        # # compute diff for selected value i.e. close
-        # dataset['rsi_diff' + self.appended_name] =  dataset[value].diff()
-
-        # # compute rsi_u and rsi_d 
-        # dataset['rsi_u' + self.appended_name] = (abs(dataset['rsi_diff']) + dataset['rsi_diff']) / 2
-        # dataset['rsi_d' + self.appended_name] = (abs(dataset['rsi_diff']) - dataset['rsi_diff']) / 2
-
-        # # compute smma for rsi_u and rsi_d
-        # smma_u = SMMA([period], _name='rsi_smma_u', _appended_name=self.appended_name)
-        # smma_d = SMMA([period], _name='rsi_smma_d', _appended_name=self.appended_name)
-        # smma_u.genData(dataset, gen_new_values=False, value='rsi_u')
-        # smma_d.genData(dataset, gen_new_values=False, value='rsi_d')
-
-        # # compute RSI
-        # dataset[self.name] = 100 - (100 / (1 + (dataset['rsi_smma_u'] / dataset['rsi_smma_d'])))
-
-        # # clean up intermediate columns
-        # dataset.drop(['rsi_u' + self.appended_name, 'rsi_d' + self.appended_name, 'rsi_diff' + self.appended_name,\
-        # 'rsi_smma_u' + self.appended_name, 'rsi_smma_d' + self.appended_name], axis=1, inplace=True)
-
         dataset[self.name] = talib_RSI(dataset[value], timeperiod=period.value)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

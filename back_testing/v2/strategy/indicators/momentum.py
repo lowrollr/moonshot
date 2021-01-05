@@ -6,6 +6,7 @@ WHAT:
     -> This file contains the Momentum Indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 from talib import MOM
 import pandas
@@ -40,4 +41,7 @@ class Momentum(Indicator):
         
         dataset[self.name] = MOM(dataset[value], period.value)
         
-        
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

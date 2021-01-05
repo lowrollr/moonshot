@@ -6,6 +6,7 @@ WHAT:
     -> This file contains the Pivot Points Indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 from v2.strategy.indicators.sma import SMA
 import pandas
@@ -53,3 +54,8 @@ class PivotPoints(Indicator):
         # clean up intermediate columns
         dataset.drop(['pp_pp' + self.appended_name, 'pp_low' + self.appended_name,\
             'pp_high' + self.appended_name, 'pp_sma' + self.appended_name], axis=1, inplace=True)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

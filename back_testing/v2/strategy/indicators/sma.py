@@ -5,6 +5,7 @@ AUTHORS:
 WHAT:
     -> This file contains the SMA (Simple Moving Average) Indicator
 '''
+from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 
@@ -42,3 +43,8 @@ class SMA(Indicator):
         # compute simple moving average and add to the dataset
         dataset[self.name] = talib_SMA(dataset[value], timeperiod=period.value)
         # dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
+    
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

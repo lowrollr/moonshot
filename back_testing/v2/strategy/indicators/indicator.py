@@ -65,6 +65,17 @@ class Indicator:
             for x in self.params:
                 x.genValue()
 
+    '''
+    ARGS:
+        -> None
+    RETURN:
+        -> None
+    WHAT: 
+        -> initializes the set of parameters necessary to generate data for this indicator, useful for lazy people who do not want to specify parameters themselves
+            every time they create an indicator
+    '''
+    def setDefaultParams(self):
+        self.params = []
 
     '''
     ARGS:
