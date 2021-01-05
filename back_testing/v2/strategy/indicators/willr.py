@@ -41,6 +41,8 @@ class WILLR(Indicator):
 
         dataset[self.name] = talib_WILLR(dataset.high, dataset.low, dataset.close, timeperiod=period.value)
 
+        return [self.name]
+
     def setDefaultParams(self):
         self.params = [
             Param(5, 10000, 0,'period', 300)
