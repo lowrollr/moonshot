@@ -1,26 +1,26 @@
 '''
-FILE: bollinger_bands.py
+FILE: ultimate_oscillator.py
 AUTHORS:
     -> Jacob Marshall (marshingjay@gmail.com)
 WHAT:
-    -> This file contains the Bollinger Band Indicator
+    -> This file contains the Ultimate Oscillator Indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 from v2.strategy.indicators.sma import SMA
-from talib import BBANDS
-import pandas
+from talib import ULTOSC
 
 '''
 CLASS: UltimateOscillator
 WHAT:
-    -> Implements the Bollinger Bands Indicator and adds the approprite columns to the dataset
-    -> What are Bollinger Bands? --> 
+    -> Implements the Ultimate Oscillator Indicator and adds the approprite columns to the dataset
+    -> What is the Ultimate Oscillator? --> 
     -> Params Required:
         -> 'period'
 '''
 
-class BollingerBands(Indicator):
+class UltimateOscillator(Indicator):
     '''
     ARGS:
         -> dataset (DataFrame): dataset to add the indicator values as a column to
@@ -33,14 +33,19 @@ class BollingerBands(Indicator):
         -> calculates and adds the Bollinger Bands of the specified value over the given period to the dataset
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
-        dev_down, dev_up, period = findParams(self.params, ['nbdevup', 'nbdevdn', 'period'])
+        period1, period2, period3 = findParams(self.params, ['period1', 'period2', 'period3'])
         
         if gen_new_values:
-            if dev_down and dev_up:
-                dev_down.genValue()
-                dev_up.genValue()
-            period.genValue()
-        if dev_down and dev_up:
-            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[value], timeperiod=period.value, nbdevup=dev_up.value, nbdevdown=dev_down.value)
-        else:
-            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[value], timeperiod=period.value)
+            period1.genValue()
+            period2.genValue()
+            period3.genValue()
+
+        dataset[self.name] = ULTOSC(high=dataset['high'], low=dataset['low'], close=dataset['close'], period1=period1.value, period2=period2.value, period3=period3.value)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period1',300),
+            Param(5,10000,0,'period2',400),
+            Param(5,10000,0,'period3',500)
+            
+        ]
