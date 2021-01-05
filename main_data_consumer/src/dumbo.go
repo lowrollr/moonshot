@@ -91,7 +91,7 @@ func (m MinuteKline) TableName() string {
 	if m.coinName != "" {
 		return strings.ToLower(m.coinName)
 	}
-	return "coin_volume" // default table name
+	return "coin_minute_kline" // default table name
 }
 
 /*
@@ -191,7 +191,7 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 		Open: float32(open), High: float32(high), Low: float32(low), Close: float32(close),
 		Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
 
-	return global_db.Table(strings.ToLower(coin_abb) + "_volume_data").Create(&temp_kline).Error
+	return global_db.Table(strings.ToLower(coin_abb) + "_minute_kline").Create(&temp_kline).Error
 }
 
 /*

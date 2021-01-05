@@ -89,7 +89,7 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 	}
 	times_per_min := 3
 
-	// fmt.Println(event)
+	fmt.Println(event)
 	// store the event in database
 	err := Dumbo.StoreCryptoBidAsk(event)
 	if err != nil {
@@ -119,7 +119,7 @@ var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsK
 	//Time to wait: 1 / 1 minute
 	times_per_min := 1
 
-	// fmt.Println(event)
+	fmt.Println(event)
 	// store the event in database
 	err := Dumbo.StoreCryptoKline(event)
 	if err != nil {
