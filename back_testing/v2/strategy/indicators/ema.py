@@ -8,6 +8,7 @@ WHAT:
 
 import pandas
 
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
 from talib import EMA as talib_EMA
@@ -45,3 +46,8 @@ class EMA(Indicator):
         # dataset[self.name] = dataset[value].ewm(span=period.value, adjust=False).mean()
         
         dataset[self.name] = talib_EMA(dataset[value], timeperiod=period.value)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

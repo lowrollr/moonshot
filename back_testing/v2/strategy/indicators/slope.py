@@ -5,6 +5,7 @@ AUTHORS:
 WHAT:
     -> This file contains the slope indicator
 '''
+from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 import pandas
@@ -36,3 +37,8 @@ class Slope(Indicator):
             period.genValue()
 
         dataset[self.name] = (dataset[value].rolling(window=int(period.value)).apply(lambda x: (x[-1] - x[0])/ period.value)) 
+    
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

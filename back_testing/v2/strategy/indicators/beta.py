@@ -9,6 +9,8 @@ WHAT:
 import pandas
 import numpy as np
 
+
+from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 
@@ -40,3 +42,8 @@ class Beta(Indicator):
             period.genValue()
 
         dataset[self.name] = talib_BETA(dataset.high, dataset.close, timeperiod=period.value)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

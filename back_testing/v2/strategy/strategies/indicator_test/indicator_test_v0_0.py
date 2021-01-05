@@ -17,6 +17,7 @@ from v2.strategy.indicators.macd import MACD
 from v2.strategy.indicators.pivot_points import PivotPoints
 from v2.strategy.indicators.variance import Variance
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.momentum import Momentum
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
 from v2.strategy.indicators.notebook_utils import genDataForAll, fetchIndicators
@@ -42,5 +43,6 @@ class indicator_test(Strategy):
     def __init__(self):
         self.name = 'indicator_test'
         self.is_ml = False
-        self.indicators = fetchIndicators(indicator_list=['psar'])
+        mom_period = Param(0,0,0,'period',90)
+        self.indicators = fetchIndicators(['ema'])
         

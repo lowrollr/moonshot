@@ -45,3 +45,8 @@ class NATR(Indicator):
             period.genValue()
         
         dataset[self.name] = talib_NATR(dataset.high, dataset.low, dataset.close, timeperiod=period.value)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

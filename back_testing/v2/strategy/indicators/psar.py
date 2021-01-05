@@ -8,6 +8,7 @@ WHAT:
 
 from v2.utils import findParams
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from talib import SAR
 
 '''
@@ -34,7 +35,7 @@ class PSAR(Indicator):
     def genData(self, dataset, gen_new_values=True, value='close'):
 
         # param named 'period' must be present
-        acceleration, maxiumum = findParams(self.params, ['acceleration', 'maxiumum'])[0]
+        acceleration, maxiumum = findParams(self.params, ['acceleration', 'maxiumum'])
         # generate a new period value, if necessary
         if gen_new_values:
             acceleration.genValue()
@@ -42,6 +43,15 @@ class PSAR(Indicator):
 
         # compute SAR
         dataset["intermediate_psar"] = SAR(dataset.high, dataset.close, acceleration=acceleration.value, maximum=maxiumum.value)
-        dataset[self.name] = dataset["intermediate_psar"] = dataset[value]
+        dataset[self.name] = dataset["intermediate_psar"] - dataset[value]
 
         dataset.drop(["intermediate_psar"], inplace=True, axis=1)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(0,5,0,'acceleration',0),
+            Param(0,5,0,'maximum',0)
+        ]
+
+
+    

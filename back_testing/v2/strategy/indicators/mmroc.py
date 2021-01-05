@@ -7,6 +7,7 @@ WHAT:
     -> This file contains the MinMax Rate of Change Indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 import pandas
 
@@ -37,3 +38,8 @@ class MinMaxRateOfChange(Indicator):
             period.genValue()
 
         dataset[self.name] = (dataset[value].rolling(window=int(period.value)).max() - dataset[value].rolling(window=int(period.value)).min()) / dataset[value].rolling(window=int(period.value)).max()
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]
