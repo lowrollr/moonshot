@@ -53,6 +53,8 @@ class Ichimoku(Indicator):
 
         dataset.dropna()
 
+        return ["tenkan_sen" + self.appended_name, 'kijun_sen' + self.appended_name, "senkou_span_a" + self.appended_name, "senkou_span_b" + self.appended_name]
+
     def setDefaultParams(self):
         self.params = [
             Param(5, 10000, 0,'short_window', 300),

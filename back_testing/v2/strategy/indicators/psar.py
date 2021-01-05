@@ -47,6 +47,8 @@ class PSAR(Indicator):
 
         dataset.drop(["intermediate_psar"], inplace=True, axis=1)
 
+        return [self.name]
+
     def setDefaultParams(self):
         self.params = [
             Param(0,0.2,2,'acceleration',0.01),

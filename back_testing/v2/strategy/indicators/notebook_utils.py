@@ -13,6 +13,10 @@ from inspect import isclass, getmembers
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
+from load_config import load_config
+from v2.model import Trading
+from alive_progress import alive_bar
+from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -62,8 +66,10 @@ WHAT:
     -> Generates data for each Indicator and puts it in the dataset
 '''
 def genDataForAll(dataset, indicators):
+    names = []
     for x in indicators:
-        x.genData(dataset, gen_new_values=False)
+        names.append(x.genData(dataset, gen_new_values=False))
+    return names
 
 
 def generateSpans(dataset, indicator_name, column_name, param_name, param_values, gen_data=True):
@@ -76,3 +82,16 @@ def generateSpans(dataset, indicator_name, column_name, param_name, param_values
             ind.genData(dataset, gen_new_values=False, value=column_name)
 
     return names
+
+
+def load_data(indicators, param_spec={}, spans={}, scale=''):
+    features = []
+    model = Trading(load_config('config.hjson'))
+    dataset_list = []
+    for g,n in model.df_groups:
+        print(f'Loading data from {n}...')
+        
+        for i,d in enumerate(g):
+            print(f'Loading data from chunk {i}...')
+            with alive_bar(length=len(d), spinner='vertical') as bar:
+                features.extend(genDataForAll(fetchIndicators(indicators, param_spec)))

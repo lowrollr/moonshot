@@ -43,6 +43,8 @@ class SMA(Indicator):
         # compute simple moving average and add to the dataset
         dataset[self.name] = talib_SMA(dataset[value], timeperiod=period.value)
         # dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
+
+        return [self.name]
     
     def setDefaultParams(self):
         self.params = [

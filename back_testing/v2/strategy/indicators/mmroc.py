@@ -39,6 +39,8 @@ class MinMaxRateOfChange(Indicator):
 
         dataset[self.name] = (dataset[value].rolling(window=int(period.value)).max() - dataset[value].rolling(window=int(period.value)).min()) / dataset[value].rolling(window=int(period.value)).max()
 
+        return [self.name]
+
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period',400)

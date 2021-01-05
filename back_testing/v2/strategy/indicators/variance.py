@@ -68,6 +68,8 @@ class Variance(Indicator):
             avg_var = np.mean(dataset['variance'])
             dataset['stop_loss_percentage'] = dataset.apply(lambda x: self.process_variance(var_std, avg_var, x.variance), axis=1)
 
+        return [self.name]
+
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period',400)

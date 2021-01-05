@@ -37,6 +37,8 @@ class Slope(Indicator):
             period.genValue()
 
         dataset[self.name] = (dataset[value].rolling(window=int(period.value)).apply(lambda x: (x[-1] - x[0])/ period.value)) 
+
+        return [self.name]
     
     def setDefaultParams(self):
         self.params = [

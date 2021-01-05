@@ -42,6 +42,8 @@ class UltimateOscillator(Indicator):
 
         dataset[self.name] = ULTOSC(high=dataset['high'], low=dataset['low'], close=dataset['close'], period1=period1.value, period2=period2.value, period3=period3.value)
 
+        return [self.name]
+
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period1',300),

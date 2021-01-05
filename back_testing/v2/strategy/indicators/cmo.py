@@ -44,6 +44,8 @@ class CMO(Indicator):
             period.genValue()
         
         dataset[self.name] = talib_CMO(dataset[value], timeperiod=period.value)
+
+        return [self.name]
         
     def setDefaultParams(self):
         self.params = [
