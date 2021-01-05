@@ -6,6 +6,7 @@ WHAT:
     -> This file contains the Ichimoku Cloud Indicator
 '''
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 import pandas as pd
 
@@ -51,3 +52,10 @@ class Ichimoku(Indicator):
         dataset["senkou_span_b" + self.appended_name] = ((long_period_high + long_period_low) / 2).shift(medium_window)
 
         dataset.dropna()
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5, 10000, 0,'short_window', 300),
+            Param(5, 10000, 0, 'medium_window', 400),
+            Param(4, 10000, 0, 'long_window', 500)
+        ]

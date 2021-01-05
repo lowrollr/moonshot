@@ -10,6 +10,7 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 from v2.strategy.indicators.sma import SMA
 from v2.strategy.indicators.param import Param
+from talib import STOCH
 import pandas
 
 '''
@@ -37,18 +38,21 @@ class StochasticOscillator(Indicator):
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
         
-        param_highlow_range, param_k_period_sma = findParams(self.params, ['highlow_range', 'k_period'])
+        slowkperiod, fastkperiod, slowdperiod = findParams(self.params, ['slowkperiod', 'fastkperiod', 'slowdperiod'])
         if gen_new_values:
-            highlow_range_value = param_highlow_range.genValue()
-            param_k_period_sma.up = highlow_range_value
+            slow_value = slowkperiod.genValue()
+            fastkperiod.up = slow_value
+            fastkperiod.genValue()
+            slowdperiod.genValue()
 
-        dataset['stosc_high_price'] = dataset['low'].rolling(window=int(param_highlow_range.value)).min()
-        dataset['stosc_low_price'] = dataset['high'].rolling(window=int(param_highlow_range.value)).max()
-        dataset['stosc_k'] = 100*((dataset['close'] - dataset['stosc_low_price']) / (dataset['stosc_high_price'] - dataset['stosc_low_price']))
+        dataset['slowk' + self.appended_name], dataset['slowd' + self.appended_name] = STOCH(close=dataset['close'], high=dataset['high'], low=dataset['low'], slowk_period=slowkperiod.value, fastk_period=fastkperiod.value, slowd_period=slowdperiod.value)
 
-        param_k_period_sma_simple = Param(_name = "period", _default=param_k_period_sma.value)
-        k_period_sma = SMA([param_k_period_sma_simple], _name='stosc_d')
-        k_period_sma.genData(dataset, gen_new_values=gen_new_values, value='stosc_k')
 
-        # clean up intermediate columns
-        dataset.drop(["stosc_high_price", "stosc_low_price"], inplace=True, axis=1)
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'slowkperiod',500),
+            Param(5,10000,0,'slowdperiod',500),
+            Param(5,10000,0,'fastkperiod',300)
+        ]
+
+        

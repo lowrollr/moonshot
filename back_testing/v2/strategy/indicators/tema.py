@@ -61,3 +61,8 @@ class TEMA(Indicator):
         # dataset.drop(["normal_ema", "double_ema", "temp_triple_ema"], inplace=True, axis=1)
 
         dataset[self.name] = talib_TEMA(dataset[value], timeperiod=period.value)
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]

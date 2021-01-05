@@ -1,26 +1,30 @@
 '''
-FILE: mmroc.py
+FILE: beta.py
 AUTHORS:
-    -> Jacob Marshall (marshingjay@gmail.com)
     -> Ross Copeland (rhcopeland101@gmail.com)
 WHAT:
-    -> This file contains the MinMax Rate of Change Indicator
+    -> This file contains the beta Indicator
 '''
-from v2.strategy.indicators.indicator import Indicator
-from v2.strategy.indicators.param import Param
-from v2.utils import findParams
-import pandas
 
+import pandas
+import numpy as np
+
+
+from v2.strategy.indicators.param import Param
+from v2.strategy.indicators.indicator import Indicator
+from v2.utils import findParams
+
+from talib import BETA as talib_BETA
 '''
-CLASS: MinMaxRateOfChange
+CLASS: Beta
 WHAT:
-    -> Calculates the min max rate of change for the given window and adds the approprite column to the dataset
-    -> What is slope? --> https://www.investopedia.com/terms/r/rateofchange.asp
+    -> Calculates variance and adds the approprite column to the dataset
+    -> What is beta? --> https://www.investopedia.com/investing/beta-know-risk/
     -> Params Required:
         -> 'period'
 '''
+class Beta(Indicator):
 
-class MinMaxRateOfChange(Indicator):
     '''
     ARGS:
         -> dataset (DataFrame): dataset to add the indicator values as a column to
@@ -30,14 +34,14 @@ class MinMaxRateOfChange(Indicator):
     RETURN:
         -> None
     WHAT: 
-        -> calculates and adds the rate of change of the specified value over the given period to the dataset
+        -> adds the beta of the specified value over the given period
     '''
     def genData(self, dataset, gen_new_values=True, value='close'):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()
 
-        dataset[self.name] = (dataset[value].rolling(window=int(period.value)).max() - dataset[value].rolling(window=int(period.value)).min()) / dataset[value].rolling(window=int(period.value)).max()
+        dataset[self.name] = talib_BETA(dataset.high, dataset.close, timeperiod=period.value)
 
     def setDefaultParams(self):
         self.params = [

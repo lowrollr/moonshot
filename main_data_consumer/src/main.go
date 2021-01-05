@@ -45,6 +45,8 @@ func main() {
 
 	fmt.Println("Coins collected: " + strings.Join(*coins, " "))
 
+	InitializeShortCandleStick(coins)
+
 	fmt.Println("Consuming Data...")
 	ConsumeData(coins)
 }

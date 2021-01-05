@@ -68,8 +68,9 @@ func (*dumbo) AutoMigrate() error {
 	coins := Dumbo.SelectCoins(-1)
 	for _, coin := range *coins {
 		temp_order := OrderBook{coinName: strings.ToLower(coin) + "_order_book"}
-		temp_volume := CoinVolume{coinName: strings.ToLower(coin) + "_volume_data"}
-		err := global_db.AutoMigrate(&temp_order, &temp_volume).Error
+		temp_min_kline := MinuteKline{coinName: strings.ToLower(coin) + "_minute_kline"}
+		temp_custom_kline := OHCLData{coinName: strings.ToLower(coin) + "_custom_kline"}
+		err := global_db.AutoMigrate(&temp_order, &temp_min_kline, &temp_custom_kline).Error
 		if err != nil {
 			return err
 		}
@@ -85,12 +86,12 @@ func (*dumbo) AutoMigrate() error {
     WHAT:
 		-> Returns the name of the coin so that it is a dynamic table names
 */
-func (cv CoinVolume) TableName() string {
+func (m MinuteKline) TableName() string {
 	// double check here, make sure the table does exist!!
-	if cv.coinName != "" {
-		return strings.ToLower(cv.coinName)
+	if m.coinName != "" {
+		return strings.ToLower(m.coinName)
 	}
-	return "coin_volume" // default table name
+	return "coin_minute_kline" // default table name
 }
 
 /*
@@ -107,6 +108,22 @@ func (o OrderBook) TableName() string {
 		return strings.ToLower(o.coinName)
 	}
 	return "order_book" // default table name
+}
+
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> (string): name of the coin for the database table
+    WHAT:
+		-> Returns the name of the coin so that it is a dynamic table names
+*/
+func (o OHCLData) TableName() string {
+	// double check here, make sure the table does exist!!
+	if o.coinName != "" {
+		return strings.ToLower(o.coinName)
+	}
+	return "custom_kline" // default table name
 }
 
 /*
@@ -170,11 +187,29 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 
 	// num_trades, err := strconv.ParseInt(event.Kline.TradeNum, 10, 16 )
 
-	temp_kline := CoinVolume{StartTime: kline.StartTime, EndTime: kline.EndTime,
+	temp_kline := MinuteKline{StartTime: kline.StartTime, EndTime: kline.EndTime,
 		Open: float32(open), High: float32(high), Low: float32(low), Close: float32(close),
 		Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
 
-	return global_db.Table(strings.ToLower(coin_abb) + "_volume_data").Create(&temp_kline).Error
+	return global_db.Table(strings.ToLower(coin_abb) + "_minute_kline").Create(&temp_kline).Error
+}
+
+/*
+	ARGS:
+        -> event (map[string]*OHCLData): pointer to object that has all kline information
+    RETURN:
+        -> (error): returns if there is one, an error in inserting coin data in the database
+    WHAT:
+		-> Inserts volume and trade coin data into database
+*/
+func (*dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) error {
+	for symbol, data := range all_coin_candles {
+		err := global_db.Table(strings.ToLower(symbol) + "_custom_kline").Create(data).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 /*

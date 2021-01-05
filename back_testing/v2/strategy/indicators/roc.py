@@ -8,6 +8,7 @@ WHAT:
 import numpy as np
 import pandas as pd
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.param import Param
 from v2.utils import findParams
 import pandas
 
@@ -44,4 +45,9 @@ class RateOfChange(Indicator):
         dataset[self.name] = (dataset[value] - dataset[value].shift(periods=1*period_value))/dataset[value].shift(1*period_value)\
         # points that occur before the period length can just be set to 0
         dataset[self.name][:period_value] = 0
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',400)
+        ]
         
