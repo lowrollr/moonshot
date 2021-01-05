@@ -47,6 +47,8 @@ class EMA(Indicator):
         
         dataset[self.name] = talib_EMA(dataset[value], timeperiod=period.value)
 
+        return [self.name]
+
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period',400)

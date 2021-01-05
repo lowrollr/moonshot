@@ -62,6 +62,8 @@ class HMA(Indicator):
         #clean up
         dataset.drop(["difference", "half_period_wma", "normal_wma"], inplace=True, axis=1)
 
+        return [self.name]
+
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period',400)

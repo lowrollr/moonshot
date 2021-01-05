@@ -45,6 +45,7 @@ class SMMA(Indicator):
         new_smma = smma(dataset[value].tolist(), int(period.value))
         # add to dataset
         dataset[self.name] = new_smma
+        return [self.name]
 
     def setDefaultParams(self):
         self.params = [

@@ -60,6 +60,8 @@ class CCI(Indicator):
         # dataset.drop(["cci_high", "cci_low", "cci_tp", "cci_sma_tp"], inplace=True, axis=1)
         dataset[self.name] = talib_CCI(dataset.high, dataset.low, dataset.close, timeperiod=period.value)
 
+        return [self.name]
+        
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period',400)

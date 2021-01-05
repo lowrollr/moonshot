@@ -55,6 +55,15 @@ class PivotPoints(Indicator):
         dataset.drop(['pp_pp' + self.appended_name, 'pp_low' + self.appended_name,\
             'pp_high' + self.appended_name, 'pp_sma' + self.appended_name], axis=1, inplace=True)
 
+
+        return ['pp_r1' + self.appended_name, 
+                'pp_s1' + self.appended_name,
+                'pp_r2' + self.appended_name,
+                'pp_s2' + self.appended_name,
+                'pp_r3' + self.appended_name,
+                'pp_s3' + self.appended_name
+                ]
+
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period',400)

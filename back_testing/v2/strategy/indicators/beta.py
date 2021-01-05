@@ -42,7 +42,7 @@ class Beta(Indicator):
             period.genValue()
 
         dataset[self.name] = talib_BETA(dataset.high, dataset.close, timeperiod=period.value)
-
+        return [self.name]
     def setDefaultParams(self):
         self.params = [
             Param(5,10000,0,'period',400)

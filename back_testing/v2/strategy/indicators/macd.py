@@ -57,6 +57,7 @@ class MACD(Indicator):
 
         dataset[self.name], dataset[self.name + '_signal'], dataset[self.name + '_hist'] = talib_MACD(dataset[value], slowperiod=ema_slow_param.value, fastperiod=ema_fast_param.value, signalperiod=signal_param.value)
 
+        return [self.name, self.name + '_signal', self.name + '_hist']
 
     def setDefaultParams(self):
         self.params = [

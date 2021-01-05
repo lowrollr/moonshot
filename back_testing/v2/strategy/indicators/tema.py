@@ -45,22 +45,11 @@ class TEMA(Indicator):
         if gen_new_values:
             period.genValue()
         
-        # ema_param = Param(_name="period", _default=tema_period.value)
-        # normal_ema = EMA([ema_param], _name="normal_ema")
-        # normal_ema.genData(dataset, gen_new_values=False, value=value)
-
-        # double_ema = EMA([ema_param], _name="double_ema")
-        # double_ema.genData(dataset, gen_new_values=False, value="normal_ema")
-
-        # triple_ema = EMA([ema_param], _name="temp_triple_ema")
-        # triple_ema.genData(dataset, gen_new_values=False, value="double_ema")
-
-        # dataset[self.name] = ((3 * dataset["normal_ema"]) - ( 3 * dataset["double_ema"])) + dataset["temp_triple_ema"]
         
-        # #clean up
-        # dataset.drop(["normal_ema", "double_ema", "temp_triple_ema"], inplace=True, axis=1)
 
         dataset[self.name] = talib_TEMA(dataset[value], timeperiod=period.value)
+
+        return [self.name]
 
     def setDefaultParams(self):
         self.params = [

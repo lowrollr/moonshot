@@ -172,7 +172,8 @@ class Optimal(Indicator):
             else:
                 return 0.0
         
-        dataset['optimal'] = dataset.apply(lambda x: fillDatasetHelper(x.time), axis=1)
+        dataset[self.name] = dataset.apply(lambda x: fillDatasetHelper(x.time), axis=1)
+        return [self.name]
 
 
 

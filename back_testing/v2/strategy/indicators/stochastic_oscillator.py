@@ -47,6 +47,8 @@ class StochasticOscillator(Indicator):
 
         dataset['slowk' + self.appended_name], dataset['slowd' + self.appended_name] = STOCH(close=dataset['close'], high=dataset['high'], low=dataset['low'], slowk_period=slowkperiod.value, fastk_period=fastkperiod.value, slowd_period=slowdperiod.value)
 
+        return ['slowk' + self.appended_name, 'slowd' + self.appended_name]
+
 
     def setDefaultParams(self):
         self.params = [
