@@ -78,6 +78,7 @@ def generateSpans(dataset, indicator_name, column_name, param_name, param_values
         ind = fetchIndicators([indicator_name], param_specification={indicator_name:{param_name: x}})[0]
         name = f'{type(ind).__name__}_{column_name}_{param_name}_{x}'
         ind.name = name
+        names.append(name)
         if gen_data:
             ind.genData(dataset, gen_new_values=False, value=column_name)
 
