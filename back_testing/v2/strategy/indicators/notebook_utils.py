@@ -162,11 +162,11 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
             if compiling_features:
                 features.extend(new_features)
             for span in spans:
-                new_features.extend(generateSpans(dataset=d, 
+                new_features=generateSpans(dataset=d, 
                                             indicator_name=span['indicator_name'],
                                             column_name=span['column_name'],
                                             param_name=span['param_name'],
-                                            param_values=span['param_values']))
+                                            param_values=span['param_values'])
                 if compiling_features:
                     features.extend(new_features)
             
@@ -181,7 +181,22 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                     raise Exception(f'Unknown scaler: {scaler}')
 
                 #drop columns that have nan
-                d.dropna(axis=1, inplace=True)
+                if d.columns.to_series()[np.isnan(d).all()] is not None:
+                    for val in d.columns.to_series()[np.isinf(d).any()]:
+                        if val in features:
+                            features.remove(val)
+
+                d.dropna(inplace=True)
+                d.replace([-np.inf], np.inf, inplace=True)
+
+                if d.columns.to_series()[np.isinf(d).any()] is not None:
+                    for val in d.columns.to_series()[np.isinf(d).any()]:
+                        if val in features:
+                            features.remove(val)
+
+                    d.replace([np.inf], np.nan, inplace=True)
+                    d.dropna(axis=1, inplace=True)
+
                 d[features] = scaler.fit_transform(d[features])
 
             compiling_features = False
