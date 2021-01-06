@@ -162,7 +162,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
             if compiling_features:
                 features.extend(new_features)
             for span in spans:
-                new_features.extend(generateSpans(dataset=d, 
+                new_features = (generateSpans(dataset=d, 
                                             indicator_name=span['indicator_name'],
                                             column_name=span['column_name'],
                                             param_name=span['param_name'],
