@@ -18,6 +18,7 @@ from load_config import load_config
 from v2.model import Trading
 from alive_progress import alive_bar
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
+import numpy as np
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -168,6 +169,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                                             param_values=span['param_values']))
                 if compiling_features:
                     features.extend(new_features)
+            
             if scale:
                 scaler = None
                 if scale == 'minmax':
@@ -178,8 +180,9 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 else:
                     raise Exception(f'Unknown scaler: {scaler}')
 
+                #drop columns that have nan
+                d.dropna(axis=1, inplace=True)
                 d[features] = scaler.fit_transform(d[features])
-
 
             compiling_features = False
             dataset_list.append(d)
