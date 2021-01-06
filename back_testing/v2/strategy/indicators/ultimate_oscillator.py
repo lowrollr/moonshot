@@ -40,7 +40,7 @@ class UltimateOscillator(Indicator):
             period2.genValue()
             period3.genValue()
 
-        dataset[self.name] = ULTOSC(high=dataset['high'], low=dataset['low'], close=dataset['close'], period1=period1.value, period2=period2.value, period3=period3.value)
+        dataset[self.name] = ULTOSC(high=dataset['high'], low=dataset['low'], close=dataset['close'], timeperiod1=period1.value, timeperiod2=period2.value, timeperiod3=period3.value)
 
         return [self.name]
 
