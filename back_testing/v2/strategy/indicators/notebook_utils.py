@@ -114,7 +114,7 @@ WHAT:
         by filtering out scores over a certain threshold
 '''
 def filter_optimal(optimal, threshold, mode):
-    if mode == 'both:':
+    if mode == 'both':
         if optimal > threshold:
             return 1.0
         elif optimal < -1*threshold:
@@ -165,7 +165,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 d['Optimal_v2'] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold, optimal_mode),  axis=1)
             if 'Optimal' in new_features:
                 new_features.remove('Optimal')
-                d['Optimal'] = d.apply(lambda x: filter_optimal(x.filter_Optimal, optimal_threshold, optimal_mode),  axis=1)
+                d['Optimal'] = d.apply(lambda x: filter_optimal(x.Optimal, optimal_threshold, optimal_mode),  axis=1)
             if compiling_features:
                 features.extend(new_features)
             for span in spans:
