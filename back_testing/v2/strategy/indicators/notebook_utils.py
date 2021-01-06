@@ -115,7 +115,14 @@ WHAT:
         by filtering out scores over a certain threshold
 '''
 def filter_optimal(optimal, threshold, mode):
-    if mode == 'buy':
+    if mode == 'both:':
+        if optimal > threshold:
+            return 1.0
+        elif optimal < -1*threshold:
+            return -1.0
+        else:
+            return 0.0
+    elif mode == 'buy':
         if optimal > threshold:
             return 1.0
         else:
