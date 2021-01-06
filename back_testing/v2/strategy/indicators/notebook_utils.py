@@ -148,6 +148,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
     dataset_list = []
     compiling_features = True
     for g,n in model.df_groups:
+        coin_dataset = []
         print(f'Loading data from {n}...')
         for i,d in enumerate(g):
             print(f'Loading data from chunk {i}...')
@@ -168,21 +169,23 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                                             param_values=span['param_values']))
                 if compiling_features:
                     features.extend(new_features)
-            if scale:
-                scaler = None
-                if scale == 'minmax':
-                    scaler = MinMaxScaler()
-
-                elif scale == 'quartile':
-                    scaler = QuantileTransformer(n_quantiles=100)
-                else:
-                    raise Exception(f'Unknown scaler: {scaler}')
-
-                d[features] = scaler.fit_transform(d[features])
-
-
+            coin_dataset.append(d)
             compiling_features = False
-            dataset_list.append(d)
+
+        coin_dataset = concat(coin_dataset)
+        if scale:
+            scaler = None
+            if scale == 'minmax':
+                scaler = MinMaxScaler()
+
+            elif scale == 'quartile':
+                scaler = QuantileTransformer(n_quantiles=100)
+            else:
+                raise Exception(f'Unknown scaler: {scaler}')
+
+            coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
+        dataset_list.append(coin_dataset)
+        
     dataset = concat(dataset_list)
     dataset.reset_index(inplace=True, drop=True)
         
