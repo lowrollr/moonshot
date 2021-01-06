@@ -18,6 +18,7 @@ from load_config import load_config
 from v2.model import Trading
 from alive_progress import alive_bar
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
+import numpy as np
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -114,7 +115,14 @@ WHAT:
         by filtering out scores over a certain threshold
 '''
 def filter_optimal(optimal, threshold, mode):
-    if mode == 'buy':
+    if mode == 'both':
+        if optimal > threshold:
+            return 1.0
+        elif optimal < -1*threshold:
+            return -1.0
+        else:
+            return 0.0
+    elif mode == 'buy':
         if optimal > threshold:
             return 1.0
         else:
@@ -158,15 +166,15 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 d['Optimal_v2'] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold, optimal_mode),  axis=1)
             if 'Optimal' in new_features:
                 new_features.remove('Optimal')
-                d['Optimal'] = d.apply(lambda x: filter_optimal(x.filter_Optimal, optimal_threshold, optimal_mode),  axis=1)
+                d['Optimal'] = d.apply(lambda x: filter_optimal(x.Optimal, optimal_threshold, optimal_mode),  axis=1)
             if compiling_features:
                 features.extend(new_features)
             for span in spans:
-                new_features.extend(generateSpans(dataset=d, 
+                new_features = generateSpans(dataset=d, 
                                             indicator_name=span['indicator_name'],
                                             column_name=span['column_name'],
                                             param_name=span['param_name'],
-                                            param_values=span['param_values']))
+                                            param_values=span['param_values'])
                 if compiling_features:
                     features.extend(new_features)
             coin_dataset.append(d)
@@ -182,6 +190,25 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
+
+            #drop columns that have nan
+            # if d.columns.to_series()[np.isnan(d).all()] is not None:
+            #     for val in d.columns.to_series()[np.isinf(d).any()]:
+            #         if val in features:
+            #             features.remove(val)
+
+            # d.dropna(inplace=True)
+            # d.replace([-np.inf], np.inf, inplace=True)
+
+            if d.columns.to_series()[np.isinf(d).any()] is not None:
+                for val in d.columns.to_series()[np.isinf(d).any()]:
+                    if val in features:
+                        features.remove(val)
+
+                    d[val].replace([np.inf], np.nan, inplace=True)
+                    d[val].replace([np.nan], d[val].max(), inplace=True)
+
+            d[features] = scaler.fit_transform(d[features])
 
             coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
         dataset_list.append(coin_dataset)
