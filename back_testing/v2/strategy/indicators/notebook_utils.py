@@ -149,6 +149,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
     dataset_list = []
     compiling_features = True
     for g,n in model.df_groups:
+        coin_dataset = []
         print(f'Loading data from {n}...')
         for i,d in enumerate(g):
             print(f'Loading data from chunk {i}...')
@@ -162,45 +163,49 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
             if compiling_features:
                 features.extend(new_features)
             for span in spans:
-                new_features=generateSpans(dataset=d, 
+                new_features = generateSpans(dataset=d, 
                                             indicator_name=span['indicator_name'],
                                             column_name=span['column_name'],
                                             param_name=span['param_name'],
                                             param_values=span['param_values'])
                 if compiling_features:
                     features.extend(new_features)
-            
-            if scale:
-                scaler = None
-                if scale == 'minmax':
-                    scaler = MinMaxScaler()
-
-                elif scale == 'quartile':
-                    scaler = QuantileTransformer(n_quantiles=100)
-                else:
-                    raise Exception(f'Unknown scaler: {scaler}')
-
-                #drop columns that have nan
-                if d.columns.to_series()[np.isnan(d).all()] is not None:
-                    for val in d.columns.to_series()[np.isinf(d).any()]:
-                        if val in features:
-                            features.remove(val)
-
-                d.dropna(inplace=True)
-                d.replace([-np.inf], np.inf, inplace=True)
-
-                if d.columns.to_series()[np.isinf(d).any()] is not None:
-                    for val in d.columns.to_series()[np.isinf(d).any()]:
-                        if val in features:
-                            features.remove(val)
-
-                    d.replace([np.inf], np.nan, inplace=True)
-                    d.dropna(axis=1, inplace=True)
-
-                d[features] = scaler.fit_transform(d[features])
-
+            coin_dataset.append(d)
             compiling_features = False
-            dataset_list.append(d)
+
+        coin_dataset = concat(coin_dataset)
+        if scale:
+            scaler = None
+            if scale == 'minmax':
+                scaler = MinMaxScaler()
+
+            elif scale == 'quartile':
+                scaler = QuantileTransformer(n_quantiles=100)
+            else:
+                raise Exception(f'Unknown scaler: {scaler}')
+
+            #drop columns that have nan
+            if d.columns.to_series()[np.isnan(d).all()] is not None:
+                for val in d.columns.to_series()[np.isinf(d).any()]:
+                    if val in features:
+                        features.remove(val)
+
+            d.dropna(inplace=True)
+            d.replace([-np.inf], np.inf, inplace=True)
+
+            if d.columns.to_series()[np.isinf(d).any()] is not None:
+                for val in d.columns.to_series()[np.isinf(d).any()]:
+                    if val in features:
+                        features.remove(val)
+
+                d.replace([np.inf], np.nan, inplace=True)
+                d.dropna(axis=1, inplace=True)
+
+            d[features] = scaler.fit_transform(d[features])
+
+            coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
+        dataset_list.append(coin_dataset)
+        
     dataset = concat(dataset_list)
     dataset.reset_index(inplace=True, drop=True)
         
