@@ -21,6 +21,10 @@ from alive_progress import alive_bar
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 import os
 import numpy as np
+from sklearn.model_selection import train_test_split
+import pandas as pd
+from sklearn.utils import class_weight
+import matplotlib.pyplot as plt
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -129,11 +133,13 @@ def filter_optimal(optimal, threshold, mode):
             return 1.0
         else:
             return 0.0
-    else:
+    elif mode == "sell":
         if optimal < -1*(threshold):
             return 1.0
         else:
             return 0.0
+    else:
+        raise ValueError("Did not provide either buy sell or both to the optimal_threshold dict")
 
 '''
 ARGS:
@@ -152,14 +158,13 @@ WHAT:
     -> returns the generated dataset and a list of the features added
     -> will add optimal features if specified but those will NOT be included in the returned features list
 '''
-def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy', spans={}, test=False, test_coin='BTC', test_freq=1, scale=''):
+def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale=''):
     features = []
     groups = None
     if not test:
         model = Trading(load_config('config.hjson'))
         groups = model.df_groups
     else:
-        zero_str = '0'
         dataset_file = f'historical_data/binance/{test_coin}/{test_freq}m/{test_coin}USDT-{test_freq}m-data_chunk000001.csv'
         dataset = read_csv(dataset_file)
         dataset = dataset[['close_time', 'high', 'low', 'close', 'open', 'volume']]
@@ -175,12 +180,23 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
         for i,d in enumerate(g):
             print(f'Loading data from chunk {i}...')
             new_features = genDataForAll(dataset=d, indicators=fetchIndicators(indicators, param_spec))
-            if 'Optimal_v2' in new_features:
-                new_features.remove('Optimal_v2')
-                d['Optimal_v2'] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold, optimal_mode),  axis=1)
-            if 'Optimal' in new_features:
-                new_features.remove('Optimal')
-                d['Optimal'] = d.apply(lambda x: filter_optimal(x.Optimal, optimal_threshold, optimal_mode),  axis=1)
+            if 'Optimal_v2' in new_features or 'Optimal' in new_features:
+                optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
+                if len(list(optimal_threshold.keys())) == 1:
+                    threshold_key = list(optimal_threshold.keys())[0]
+
+                    d["optimal"] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
+
+                    d.drop(optimal_col_name, inplace=True, axis=1)
+                elif len(optimal_threshold.keys()) == 2:
+                    for key in list(optimal_threshold.keys()):
+                        d["optimal_" + key] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
+                    d.drop(optimal_col_name, axis=1, inplace=True)
+
+                else: raise Exception("Please provide either one or two thresholds")
+                
+                new_features.remove(optimal_col_name)
+
             if compiling_features:
                 features.extend(new_features)
             for span in spans:
@@ -255,6 +271,82 @@ def saveModels(models, scalers, base_name):
         scaler_filenames.append(name)
 
     return model_directory, model_filenames, scaler_filenames
+
+def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=False, balance_unbalanced_data=False, balance_info=None):
+    if not balance_unbalanced_data:
+        return train_test_split(dataset.drop([y_column_name], axis=1), dataset[[y_column_name]], test_size=split_size, shuffle=shuffle_data)
+
+    if balance_info != None:
+        train, test = train_test_split(dataset, test_size=split_size, shuffle=shuffle_data)
+        min_class_signals = train[train[y_column_name] != balance_info['superset_class_val']]
+        not_signals = train[train[y_column_name] == balance_info['superset_class_val']]
+
+        sampled_not_signals = not_signals.sample(n=min(len(min_class_signals) * balance_info["multiplier_val"], len(not_signals)), random_state=69420, axis=0)
+
+        balanced_data_all = pd.concat([sampled_not_signals, min_class_signals])
+
+        if balance_info['randomize_concat']:
+            balanced_data_all = balanced_data_all.sample(frac=1).reset_index(drop=True)
+
+        return balanced_data_all.drop([y_column_name], axis=1), test.drop([y_column_name], axis=1), balanced_data_all[[y_column_name]], test[[y_column_name]]
+
+
+    raise Exception("when balance == true balance_info must specify params for balancing. Specify in the form of:\
+        {'multiplier_val':4, 'superset_class_val':0, 'randomize_concat':true}")
+
+def getWeights(y_dataset):
+    weights = class_weight.compute_class_weight('balanced', np.unique(y_dataset.to_numpy()[:,0]), y_dataset.to_numpy()[:,0])
+    return {i : weights[i] for i in range(len(np.unique(y_dataset.values)))}
+
+def insert_buys(row):
+    if row.predict_buy > 0.6:
+        return row.close
+    # if row.predict == 2.0 :# and heat_val > 0.6:
+    #     return row.close
+    else:
+        return None
+
+def insert_sells(row):
+    if row.predict_sell > 0.5:
+        return row.close
+    # if row.predict == 0.0:
+    #     return row.close
+    else:
+        return None
+
+def classifyPoints(clf, dataset, predict_proba=False, proba_thresh=0.7, plot_optimal=False, optimal=None):
+    if not predict_proba:
+        dataset["classify"] = clf.predict(dataset.drop("close", axis=1).values)
+    else:
+        dataset["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+        dataset["classify"] = dataset["predict"].apply(lambda x: filter_optimal(x, proba_thresh, "buy"))
+        dataset.drop("predict", axis=1, inplace=True)
+
+    if plot_optimal:
+        return pd.concat([dataset[["close", "classify"]], optimal])
+
+    return dataset[["close", "classify"]]
+
+
+def inputPrice(row):
+    if row.classify:
+        return row.close
+    return np.nan
+
+def graphPoints(df, mode="buy", plot_optimal=False):
+    color = "red" if mode == "buy" else "green"
+
+    df["classify"] = df["classify"].apply(lambda x: inputPrice(x))
+
+    plt.scatter(df.index, df['classify'], color=color)
+
+    if plot_optimal:
+        df['optimal_' + mode] = df['optimal_' + mode].apply(lambda x: inputPrice(x))
+
+        plt.scatter(df.index, df['optimal_' + mode], color="purple")
+
+    plt.plot(df.index, df['close'], color='blue')
+    
 
 '''
 
