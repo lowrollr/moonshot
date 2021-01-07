@@ -7,13 +7,13 @@ WHAT:
         and manipulation of indicators for research notebooks
     -> Backtesting code should avoid calling these if possible
 '''
-from pandas import concat
+from pandas import concat, read_csv
 from pyclbr import readmodule
 from importlib import import_module
 from inspect import isclass, getmembers
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
-from pickle import dump
+from pickle import dump, load
 from v2.utils import findParams
 from load_config import load_config
 from v2.model import Trading
@@ -152,13 +152,24 @@ WHAT:
     -> returns the generated dataset and a list of the features added
     -> will add optimal features if specified but those will NOT be included in the returned features list
 '''
-def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy', spans={}, scale=''):
+def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy', spans={}, test=False, test_coin='BTC', test_freq=1, scale=''):
     features = []
-    model = Trading(load_config('config.hjson'))
+    groups = None
+    if not test:
+        model = Trading(load_config('config.hjson'))
+        groups = model.df_groups
+    else:
+        zero_str = '0'
+        dataset_file = f'historical_data/binance/{test_coin}/{test_freq}m/{test_coin}USDT-{test_freq}m-data_chunk000001.csv'
+        dataset = read_csv(dataset_file)
+        dataset = dataset[['close_time', 'high', 'low', 'close', 'open', 'volume']]
+        dataset.rename(columns={'close_time': 'time'}, inplace=True)
+        groups = [[[dataset], f'{test_coin}USDT-{test_freq}m']]
+
     dataset_list = []
     scalers = []
     compiling_features = True
-    for g,n in model.df_groups:
+    for g,n in groups:
         coin_dataset = []
         print(f'Loading data from {n}...')
         for i,d in enumerate(g):
@@ -193,15 +204,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
-            scalers.append(scaler)    
-            #drop columns that have nan
-            # if d.columns.to_series()[np.isnan(d).all()] is not None:
-            #     for val in d.columns.to_series()[np.isinf(d).any()]:
-            #         if val in features:
-            #             features.remove(val)
-
-            # d.dropna(inplace=True)
-            # d.replace([-np.inf], np.inf, inplace=True)
+            scalers.append(scaler)   
 
             if d.columns.to_series()[np.isinf(d).any()] is not None:
                 for val in d.columns.to_series()[np.isinf(d).any()]:
@@ -229,12 +232,14 @@ ARGS:
     -> base_name (String): name of directory to write pickled model objects to
 RETURN:
     -> model_directory (String): path to newly created directory that models have been written to
-    -> filenames ([String]): filenames for each model stored
+    -> model_names ([String]): filenames for each model stored
+    -> scaler_names ([String]): filenames for each scaler stored
 WHAT: 
     -> pickles passed models and scalers and creates a directory to save them to
 '''
 def saveModels(models, scalers, base_name):
-    filenames = []
+    model_filenames = []
+    scaler_filenames = []
     model_directory = f'./v2/strategy/saved_models/{base_name}/'
     try:
         os.mkdir(model_directory)
@@ -244,12 +249,13 @@ def saveModels(models, scalers, base_name):
     for model, model_name in models:
         name = f'model_{base_name}_{model_name}.sav'
         dump(model, open(f'{model_directory}{name}', 'wb'))
-        filenames.append(name)
+        model_filenames.append(name)
     for scaler, coin_name in scalers:
         name = f'scaler_{base_name}_{coin_name}'
         dump(scaler, open(f'{model_directory}{name}', 'wb'))
-        filenames.append(name)
+        scaler_filenames.append(name)
 
-    return model_directory, filenames
+    return model_directory, model_filenames, scaler_filenames
 
-# def testModel(model, scaler, strategy_type,)
+def testModel(model_directory, model_name, scaler_name, strategy_type, dataset):
+    model = 
