@@ -208,8 +208,9 @@ class Trading:
         dataset = pd.DataFrame()
         for d in my_dataset_group[0]:
             dataset = dataset.append(d)
-    
-            first_times.add(d.head(1).time[0])
+
+            # DONT CHANGE THIS
+            first_times.add(d.head(1).time.values[0])
         
         # initialize starting position to 1000000 units
         position_quote = 1000000.00

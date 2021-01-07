@@ -13,7 +13,7 @@ from importlib import import_module
 from inspect import isclass, getmembers
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
-from pickle import dump, load
+import pickle
 from v2.utils import findParams
 from load_config import load_config
 from v2.model import Trading
@@ -263,11 +263,11 @@ def saveModels(models, scalers, base_name):
 
     for model, model_name in models:
         name = f'model_{base_name}_{model_name}.sav'
-        dump(model, open(f'{model_directory}{name}', 'wb'))
+        pickle.dump(model, open(f'{model_directory}{name}', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
         model_filenames.append(name)
     for scaler, coin_name in scalers:
-        name = f'scaler_{base_name}_{coin_name}'
-        dump(scaler, open(f'{model_directory}{name}', 'wb'))
+        name = f'scaler_{base_name}_{coin_name}.sav'
+        pickle.dump(scaler, open(f'{model_directory}{name}', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
         scaler_filenames.append(name)
 
     return model_directory, model_filenames, scaler_filenames
@@ -351,12 +351,11 @@ def graphPoints(df, mode="buy", plot_optimal=False):
 '''
 
 '''
-def testModel(model_directory, model_name, scaler_name, strategy_type, strategy_version, dataset):
-    model = load(open(f'{model_directory}/{model_name}'))
-    scaler = load(open(f'{model_directory}/{scaler_name}'))
-    trading_model = Trading(load_config())
-    strategy = trading_model.importStrategy(strategy_type, strategy_version)()
-    strategy.buy_model = model
-    strategy.scaler = scaler
-    result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=[dataset], should_print=False, plot=False)
+def testModel(dataset, features, model_directory, model_name, scaler_name, strategy_type='buy', num_minutes=4000):
+    dataset[0][0] = dataset[0][0].head(4000)
+    model = pickle.load(open(f'{model_directory}/{model_name}', 'rb'))
+    scaler = pickle.load(open(f'{model_directory}/{scaler_name}', 'rb'))
+    trading_model = Trading(load_config('config.hjson'))
+    strategy = trading_model.importStrategy(f'{strategy_type}_benchmark', 'latest')(scaler=scaler, buy_model=model, buy_model_features=features)
+    result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=dataset, should_print=True, plot=False)
     return result, len(entries), len(exits)
