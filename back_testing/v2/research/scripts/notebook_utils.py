@@ -204,24 +204,22 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
-            scalers.append(scaler)   
+            scalers.append([scaler, n])   
 
-            if d.columns.to_series()[np.isinf(d).any()] is not None:
-                for val in d.columns.to_series()[np.isinf(d).any()]:
+            if coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()] is not None:
+                for val in coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()]:
                     if val in features:
                         features.remove(val)
 
-                    d[val].replace([np.inf], np.nan, inplace=True)
-                    d[val].replace([np.nan], d[val].max(), inplace=True)
-
-            d[features] = scaler.fit_transform(d[features])
+                    coin_dataset[val].replace([np.inf], np.nan, inplace=True)
+                    coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
 
             coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
         dataset_list.append(coin_dataset)
         
     dataset = concat(dataset_list)
     dataset.reset_index(inplace=True, drop=True)
-        
+    dataset.dropna(inplace=True)
     return dataset, features, scalers
 
 
@@ -257,5 +255,15 @@ def saveModels(models, scalers, base_name):
 
     return model_directory, model_filenames, scaler_filenames
 
-def testModel(model_directory, model_name, scaler_name, strategy_type, dataset):
-    model = 
+'''
+
+'''
+def testModel(model_directory, model_name, scaler_name, strategy_type, strategy_version, dataset):
+    model = load(open(f'{model_directory}/{model_name}'))
+    scaler = load(open(f'{model_directory}/{scaler_name}'))
+    trading_model = Trading(load_config())
+    strategy = trading_model.importStrategy(strategy_type, strategy_version)()
+    strategy.buy_model = model
+    strategy.scaler = scaler
+    result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=[dataset], should_print=False, plot=False)
+    return result, len(entries), len(exits)
