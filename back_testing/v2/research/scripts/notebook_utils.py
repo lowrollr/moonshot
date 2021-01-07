@@ -21,6 +21,8 @@ from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 import numpy as np
 from sklearn.model_selection import train_test_split
 import pandas as pd
+from sklearn.utils import class_weight
+import matplotlib.pyplot as plt
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -255,3 +257,56 @@ def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=
 
     raise Exception("when balance == true balance_info must specify params for balancing. Specify in the form of:\
         {'multiplier_val':4, 'superset_class_val':0, 'randomize_concat':true}")
+
+def getWeights(y_dataset):
+    weights = class_weight.compute_class_weight('balanced', np.unique(y_dataset.to_numpy()[:,0]), y_dataset.to_numpy()[:,0])
+    return {i : weights[i] for i in range(len(np.unique(y_dataset.values)))}
+
+def insert_buys(row):
+    if row.predict_buy > 0.6:
+        return row.close
+    # if row.predict == 2.0 :# and heat_val > 0.6:
+    #     return row.close
+    else:
+        return None
+
+def insert_sells(row):
+    if row.predict_sell > 0.5:
+        return row.close
+    # if row.predict == 0.0:
+    #     return row.close
+    else:
+        return None
+
+def classifyPoints(clf, dataset, predict_proba=False, proba_thresh=0.7, plot_optimal=False, optimal=None):
+    if not predict_proba:
+        dataset["classify"] = clf.predict(dataset.drop("close", axis=1).values)
+    else:
+        dataset["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+        dataset["classify"] = dataset["predict"].apply(lambda x: filter_optimal(x, proba_thresh, "buy"))
+        dataset.drop("predict", axis=1, inplace=True)
+
+    if plot_optimal:
+        return pd.concat([dataset[["close", "classify"]], optimal])
+
+    return dataset[["close", "classify"]]
+
+
+def inputPrice(row):
+    if row.classify:
+        return row.close
+    return np.nan
+
+def graphPoints(df, mode="buy", plot_optimal=False):
+    color = "red" if mode == "buy" else "green"
+
+    df["classify"] = df["classify"].apply(lambda x: inputPrice(x))
+
+    plt.scatter(df.index, df['classify'], color=color)
+
+    if plot_optimal:
+        df['optimal_' + mode] = df['optimal_' + mode].apply(lambda x: inputPrice(x))
+
+        plt.scatter(df.index, df['optimal_' + mode], color="purple")
+
+    plt.plot(df.index, df['close'], color='blue')
