@@ -13,11 +13,13 @@ from importlib import import_module
 from inspect import isclass, getmembers
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
+from pickle import dump
 from v2.utils import findParams
 from load_config import load_config
 from v2.model import Trading
 from alive_progress import alive_bar
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
+import os
 import numpy as np
 '''
 ARGS:
@@ -154,6 +156,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
     features = []
     model = Trading(load_config('config.hjson'))
     dataset_list = []
+    scalers = []
     compiling_features = True
     for g,n in model.df_groups:
         coin_dataset = []
@@ -190,7 +193,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
-
+            scalers.append(scaler)    
             #drop columns that have nan
             # if d.columns.to_series()[np.isnan(d).all()] is not None:
             #     for val in d.columns.to_series()[np.isinf(d).any()]:
@@ -216,5 +219,37 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
     dataset = concat(dataset_list)
     dataset.reset_index(inplace=True, drop=True)
         
+    return dataset, features, scalers
 
-    return dataset, features
+
+'''
+ARGS:
+    -> models ([[model, String]]): list of model object-model name pairs
+    -> scalers ([[scaler, String]]): list of scaler object-coin name pairs
+    -> base_name (String): name of directory to write pickled model objects to
+RETURN:
+    -> model_directory (String): path to newly created directory that models have been written to
+    -> filenames ([String]): filenames for each model stored
+WHAT: 
+    -> pickles passed models and scalers and creates a directory to save them to
+'''
+def saveModels(models, scalers, base_name):
+    filenames = []
+    model_directory = f'./v2/strategy/saved_models/{base_name}/'
+    try:
+        os.mkdir(model_directory)
+    except OSError as error:
+        raise (f'Models for the specified base directory name <{base_name}> already exist! ')
+
+    for model, model_name in models:
+        name = f'model_{base_name}_{model_name}.sav'
+        dump(model, open(f'{model_directory}{name}', 'wb'))
+        filenames.append(name)
+    for scaler, coin_name in scalers:
+        name = f'scaler_{base_name}_{coin_name}'
+        dump(scaler, open(f'{model_directory}{name}', 'wb'))
+        filenames.append(name)
+
+    return model_directory, filenames
+
+# def testModel(model, scaler, strategy_type,)
