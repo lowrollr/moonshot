@@ -204,7 +204,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
-            scalers.append([scaler, n])   
+              
 
             if coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()] is not None:
                 for val in coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()]:
@@ -215,6 +215,7 @@ def loadData(indicators, param_spec={}, optimal_threshold=0.9, optimal_mode='buy
                     coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
 
             coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
+            scalers.append([scaler, n]) 
         dataset_list.append(coin_dataset)
         
     dataset = concat(dataset_list)
@@ -241,8 +242,8 @@ def saveModels(models, scalers, base_name):
     model_directory = f'./v2/strategy/saved_models/{base_name}/'
     try:
         os.mkdir(model_directory)
-    except OSError as error:
-        raise (f'Models for the specified base directory name <{base_name}> already exist! ')
+    except Exception as error:
+        raise Exception(f'Error creating directory!')
 
     for model, model_name in models:
         name = f'model_{base_name}_{model_name}.sav'
