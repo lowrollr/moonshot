@@ -7,17 +7,19 @@ WHAT:
         and manipulation of indicators for research notebooks
     -> Backtesting code should avoid calling these if possible
 '''
-from pandas import concat
+from pandas import concat, read_csv
 from pyclbr import readmodule
 from importlib import import_module
 from inspect import isclass, getmembers
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
+from pickle import dump, load
 from v2.utils import findParams
 from load_config import load_config
 from v2.model import Trading
 from alive_progress import alive_bar
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
+import os
 import numpy as np
 from sklearn.model_selection import train_test_split
 import pandas as pd
@@ -156,12 +158,23 @@ WHAT:
     -> returns the generated dataset and a list of the features added
     -> will add optimal features if specified but those will NOT be included in the returned features list
 '''
-def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, scale=''):
+def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale=''):
     features = []
-    model = Trading(load_config('config.hjson'))
+    groups = None
+    if not test:
+        model = Trading(load_config('config.hjson'))
+        groups = model.df_groups
+    else:
+        dataset_file = f'historical_data/binance/{test_coin}/{test_freq}m/{test_coin}USDT-{test_freq}m-data_chunk000001.csv'
+        dataset = read_csv(dataset_file)
+        dataset = dataset[['close_time', 'high', 'low', 'close', 'open', 'volume']]
+        dataset.rename(columns={'close_time': 'time'}, inplace=True)
+        groups = [[[dataset], f'{test_coin}USDT-{test_freq}m']]
+
     dataset_list = []
+    scalers = []
     compiling_features = True
-    for g,n in model.df_groups:
+    for g,n in groups:
         coin_dataset = []
         print(f'Loading data from {n}...')
         for i,d in enumerate(g):
@@ -207,34 +220,56 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
+            scalers.append([scaler, n])   
 
-            #drop columns that have nan
-            # if d.columns.to_series()[np.isnan(d).all()] is not None:
-            #     for val in d.columns.to_series()[np.isinf(d).any()]:
-            #         if val in features:
-            #             features.remove(val)
-
-            # d.dropna(inplace=True)
-            # d.replace([-np.inf], np.inf, inplace=True)
-
-            if d.columns.to_series()[np.isinf(d).any()] is not None:
-                for val in d.columns.to_series()[np.isinf(d).any()]:
+            if coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()] is not None:
+                for val in coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()]:
                     if val in features:
                         features.remove(val)
 
-                    d[val].replace([np.inf], np.nan, inplace=True)
-                    d[val].replace([np.nan], d[val].max(), inplace=True)
-
-            d[features] = scaler.fit_transform(d[features])
+                    coin_dataset[val].replace([np.inf], np.nan, inplace=True)
+                    coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
 
             coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
         dataset_list.append(coin_dataset)
         
     dataset = concat(dataset_list)
     dataset.reset_index(inplace=True, drop=True)
-        
+    dataset.dropna(inplace=True)
+    return dataset, features, scalers
 
-    return dataset, features
+
+'''
+ARGS:
+    -> models ([[model, String]]): list of model object-model name pairs
+    -> scalers ([[scaler, String]]): list of scaler object-coin name pairs
+    -> base_name (String): name of directory to write pickled model objects to
+RETURN:
+    -> model_directory (String): path to newly created directory that models have been written to
+    -> model_names ([String]): filenames for each model stored
+    -> scaler_names ([String]): filenames for each scaler stored
+WHAT: 
+    -> pickles passed models and scalers and creates a directory to save them to
+'''
+def saveModels(models, scalers, base_name):
+    model_filenames = []
+    scaler_filenames = []
+    model_directory = f'./v2/strategy/saved_models/{base_name}/'
+    try:
+        os.mkdir(model_directory)
+    except OSError as error:
+        raise (f'Models for the specified base directory name <{base_name}> already exist! ')
+
+    for model, model_name in models:
+        name = f'model_{base_name}_{model_name}.sav'
+        dump(model, open(f'{model_directory}{name}', 'wb'))
+        model_filenames.append(name)
+    for scaler, coin_name in scalers:
+        name = f'scaler_{base_name}_{coin_name}'
+        dump(scaler, open(f'{model_directory}{name}', 'wb'))
+        scaler_filenames.append(name)
+
+    return model_directory, model_filenames, scaler_filenames
 
 def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=False, balance_unbalanced_data=False, balance_info=None):
     if not balance_unbalanced_data:
@@ -310,3 +345,17 @@ def graphPoints(df, mode="buy", plot_optimal=False):
         plt.scatter(df.index, df['optimal_' + mode], color="purple")
 
     plt.plot(df.index, df['close'], color='blue')
+    
+
+'''
+
+'''
+def testModel(model_directory, model_name, scaler_name, strategy_type, strategy_version, dataset):
+    model = load(open(f'{model_directory}/{model_name}'))
+    scaler = load(open(f'{model_directory}/{scaler_name}'))
+    trading_model = Trading(load_config())
+    strategy = trading_model.importStrategy(strategy_type, strategy_version)()
+    strategy.buy_model = model
+    strategy.scaler = scaler
+    result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=[dataset], should_print=False, plot=False)
+    return result, len(entries), len(exits)
