@@ -5,6 +5,8 @@ AUTHORS:
 WHAT:
     -> This file contains the Strategy superclass
 '''
+import os
+import pickle
 
 '''
 CLASS: Strategy
@@ -31,6 +33,30 @@ class Strategy:
         self.indicators = []
         self.is_ml = False
         self.name = self.__class__.__name__
+
+    def importModel(self, model, version="latest"):
+        #get the correct model
+        base_dir = './v2/strategy/saved_models/' + model + '/'
+
+        if version == 'latest': # fetch the latest version of the given strategy
+            all_files = os.listdir(base_dir)
+            highest_version = 0.0
+            # find the highest version number
+            for my_file in all_files:
+                if my_file[:len(model)] == model:
+                    my_version = my_file.split('_v')[1]
+                    my_version = float(my_version.replace('_', '.'))
+                    highest_version = max(my_version, highest_version)
+                    
+            # set version to be the highest version found
+            version = str(highest_version).replace('.', '_')
+        
+        # this code attempts to find the module (strategy) with the given name, 
+        # and gets the corresponding object if it exists
+        full_path = base_dir + model + '_v' + version + "/" + model + '_v' + version + ".sav"
+        
+        model_data = pickle.load(full_path)
+
 
 
     '''

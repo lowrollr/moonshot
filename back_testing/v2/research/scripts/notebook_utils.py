@@ -271,6 +271,10 @@ def saveModels(models, scalers, base_name):
 
     return model_directory, model_filenames, scaler_filenames
 
+
+'''
+
+'''
 def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=False, balance_unbalanced_data=False, balance_info=None):
     if not balance_unbalanced_data:
         return train_test_split(dataset.drop([y_column_name], axis=1), dataset[[y_column_name]], test_size=split_size, shuffle=shuffle_data)
@@ -293,56 +297,60 @@ def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=
     raise Exception("when balance == true balance_info must specify params for balancing. Specify in the form of:\
         {'multiplier_val':4, 'superset_class_val':0, 'randomize_concat':true}")
 
+
+'''
+
+'''
 def getWeights(y_dataset):
     weights = class_weight.compute_class_weight('balanced', np.unique(y_dataset.to_numpy()[:,0]), y_dataset.to_numpy()[:,0])
     return {i : weights[i] for i in range(len(np.unique(y_dataset.values)))}
 
-def insert_buys(row):
-    if row.predict_buy > 0.6:
-        return row.close
-    # if row.predict == 2.0 :# and heat_val > 0.6:
-    #     return row.close
-    else:
-        return None
 
-def insert_sells(row):
-    if row.predict_sell > 0.5:
-        return row.close
-    # if row.predict == 0.0:
-    #     return row.close
-    else:
-        return None
+'''
 
+'''
 def classifyPoints(clf, dataset, predict_proba=False, proba_thresh=0.7, plot_optimal=False, optimal=None):
+    classifyingDF = dataset.copy()
     if not predict_proba:
-        dataset["classify"] = clf.predict(dataset.drop("close", axis=1).values)
+        classifyingDF["classify"] = clf.predict(dataset.drop("close", axis=1).values)
     else:
-        dataset["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
-        dataset["classify"] = dataset["predict"].apply(lambda x: filter_optimal(x, proba_thresh, "buy"))
-        dataset.drop("predict", axis=1, inplace=True)
+        classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+        classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: filter_optimal(x, proba_thresh, "buy"))
+        classifyingDF.drop("predict", axis=1, inplace=True)
 
     if plot_optimal:
-        return pd.concat([dataset[["close", "classify"]], optimal])
+        classifyingDF["optimal"] = optimal.values
+        return classifyingDF[["close", "classify", "optimal"]]
 
-    return dataset[["close", "classify"]]
+    return classifyingDF[["close", "classify"]]
 
 
-def inputPrice(row):
-    if row.classify:
+'''
+
+'''
+def inputPrice(row, column):
+    if row.get(column) == 1:
         return row.close
     return np.nan
 
+
+'''
+
+'''
 def graphPoints(df, mode="buy", plot_optimal=False):
+    plt.clf()
+    plt.figure(figsize=(20,10))
+
     color = "red" if mode == "buy" else "green"
 
-    df["classify"] = df["classify"].apply(lambda x: inputPrice(x))
+    df["classify"] = df.apply(lambda x: inputPrice(x, "classify"), axis=1)
 
-    plt.scatter(df.index, df['classify'], color=color)
+    plt.scatter(df.index, df['classify'], color=color, s=50)
 
     if plot_optimal:
-        df['optimal_' + mode] = df['optimal_' + mode].apply(lambda x: inputPrice(x))
-
-        plt.scatter(df.index, df['optimal_' + mode], color="purple")
+        df['optimal'] = df.apply(lambda x: inputPrice(x, 'optimal'), axis=1)
+        
+        plt.scatter(df.index, df['optimal'], color="purple")
 
     plt.plot(df.index, df['close'], color='blue')
     

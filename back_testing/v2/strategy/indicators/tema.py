@@ -9,7 +9,6 @@ from v2.utils import findParams
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.ema import EMA
-from v2.utils import calcSlope
 import numpy as np
 from talib import TEMA as talib_TEMA
 
@@ -45,13 +44,11 @@ class TEMA(Indicator):
         if gen_new_values:
             period.genValue()
         
-        
-
         dataset[self.name] = talib_TEMA(dataset[value], timeperiod=period.value)
 
         return [self.name]
 
     def setDefaultParams(self):
         self.params = [
-            Param(5,10000,0,'period',400)
+            Param(5,10000,0,'period', 10)
         ]
