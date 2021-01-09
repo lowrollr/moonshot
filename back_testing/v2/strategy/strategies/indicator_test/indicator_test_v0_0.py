@@ -20,7 +20,7 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.momentum import Momentum
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
-from v2.strategy.indicators.notebook_utils import genDataForAll, fetchIndicators
+from v2.research.scripts.notebook_utils import genDataForAll, fetchIndicators, generateSpans
 
 '''
 CLASS: indicator_test
@@ -44,5 +44,5 @@ class indicator_test(Strategy):
         self.name = 'indicator_test'
         self.is_ml = False
         mom_period = Param(0,0,0,'period',90)
-        self.indicators = fetchIndicators(['ema'])
+        self.indicators = fetchIndicators(['macd'])
         

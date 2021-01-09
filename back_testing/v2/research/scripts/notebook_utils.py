@@ -13,7 +13,7 @@ from importlib import import_module
 from inspect import isclass, getmembers
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
-from pickle import dump, load
+import pickle
 from v2.utils import findParams
 from load_config import load_config
 from v2.model import Trading
@@ -220,7 +220,7 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
-            scalers.append([scaler, n])   
+              
 
             if coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()] is not None:
                 for val in coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()]:
@@ -231,6 +231,7 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
                     coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
 
             coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
+            scalers.append([scaler, n]) 
         dataset_list.append(coin_dataset)
         
     dataset = concat(dataset_list)
@@ -257,16 +258,16 @@ def saveModels(models, scalers, base_name):
     model_directory = f'./v2/strategy/saved_models/{base_name}/'
     try:
         os.mkdir(model_directory)
-    except OSError as error:
-        raise (f'Models for the specified base directory name <{base_name}> already exist! ')
+    except Exception as error:
+        raise Exception(f'Error creating directory!')
 
     for model, model_name in models:
         name = f'model_{base_name}_{model_name}.sav'
-        dump(model, open(f'{model_directory}{name}', 'wb'))
+        pickle.dump(model, open(f'{model_directory}{name}', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
         model_filenames.append(name)
     for scaler, coin_name in scalers:
-        name = f'scaler_{base_name}_{coin_name}'
-        dump(scaler, open(f'{model_directory}{name}', 'wb'))
+        name = f'scaler_{base_name}_{coin_name}.sav'
+        pickle.dump(scaler, open(f'{model_directory}{name}', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
         scaler_filenames.append(name)
 
     return model_directory, model_filenames, scaler_filenames
@@ -358,12 +359,11 @@ def graphPoints(df, mode="buy", plot_optimal=False):
 '''
 
 '''
-def testModel(model_directory, model_name, scaler_name, strategy_type, strategy_version, dataset):
-    model = load(open(f'{model_directory}/{model_name}'))
-    scaler = load(open(f'{model_directory}/{scaler_name}'))
-    trading_model = Trading(load_config())
-    strategy = trading_model.importStrategy(strategy_type, strategy_version)()
-    strategy.buy_model = model
-    strategy.scaler = scaler
-    result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=[dataset], should_print=False, plot=False)
+def testModel(dataset, features, model_directory, model_name, scaler_name, strategy_type='buy', num_minutes=4000):
+    dataset[0][0] = dataset[0][0].head(4000)
+    model = pickle.load(open(f'{model_directory}/{model_name}', 'rb'))
+    scaler = pickle.load(open(f'{model_directory}/{scaler_name}', 'rb'))
+    trading_model = Trading(load_config('config.hjson'))
+    strategy = trading_model.importStrategy(f'{strategy_type}_benchmark', 'latest')(scaler=scaler, buy_model=model, buy_model_features=features)
+    result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=dataset, should_print=True, plot=False)
     return result, len(entries), len(exits)

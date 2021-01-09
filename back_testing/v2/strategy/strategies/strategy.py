@@ -29,9 +29,19 @@ class Strategy:
         -> Each subclass should instantiate and populate its list of Indicators so that they may be added to the dataset
             before the strategy is executed
     '''
-    def __init__(self):
+    def __init__(self, entry_models=[], exit_models=[]):
+        self.entry_models = []
+        self.exit_models = []
         self.indicators = []
-        self.is_ml = False
+        for name, version in entry_models:
+            model, model_indictors = self.importModel(name, version)
+            self.entry_models.append(model)
+            self.indicators.extend(model_indictors)
+        for name, version in exit_models:
+            model, model_indictors = self.importModel(name, version)
+            self.exit_models.append(model)
+            self.indicators.extend(model_indictors)
+
         self.name = self.__class__.__name__
 
     def importModel(self, model, version="latest"):
