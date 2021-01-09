@@ -2,7 +2,7 @@
 FILE: notebook_utils.py
 AUTHORS:
     -> Jacob Marshall (marshingjay@gmail.com) 
-    -> Ross Copeland ()
+    -> Ross Copeland (rhcopeland101@gmail.com)
 WHAT:
     -> This file contains utility functions associated with the fetching 
         and manipulation of indicators for research notebooks
@@ -289,9 +289,22 @@ def saveModels(models, scalers, base_name):
 
 
 '''
-
+ARGS:
+    -> dataset (pandas Dataframe): dataset to eventually feed into the model
+    -> split_size (float): size of the test size when splitting the train and test
+    -> y_column_name (string): the name of the y column to set for the y train
+    -> shuffle_data (bool): whether to shuffle the data
+    -> balance_unbalanced_data (bool): whether to create balanced dataset from unbalanced data
+    -> balance_info (dict): look at error message for propper formatting
+RETURN:
+    -> (pandas Dataframe): trainX
+    -> (pandas Dataframe): testX
+    -> (pandas Dataframe): trainy
+    -> (pandas Dataframe): testy
+WHAT: 
+    -> wrapper for splitting up the data
 '''
-def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=False, balance_unbalanced_data=False, balance_info=None):
+def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=False, balance_unbalanced_data=False, balance_info={}}):
     if not balance_unbalanced_data:
         return train_test_split(dataset.drop([y_column_name], axis=1), dataset[[y_column_name]], test_size=split_size, shuffle=shuffle_data)
 
@@ -309,13 +322,17 @@ def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=
 
         return balanced_data_all.drop([y_column_name], axis=1), test.drop([y_column_name], axis=1), balanced_data_all[[y_column_name]], test[[y_column_name]]
 
-
     raise Exception("when balance == true balance_info must specify params for balancing. Specify in the form of:\
         {'multiplier_val':4, 'superset_class_val':0, 'randomize_concat':true}")
 
 
 '''
-
+ARGS:
+    -> y_dataset (numpy array): list of model object-model name pairs
+RETURN:
+    -> (dict): weights of the different classes
+WHAT: 
+    -> creates a dictionary with the weights of the classes for 
 '''
 def getWeights(y_dataset):
     weights = class_weight.compute_class_weight('balanced', np.unique(y_dataset.to_numpy()[:,0]), y_dataset.to_numpy()[:,0])
@@ -323,7 +340,17 @@ def getWeights(y_dataset):
 
 
 '''
-
+ARGS:
+    -> clf (model object): model for performing the predictions
+    -> dataset (pandas Dataframe): dataset to feed into the model
+    -> predict_proba (bool): should use the predict_proba method instead of just predict
+    -> proba_thresh (float): threshold for when using the predict_proba
+    -> plot_optimal (bool): plot the optimal along with the predicted
+    -> optimal (numpy array): the optimal points so that they can be plotted along with 
+RETURN:
+    -> (pandas Dataframe): data frame with the close and classify and possibly optimal points
+WHAT: 
+    -> creates the predictions from the dataframe with the model
 '''
 def classifyPoints(clf, dataset, predict_proba=False, proba_thresh=0.7, plot_optimal=False, optimal=None):
     classifyingDF = dataset.copy()
@@ -342,7 +369,12 @@ def classifyPoints(clf, dataset, predict_proba=False, proba_thresh=0.7, plot_opt
 
 
 '''
-
+ARGS:
+    -> row (pandas Series row): data for returning
+RETURN:
+    -> (dict): 
+WHAT: 
+    -> creates a dictionary with the weights of the classes for 
 '''
 def inputPrice(row, column):
     if row.get(column) == 1:
