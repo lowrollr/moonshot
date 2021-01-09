@@ -27,6 +27,7 @@ class my_first_strategy(Strategy):
     '''
     def __init__(self, entry_models=[], exit_models=[]):
         super().__init__(entry_models, exit_models)
+        self.predicted = False
         # wanna test some indicators?
         # do that here 
 
@@ -37,7 +38,8 @@ class my_first_strategy(Strategy):
         time = data.time
         prediction = self.entry_models[1]['results'][time]
         model_1_data = np.array([getattr(data, x) for x in self.entry_models[1]['features']])
-        if prediction:
+        if prediction and not self.predicted:
+            self.predicted = True
             return True
         else:
             return False
