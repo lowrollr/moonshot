@@ -88,8 +88,10 @@ class Strategy:
         
         model_data = pickle.load(full_path)
 
-        ret_model = model_data["model_object"]
+        ret_model = model_data["model"]
         indicators = model_data["indicators"]
+        #features (string)
+        #proba_threshold (bool)
 
         return (ret_model, full_path), indicators
 
@@ -128,9 +130,8 @@ class Strategy:
         process_pool = mp.Pool(processes)
 
         #split data
-        S = processes
-        N = int(len(dataset)/S)
-        frames = [ dataset.iloc[i*S:(i+1)*S].copy() for i in range(N) ]
+        N = int(len(dataset)/processes)
+        frames = [ dataset.iloc[i*processes:(i+1)*processes].copy() for i in range(N) ]
 
         params = zip(frames, repeat(model_path))
         results = process_pool.starmap(self.modelProcess, params)
