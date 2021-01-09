@@ -126,7 +126,7 @@ class Strategy:
     WHAT: 
         -> This function is the wrapper for completing pre-processing for each of the models that we have in the strat
     '''
-    def preProcessing(self, dataset, numProcesses=1):
+    def preProcessing(self, dataset, numProcesses=-1):
         for k in list(self.entry_models.keys()):
             self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, numProcesses)
         for k in list(self.exit_models.keys()):
@@ -152,12 +152,14 @@ class Strategy:
 
         #split data
         N = int(len(dataset)/processes)
-        frames = [ dataset.iloc[i*processes:(i+1)*processes].copy() for i in range(N) ]
+        frames = [ dataset.iloc[i*processes:(i+1)*processes if (i+1)*processes < len(dataset) else len(dataset)].copy() for i in range(N+1) ]
 
         params = zip(frames, repeat(model_path))
         results = process_pool.starmap(self.modelProcess, params)
-
-        return chain.from_iterable(results)
+        cur_dict = dict()
+        for r in results:
+            cur_dict.update(r)
+        return cur_dict
 
 
     '''
@@ -173,7 +175,7 @@ class Strategy:
         model_obj = pickle.load(open(model_path, 'rb'))
         model = model_obj["model"]
 
-        model_predictions = []
+        model_predictions = dict()
 
         if model_obj["proba_threshold"]:
             ret = model.predict_proba(data)[:,1]
@@ -182,11 +184,17 @@ class Strategy:
                 if model_obj["proba_threshold"] < prediction:
                     return 1.0
                 return 0.0
-
-            model_predictions = list(map(filter_proba, ret))
+            predictions = list(map(filter_proba, ret))
+            times = list(data['time'].values)
+            for i, p in enumerate(predictions):
+                model_predictions[times[i]] = p
+            
             
         else:
-            model_predictions = model.predict(data[model_obj['features']])
+            predictions = list(model.predict(data[model_obj['features']]))
+            times = list(data['time'].values)
+            for i, p in enumerate(predictions):
+                model_predictions[times[i]] = p
 
         return model_predictions
 

@@ -252,8 +252,8 @@ TODO:
 
 #     return base_currencies
 
-def realtimeScale(dataset):
-    cols = dataset.columns
+def realtimeScale(dataset, columns):
+    cols = columns
 
     minmax_cols = dict()
 
@@ -267,9 +267,12 @@ def realtimeScale(dataset):
             cur_min = minmax_cols[c]['min']
             cur_max = minmax_cols[c]['max']
             row_val = getattr(row, c)
-            new_val = (row_val - cur_min) / (cur_max - cur_min)
+            
+            new_val = 0.5
+            if cur_max != cur_min:
+                new_val = (row_val - cur_min) / (cur_max - cur_min)
             minmax_cols[c]['min'] = min(cur_min, row_val)
             minmax_cols[c]['max'] = max(cur_max, row_val)
-            setattr(row, c, new_val)
+            dataset.set_value(row.Index, c, new_val)
 
     

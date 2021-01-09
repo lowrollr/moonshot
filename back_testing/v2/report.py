@@ -214,7 +214,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     # if the report format is auto, set the format to the appropriate type given the number of plots
     if report_format == 'auto':
         if len(movement_plots) < 20:
-            report_format == 'divs'
+            report_format = 'divs'
         else:
             report_format = 'pages'
     filenames = []

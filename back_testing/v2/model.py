@@ -64,6 +64,7 @@ class Trading:
         self.slippage = float(config["slippage"])
         self.report_format = config['report_format']
         self.data_source = config['data_source']
+        self.padding = config['padding']
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
@@ -206,7 +207,8 @@ class Trading:
         -> Is slippage all the way implemented?
     '''
     def executeStrategy(self, strategy, dataset, first_times, dataset_name, should_print=True, plot=True, *args):
-        
+        # remove the first x rows equal to the amount of padding specified
+        dataset = dataset[self.padding:]
         
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
@@ -383,6 +385,7 @@ class Trading:
         -> handles genetic algorithm if we are attempting to optimize parameters
     '''
     def backtest(self):
+        print('Importing Strategies...')
         strategy_objs = []
         # dynamically load strategy objects and call their constructors
         for x in self.strategies:
@@ -404,9 +407,10 @@ class Trading:
             for dataset_chunks, dataset_name in self.df_groups:
                 # generate data for each dataset in the group
 
-                
-                self.generateIndicatorData(dataset_chunks, x.indicators)
+                print('Generating Model Data...')
+                new_features = self.generateIndicatorData(dataset_chunks, x.indicators)
 
+                
                 # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
                 first_times = set()
 
@@ -415,9 +419,12 @@ class Trading:
                 first_times = set()
                 for d in dataset_chunks:
                     dataset = dataset.append(d)
-                time_now = time.time()
+                print('Scaling Model Data...')
+                utils.realtimeScale(dataset, new_features)
+                print('Preprocessing Model Predictions...')
                 x.preProcessing(dataset)
-                print(time.time() - time_now)
+                
+                print('Generating Algo Data...')
                 dataset = pd.DataFrame()
                 self.generateIndicatorData(dataset_chunks, x.algo_indicators)
                 for d in dataset_chunks:
@@ -425,16 +432,24 @@ class Trading:
                     # DONT CHANGE THIS PLS THX
                     first_times.add(d.head(1).time.values[0])
                     
+                print('Executing Strategy...')
                 # execute the strategy on the dataset       
                 self.executeStrategy(x, dataset, first_times, dataset_name, plot=self.plot)
 
     def generateIndicatorData(self, dataset_chunks, indicator_objects, gen_new_values=False):
+        got_new_features = False
+        new_features =  []
         for chunk in dataset_chunks:
+            
             for ind in indicator_objects:
-                ind.genData(chunk, False)
+                new_fs = ind.genData(chunk, False)
+                if not got_new_features:
+                    new_features.extend(new_fs)
+            got_new_features = True
 
             chunk.dropna(inplace=True)
             chunk.reset_index(inplace=True, drop=True)
+        return new_features
 
     '''
     ARGS:
