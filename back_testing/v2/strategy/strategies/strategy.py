@@ -130,10 +130,10 @@ class Strategy:
         -> This function is the wrapper for completing pre-processing for each of the models that we have in the strat
     '''
     def preProcessing(self, dataset, numProcesses=-1):
-        for _, path in self.entry_models:
-            self.entry_model_results.append(self.preProcessingHelper(path, dataset, numProcesses))
-        for _, path in self.exit_models:
-            self.exit_model_results.append(self.preProcessingHelper(path, dataset, numProcesses))
+        for k in list(self.entry_models.keys()):
+            self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, numProcesses)
+        for k in list(self.exit_models.keys()):
+            self.exit_models[k]['results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset, numProcesses)
 
     '''
     ARGS:
