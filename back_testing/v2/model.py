@@ -383,6 +383,7 @@ class Trading:
         -> handles genetic algorithm if we are attempting to optimize parameters
     '''
     def backtest(self):
+        print('Importing Strategies...')
         strategy_objs = []
         # dynamically load strategy objects and call their constructors
         for x in self.strategies:
@@ -404,7 +405,7 @@ class Trading:
             for dataset_chunks, dataset_name in self.df_groups:
                 # generate data for each dataset in the group
 
-                
+                print('Generating Model Data...')
                 self.generateIndicatorData(dataset_chunks, x.indicators)
 
                 # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
@@ -415,9 +416,10 @@ class Trading:
                 first_times = set()
                 for d in dataset_chunks:
                     dataset = dataset.append(d)
-                time_now = time.time()
+                print('Preprocessing Model Predictions')
                 x.preProcessing(dataset)
-                print(time.time() - time_now)
+                
+                print('Generating Algo Data...')
                 dataset = pd.DataFrame()
                 self.generateIndicatorData(dataset_chunks, x.algo_indicators)
                 for d in dataset_chunks:
@@ -425,6 +427,7 @@ class Trading:
                     # DONT CHANGE THIS PLS THX
                     first_times.add(d.head(1).time.values[0])
                     
+                print('Executing Strategy...')
                 # execute the strategy on the dataset       
                 self.executeStrategy(x, dataset, first_times, dataset_name, plot=self.plot)
 
