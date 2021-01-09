@@ -24,7 +24,7 @@
     genetic: false,
     # Fees to subtract from trades (percentage)
     fees: 0.001,
-    # Strategy to execute (file name sans version no.)
+    # Strategoes to execute (file name sans version no.)
     
     strategies: [{
                     type: 'my_first_strategy',
@@ -42,6 +42,9 @@
                         }
                     ]
                 }]
+
+    # How long to wait before trading
+    padding: 1000,
 
     # Version of strategy
     # specifying latest will just grab the highest version number present

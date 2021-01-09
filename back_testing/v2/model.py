@@ -64,6 +64,7 @@ class Trading:
         self.slippage = float(config["slippage"])
         self.report_format = config['report_format']
         self.data_source = config['data_source']
+        self.padding = config['padding']
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
@@ -206,7 +207,8 @@ class Trading:
         -> Is slippage all the way implemented?
     '''
     def executeStrategy(self, strategy, dataset, first_times, dataset_name, should_print=True, plot=True, *args):
-        
+        # remove the first x rows equal to the amount of padding specified
+        dataset = dataset[self.padding:]
         
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
