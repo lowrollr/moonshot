@@ -54,7 +54,10 @@ def fetchIndicators(indicator_list, param_specification={}):
         base_dir = 'v2.strategy.indicators.'
         module = import_module(base_dir + indicator.lower())
         indicator_object = None
-        print(readmodule(module.__name__).values())
+        print(indicator, value)
+
+        print(list(readmodule(module.__name__).values())[0].module)
+
         local_class = list(readmodule(module.__name__).values())[0].module
         for mod in dir(module):
             obj = getattr(module, mod)
