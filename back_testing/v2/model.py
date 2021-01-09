@@ -198,19 +198,8 @@ class Trading:
     TODO:
         -> Is slippage all the way implemented?
     '''
-    def executeStrategy(self, strategy, my_dataset_group, should_print=True, plot=True, *args):
-        # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
-        first_times = set()
-        # store the dataset name to use later
-        dataset_name = my_dataset_group[1]
-
-        # construct a single dataframe from all of the individual dataframes in the group, and construct the first_times set
-        dataset = pd.DataFrame()
-        for d in my_dataset_group[0]:
-            dataset = dataset.append(d)
-
-            # DONT CHANGE THIS
-            first_times.add(d.head(1).time.values[0])
+    def executeStrategy(self, strategy, dataset, first_times, dataset_name, should_print=True, plot=True, *args):
+        
         
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
@@ -398,16 +387,39 @@ class Trading:
         # execute each strategy
         for x in self.strategies:
             # execute the strategy on each dataset group
-            for group in self.df_groups:
+            for dataset_chunks, dataset_name in self.df_groups:
                 # generate data for each dataset in the group
-                for d in group[0]:
-                    for ind in x.indicators:
-                        ind.genData(d, False)
-                        d.dropna(inplace=True)
-                        d.reset_index(inplace=True, drop=True)
-                # execute the strategy on the dataset       
-                self.executeStrategy(x, group, plot=self.plot)
 
+                
+                self.generateIndicatorData(dataset_chunks, x.indicators)
+
+                # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
+                first_times = set()
+
+                # construct a single dataframe from all of the individual dataframes in the group, and construct the first_times set
+                dataset = pd.DataFrame()
+                first_times = set()
+                for d in dataset_chunks:
+                    dataset = dataset.append(d)
+
+                # x.preprocessing(dataset)
+                dataset = pd.DataFrame()
+                self.generateIndicatorData(dataset_chunks, x.algo_indicators)
+                for d in dataset_chunks:
+                    dataset = dataset.append(d)
+                    # DONT CHANGE THIS PLS THX
+                    first_times.add(d.head(1).time.values[0])
+                    
+                # execute the strategy on the dataset       
+                self.executeStrategy(x, dataset, first_times, dataset_name, plot=self.plot)
+
+    def generateIndicatorData(self, dataset_chunks, indicator_objects, gen_new_values=False):
+        for chunk in dataset_chunks:
+            for ind in indicator_objects:
+                ind.genData(chunk, False)
+
+            chunk.dropna(inplace=True)
+            chunk.reset_index(inplace=True, drop=True)
 
     '''
     ARGS:
