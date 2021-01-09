@@ -129,11 +129,11 @@ class Strategy:
     WHAT: 
         -> This function is the wrapper for completing pre-processing for each of the models that we have in the strat
     '''
-    def preProcessing(self, dataset, numProcesses=-1):
-        for _, path in self.entry_models:
-            self.entry_model_results.append(self.preProcessingHelper(path, dataset, numProcesses))
-        for _, path in self.exit_models:
-            self.exit_model_results.append(self.preProcessingHelper(path, dataset, numProcesses))
+    def preProcessing(self, dataset, numProcesses=1):
+        for k in list(self.entry_models.keys()):
+            self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, numProcesses)
+        for k in list(self.exit_models.keys()):
+            self.exit_models[k]['results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset, numProcesses)
 
     '''
     ARGS:
@@ -173,23 +173,23 @@ class Strategy:
         -> function called by each created process for creating the predictions
     '''
     def modelProcess(self, data, model_path):
-        model_obj = pickle.load(model_path)
+        model_obj = pickle.load(open(model_path, 'rb'))
         model = model_obj["model"]
 
         model_predictions = []
 
-        if model_obj["predict_proba"]:
+        if model_obj["proba_threshold"]:
             ret = model.predict_proba(data)[:,1]
             
             def filter_proba(prediction):
-                if model_obj["threshold"] < prediction:
+                if model_obj["proba_threshold"] < prediction:
                     return 1.0
                 return 0.0
 
             model_predictions = list(map(filter_proba, ret))
             
         else:
-            model_predictions = model.predict(data)
+            model_predictions = model.predict(data[model_obj['features']])
 
         return model_predictions
 

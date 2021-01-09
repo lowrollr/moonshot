@@ -12,6 +12,7 @@ warnings.simplefilter(action='ignore')
 
 import pandas as pd
 import os
+import time
 import importlib
 import inspect
 import random
@@ -58,9 +59,7 @@ class Trading:
         self.freq = config['freq']
         self.fees = float(config['fees'])
         self.indicators_to_graph = config['indicators_to_graph']
-        self.strategy_list = config['strategy']
-        self.version_list = config['strategy_version']
-        self.strategies = []
+        self.strategies = config['strategies']
         self.timespan = []
         self.slippage = float(config["slippage"])
         self.report_format = config['report_format']
@@ -145,27 +144,35 @@ class Trading:
         -> finds the object corresponding to the given strategy and version number in the strategies
             directory, returns a reference(?) to that object which can be used to call the constructor
     '''
-    def importStrategy(self, strategy, version):
+    def importStrategy(self, strategy):
         # construct the base directory
-        base_dir = 'v2.strategy.strategies.' + strategy
+        base_module = 'v2.strategy.strategies.' + strategy['type']
 
-        if version == 'latest': # fetch the latest version of the given strategy
-            all_files = os.listdir('./v2/strategy/strategies/' + strategy)
-            highest_version = 0.0
+        if strategy['version'] == 'latest': # fetch the latest version of the given strategy
+            base_dir = './v2/strategy/strategies/' + strategy['type']
+            highest_version = [0,0]
             # find the highest version number
-            for x in all_files:
-                if x[0:len(strategy)] == strategy:
-                    my_file = x.split('.py')[0]
+            for f in [x for x in os.scandir(f'{base_dir}/')]:
+                if f.name[0:len(strategy['type'])] == strategy['type']:
+                    my_file = f.name.split('.py')[0]
                     my_version = my_file.split('_v')[1]
-                    my_version = float(my_version.replace('_', '.'))
-                    highest_version = max(my_version, highest_version)
+                    parts = my_version.split('_')
+                    version = int(parts[0])
+                    subversion = int(parts[1])
+                    if version == highest_version[0]:
+                        if subversion > highest_version[1]:
+                            highest_version = [version, subversion]
+                    elif version > highest_version[0]:
+                        highest_version = [version, subversion]
                     
             # set version to be the highest version found
-            version = str(highest_version).replace('.', '_')
+            version = f'{highest_version[0]}_{highest_version[1]}'
+        else:
+            version = strategy['version']
         
         # this code attempts to find the module (strategy) with the given name, 
         # and gets the corresponding object if it exists
-        module = importlib.import_module(base_dir + '.' + strategy + '_v' + version)
+        module = importlib.import_module(base_module + '.' + strategy['type'] + '_v' + version)
         for mod in dir(module):
             obj = getattr(module, mod)
             if inspect.isclass(obj) and issubclass(obj, Strategy) and obj != Strategy:
@@ -376,10 +383,17 @@ class Trading:
         -> handles genetic algorithm if we are attempting to optimize parameters
     '''
     def backtest(self):
+        strategy_objs = []
         # dynamically load strategy objects and call their constructors
-        for x in range(len(self.strategy_list)):
-            self.strategies.append(self.importStrategy(self.strategy_list[x], self.version_list[x])())
+        for x in self.strategies:
+            entry_models_info, exit_models_info = [], []
+            for m in x['entry_models']:
+                entry_models_info.append([m['name'], m['version']])
+            for m in x['exit_models']:
+                exit_models_info.append([m['name'], m['version']])
+            strategy_objs.append(self.importStrategy(x)(entry_models=entry_models_info, exit_models=exit_models_info))
 
+        self.strategies = strategy_objs
         # run genetic algorithm if specified by config
         if self.test_param_ranges:
             self.geneticExecution()
@@ -401,8 +415,9 @@ class Trading:
                 first_times = set()
                 for d in dataset_chunks:
                     dataset = dataset.append(d)
-
-                # x.preprocessing(dataset)
+                time_now = time.time()
+                x.preProcessing(dataset)
+                print(time.time() - time_now)
                 dataset = pd.DataFrame()
                 self.generateIndicatorData(dataset_chunks, x.algo_indicators)
                 for d in dataset_chunks:

@@ -3,38 +3,54 @@
     # will be fetched from the historical data repository
 
     # directory to pull data from
-    "data_source": "binance",
+    data_source: "binance",
     # Currencies to trade against Tether (USDT)
-    "currencies": ["BTC"],
+    currencies: ["COMP"],
     # Whether or not to daisy chain all data chunks for a particular coin
-    "daisy_chain": true,
+    daisy_chain: true,
     # If daisy_chain is false, the user must specify a chunk id to run on. Indexed at 1
-    "chunk_ids": [1],
+    chunk_ids: [1],
     # Whether or not to test ranges of values for each indicator parameter (genetic algo)
-    "test_param_ranges": false,
+    test_param_ranges: false,
     # Timespan to fetch data for
     # "max" = all data
     # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
     # ["2020.1.1"] = data for Jan. 1, 2020 forwards
-    "timespan": "max",
+    timespan: "max",
     # Candle frequency to retrieve 
     # 1 = 1 minute
-    "freq": 1,
+    freq: 1,
     # determining if we are testing on a genetic algorithm or just a single run through
-    "genetic": false,
+    genetic: false,
     # Fees to subtract from trades (percentage)
-    "fees": 0.001,
+    fees: 0.001,
     # Strategy to execute (file name sans version no.)
-    "strategy": ["indicator_test"],
+    
+    strategies: [{
+                    type: 'indicator_test',
+                    version: 'latest',
+                    entry_models: [
+                        {
+                            name: 'test_model',
+                            version: 'latest'
+                        }
+                    ],
+                    exit_models: [
+                        {
+                            name: 'test_model',
+                            version: 'latest'
+                        }
+                    ]
+                }]
+
     # Version of strategy
     # specifying latest will just grab the highest version number present
-    "strategy_version": ["latest"],
     # Indicators to plot on the results graph
-    "indicators_to_graph": [],
+    indicators_to_graph: [],
     # Whether or not results should be plotted
-    "plot": false,
+    plot: false,
     # Slippage to factor into profits
-    "slippage": 0,
+    slippage: 0,
     # Report movement plots as individual pages or embedded divs (choose 'pages', 'divs', or 'auto')
-    "report_format": "auto"
+    report_format: "auto"
 }

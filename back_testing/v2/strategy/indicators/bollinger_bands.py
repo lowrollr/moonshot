@@ -42,9 +42,9 @@ class BollingerBands(Indicator):
                 dev_up.genValue()
             period.genValue()
         if dev_down and dev_up:
-            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=getattr(period, self.value), nbdevup=getattr(dev_up, self.value), nbdevdown=getattr(dev_down, self.value))
+            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=period.value, nbdevup=dev_up.value, nbdevdown=dev_down.value)
         else:
-            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=getattr(period, self.value))
+            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=period.value)
 
         return ['boll_upper' + self.appended_name, 'boll_upper' + self.appended_name]
     def setDefaultParams(self):
