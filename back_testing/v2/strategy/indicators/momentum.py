@@ -32,14 +32,14 @@ class Momentum(Indicator):
     WHAT: 
         -> calculates and adds the Momentum of the specified value over the given period to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period = findParams(self.params, ['period'])[0]
         
         if gen_new_values:
             
             period.genValue()
         
-        dataset[self.name] = MOM(dataset[value], period.value)
+        dataset[self.name] = MOM(dataset[self.value], period.value)
         
         return [self.name]
         

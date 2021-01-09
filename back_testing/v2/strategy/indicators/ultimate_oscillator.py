@@ -32,7 +32,7 @@ class UltimateOscillator(Indicator):
     WHAT: 
         -> calculates and adds the Bollinger Bands of the specified value over the given period to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period1, period2, period3 = findParams(self.params, ['period1', 'period2', 'period3'])
         
         if gen_new_values:
@@ -50,4 +50,4 @@ class UltimateOscillator(Indicator):
             Param(5,10000,0,'period2',400),
             Param(5,10000,0,'period3',500)
             
-        ]
+        ]       

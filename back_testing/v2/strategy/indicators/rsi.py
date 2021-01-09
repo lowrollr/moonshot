@@ -38,7 +38,7 @@ class RSI(Indicator):
         -> Uses values from these columns to calculate MACD value
         -> the resultant value from the MACD calculation is placed in the 'macd_diff' column
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         # param named 'period' must be present
         period = findParams(self.params, ['period'])[0]
@@ -46,7 +46,7 @@ class RSI(Indicator):
         if gen_new_values:
             period.genValue()
 
-        dataset[self.name] = talib_RSI(dataset[value], timeperiod=period.value)
+        dataset[self.name] = talib_RSI(dataset[self.value], timeperiod=period.value)
 
 
         return [self.name]

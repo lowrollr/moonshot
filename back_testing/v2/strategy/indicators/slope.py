@@ -31,12 +31,12 @@ class Slope(Indicator):
     WHAT: 
         -> calculates and adds the rate of change of the specified value over the given period to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()
 
-        dataset[self.name] = (dataset[value].rolling(window=int(period.value)).apply(lambda x: (x[-1] - x[0])/ period.value)) 
+        dataset[self.name] = (dataset[self.value].rolling(window=int(period.value)).apply(lambda x: (x[-1] - x[0])/ period.value)) 
 
         return [self.name]
     

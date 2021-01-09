@@ -55,12 +55,12 @@ class Variance(Indicator):
     WHAT: 
         -> adds the variance of the specified value over the given period
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()
 
-        dataset[self.name] = dataset[value].rolling(window=int(period.value)).var()
+        dataset[self.name] = dataset[self.value].rolling(window=int(period.value)).var()
 
         stop_loss_percentage = findParams(self.params, ['stop_loss_percentage'])[0]
         if stop_loss_percentage:

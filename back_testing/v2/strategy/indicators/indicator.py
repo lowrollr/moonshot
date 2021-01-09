@@ -25,8 +25,9 @@ class Indicator:
         -> Sets up the best_values dictionary to store best found values for Indicator params during 
             the execution of a genetic optimization algorithm
     '''
-    def __init__(self, _params, _appended_name='', _name=''):
+    def __init__(self, _params, _value='close', _appended_name='', _name=''):
         self.params = _params
+        self.value = _value
         # if a new name is given, set the name as that
         if _name:
             if _appended_name:
@@ -58,7 +59,7 @@ class Indicator:
             to the dataset or have an abstracted implementation
         -> Here, instead of adding a column to the dataframe, we simply generate new values for each param if necessary
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         # generic indicators don't get added to the dataset as columns because they are simply
         # data used within strategies and thus don't need to be applied to data frames
         if gen_new_values: # if we are generating new values, call genValue for each param belonging to this indciator

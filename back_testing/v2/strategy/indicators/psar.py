@@ -32,7 +32,7 @@ class PSAR(Indicator):
     WHAT: 
         -> computes the parabolic sar of the specified value over the given period
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         # param named 'period' must be present
         acceleration, maxiumum = findParams(self.params, ['acceleration', 'maximum'])
@@ -43,7 +43,7 @@ class PSAR(Indicator):
 
         # compute SAR
         dataset["intermediate_psar"] = SAR(dataset.high, dataset.close, acceleration=acceleration.value, maximum=maxiumum.value)
-        dataset[self.name] = dataset["intermediate_psar"] - dataset[value]
+        dataset[self.name] = dataset["intermediate_psar"] - dataset[self.value]
 
         dataset.drop(["intermediate_psar"], inplace=True, axis=1)
 

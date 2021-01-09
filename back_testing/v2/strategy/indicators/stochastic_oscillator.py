@@ -36,7 +36,7 @@ class StochasticOscillator(Indicator):
     WHAT: 
         -> calculates and adds the stochastic oscillation of the specified value over the given period to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         
         slowkperiod, fastkperiod, slowdperiod = findParams(self.params, ['slowkperiod', 'fastkperiod', 'slowdperiod'])
         if gen_new_values:

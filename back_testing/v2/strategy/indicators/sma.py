@@ -32,7 +32,7 @@ class SMA(Indicator):
     WHAT: 
         -> computes the simple moving average of the specified value over the given period
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         # param named 'period' must be present
         period = findParams(self.params, ['period'])[0]
@@ -41,7 +41,7 @@ class SMA(Indicator):
             period.genValue()
         
         # compute simple moving average and add to the dataset
-        dataset[self.name] = talib_SMA(dataset[value], timeperiod=period.value)
+        dataset[self.name] = talib_SMA(dataset[self.value], timeperiod=period.value)
         # dataset[self.name] = dataset[value].rolling(int(period.value)).mean()
 
         return [self.name]

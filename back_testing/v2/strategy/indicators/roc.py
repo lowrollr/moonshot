@@ -35,14 +35,14 @@ class RateOfChange(Indicator):
     WHAT: 
         -> calculates and adds the rate of change with a respect to a given point in the past for the given value to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()
         period_value = int(period.value) 
     
         # calculate percentage difference between x1 and x2 for every point in the dataset
-        dataset[self.name] = (dataset[value] - dataset[value].shift(periods=1*period_value))/dataset[value].shift(1*period_value)\
+        dataset[self.name] = (dataset[self.value] - dataset[self.value].shift(periods=1*period_value))/dataset[self.value].shift(1*period_value)\
         
         return [self.name]
 

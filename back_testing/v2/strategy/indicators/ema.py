@@ -34,7 +34,7 @@ class EMA(Indicator):
     WHAT: 
         -> computes the exponential moving average of the specified value over the given period
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         # param named 'period' must be present
         period = findParams(self.params, ['period'])[0]
@@ -45,7 +45,7 @@ class EMA(Indicator):
         # # compute EMA and add to the dataset
         # dataset[self.name] = dataset[value].ewm(span=period.value, adjust=False).mean()
         
-        dataset[self.name] = talib_EMA(dataset[value], timeperiod=period.value)
+        dataset[self.name] = talib_EMA(dataset[self.value], timeperiod=period.value)
 
         return [self.name]
 

@@ -34,7 +34,7 @@ class SMMA(Indicator):
     WHAT: 
         -> computes the smoothed moving average of the specified value over the given period
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         # param named 'period' must be present
         period = findParams(self.params, ['period'])[0]
@@ -42,7 +42,7 @@ class SMMA(Indicator):
         if gen_new_values:
             period.genValue()
         # compute smma
-        new_smma = smma(dataset[value].tolist(), int(period.value))
+        new_smma = smma(dataset[self.value].tolist(), int(period.value))
         # add to dataset
         dataset[self.name] = new_smma
         return [self.name]
