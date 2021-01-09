@@ -13,6 +13,8 @@ from importlib import import_module
 from inspect import isclass, getmembers
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
+from v2.strategy.indicators.optimal import Optimal
+from v2.strategy.indicators.optimal_v2 import Optimal_v2
 import pickle
 from v2.utils import findParams
 from load_config import load_config
@@ -96,6 +98,7 @@ WHAT:
 '''
 def generateSpans(dataset, indicator_name, column_name, param_name, param_values, gen_data=True):
     names = []
+    inds = []
     for x in param_values:
         # grab new instantiated indicator objects corresponding to each name passed, set the param accordingly
         ind = fetchIndicators([indicator_name], param_specification={indicator_name:{param_name: x}})[0]
@@ -104,10 +107,11 @@ def generateSpans(dataset, indicator_name, column_name, param_name, param_values
         ind.name = name
         names.append(name)
         # generate the data and add it to the dataset
+        inds.append(ind)
         if gen_data:
             ind.genData(dataset, gen_new_values=False, value=column_name)
 
-    return names
+    return names, inds
 
 '''
 ARGS:
@@ -160,6 +164,7 @@ WHAT:
 '''
 def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale=''):
     features = []
+    indicator_objs = []
     groups = None
     if not test:
         model = Trading(load_config('config.hjson'))
@@ -179,7 +184,10 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
         print(f'Loading data from {n}...')
         for i,d in enumerate(g):
             print(f'Loading data from chunk {i}...')
-            new_features = genDataForAll(dataset=d, indicators=fetchIndicators(indicators, param_spec))
+            new_indicators = fetchIndicators(indicators, param_spec)
+            
+            new_features = genDataForAll(dataset=d, indicators=new_indicators)
+            new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
             if 'Optimal_v2' in new_features or 'Optimal' in new_features:
                 optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
                 if len(list(optimal_threshold.keys())) == 1:
@@ -199,14 +207,16 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
 
             if compiling_features:
                 features.extend(new_features)
+                indicator_objs.extend(new_indicators)
             for span in spans:
-                new_features = generateSpans(dataset=d, 
+                new_features, new_inds = generateSpans(dataset=d, 
                                             indicator_name=span['indicator_name'],
                                             column_name=span['column_name'],
                                             param_name=span['param_name'],
                                             param_values=span['param_values'])
                 if compiling_features:
                     features.extend(new_features)
+                    indicator_objs.extend(new_inds)
             coin_dataset.append(d)
             compiling_features = False
 
@@ -237,7 +247,7 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
     dataset = concat(dataset_list)
     dataset.reset_index(inplace=True, drop=True)
     dataset.dropna(inplace=True)
-    return dataset, features, scalers
+    return dataset, features, indicator_objs, scalers
 
 
 '''
@@ -359,3 +369,9 @@ def testModel(dataset, features, model_directory, model_name, scaler_name, strat
     strategy = trading_model.importStrategy(f'{strategy_type}_benchmark', 'latest')(scaler=scaler, buy_model=model, buy_model_features=features)
     result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=dataset, should_print=True, plot=False)
     return result, len(entries), len(exits)
+
+
+
+
+
+# def exportModel()
