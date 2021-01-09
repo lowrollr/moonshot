@@ -34,21 +34,19 @@ class Strategy:
         -> do check at the end for the indicators that are the same and remove
     '''
     def __init__(self, entry_models=[], exit_models=[]):
-        self.entry_models = []
-        self.exit_models = []
-        self.entry_model_results = []
-        self.exit_model_results = []
-
+        self.entry_models = dict()
+        self.exit_models = dict()
         self.indicators = []
-
+        model_num = 1
         for name, version in entry_models:
-            model, indicators = self.importModel(name, version)
-            self.entry_models.append(model)
-            self.indicators.extend(indicators)
+            
+            self.importModel(name, version, model_num, True)
+            model_num += 1
+
+        model_num = 1
         for name, version in exit_models:
-            model, indicators = self.importModel(name, version)
-            self.exit_models.append(model)
-            self.indicators.extend(indicators)
+            self.importModel(name, version, model_num, False)
+            model_num += 1
         
         self.algo_indicators = []
         self.name = self.__class__.__name__
@@ -65,28 +63,54 @@ class Strategy:
     TODO:
         -> add availibility for neural networks which are directories
     '''
-    def importModel(self, model, version="latest"):
+    def importModel(self, model, version="latest", model_num=1, is_entry=True):
         #get the correct model
         base_dir = './v2/strategy/saved_models/' + model + '/'
 
         if version == 'latest': # fetch the latest version of the given strategy
             all_files = os.listdir(base_dir)
-            highest_version = 0.0
-            # find the highest version number
-            for my_file in all_files:
-                if my_file[:len(model)] == model:
-                    my_version = my_file.split('_v')[1]
-                    my_version = float(my_version.replace('_', '.'))
-                    highest_version = max(my_version, highest_version)
+            highest_version = [0, 0]
+
+            for f in [x for x in os.scandir(f'{base_dir}/')if x.is_dir()]:
+                parts = f.name.split('_')
+                version = int(parts[0])
+                subversion = int(parts[1])
+                if version == highest_version[0]:
+                    if subversion > highest_version[1]:
+                        highest_version = [version, subversion]
+                elif version > highest_version[0]:
+                    highest_version = [version, subversion]
                     
             # set version to be the highest version found
-            version = str(highest_version).replace('.', '_')
+            version = f'{highest_version[0]}_{highest_version[1]}'
         
         # this code attempts to find the module (strategy) with the given name, 
         # and gets the corresponding object if it exists
-        full_path = base_dir + model + '_v' + version + "/" + model + '_v' + version + ".sav"
+        full_path = base_dir + '/' + version + '/' + model + '_' + version + '.sav'
         
-        model_data = pickle.load(full_path)
+        model_data = pickle.load(open(full_path, 'rb'))
+        self.indicators.extend(model_data['indicators'])
+        if is_entry:
+            self.entry_models[model_num] = dict()
+            self.entry_models[model_num]['features'] = list(model_data['features'])
+            self.entry_models[model_num]['proba_threshold'] = model_data['proba_threshold']
+            self.entry_models[model_num]['path'] = full_path
+            if not model_data['model']: #this is a neural network
+                pass
+            else:
+                self.entry_models[model_num]['model'] = model_data['model']
+        else:
+            self.exit_models[model_num] = dict()
+            self.exit_models[model_num]['features'] = list(model_data['features'])
+            self.exit_models[model_num]['proba_threshold'] = model_data['proba_threshold']
+            self.exit_models[model_num]['path'] = full_path
+            if not model_data['model']: #this is a neural network
+                pass
+            else:
+                self.exit_models[model_num]['model'] = model_data['model']
+
+
+        
 
         ret_model = model_data["model"]
         indicators = model_data["indicators"]

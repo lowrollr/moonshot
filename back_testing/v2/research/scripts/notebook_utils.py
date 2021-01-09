@@ -22,6 +22,8 @@ from load_config import load_config
 from v2.model import Trading
 from alive_progress import alive_bar
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
+import tensorflow as tf
+from tensorflow import keras
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -31,9 +33,11 @@ import matplotlib.pyplot as plt
 from concurrent.futures import ThreadPoolExecutor
 import copy
 from itertools import repeat
+from glob import glob
 '''
 ARGS:
-    -> indicator_list ([String]): list of strings that are matched to Indicator objects
+    -> indicator_list ([String, String]): list of strings that are matched to Indicator objects paired with strings matched to the column
+        that the indicator will be applied to
     -> param_specification ({String: Value}) <optional>: maps indicator params to values 
 RETURN:
     -> None
@@ -46,7 +50,7 @@ WHAT:
 '''
 def fetchIndicators(indicator_list, param_specification={}):
     indicator_objects = []
-    for indicator in indicator_list:
+    for indicator, value in indicator_list:
         base_dir = 'v2.strategy.indicators.'
         module = import_module(base_dir + indicator.lower())
         indicator_object = None
@@ -58,7 +62,7 @@ def fetchIndicators(indicator_list, param_specification={}):
                 indicator_object = obj
                 break
         if indicator_object:
-            ind_obj = indicator_object(_params=[])
+            ind_obj = indicator_object(_params=[], _value=value)
             ind_obj.setDefaultParams()
             if indicator in param_specification:
                 params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
@@ -106,7 +110,7 @@ def generateSpans(dataset, indicator_name, column_name, param_name, param_values
     inds = []
     for x in param_values:
         # grab new instantiated indicator objects corresponding to each name passed, set the param accordingly
-        ind = fetchIndicators([indicator_name], param_specification={indicator_name:{param_name: x}})[0]
+        ind = fetchIndicators([[indicator_name, column_name]], param_specification={indicator_name:{param_name: x}})[0]
         # construct the column name
         name = f'{type(ind).__name__}_{column_name}_{param_name}_{x}'
         ind.name = name
@@ -114,7 +118,7 @@ def generateSpans(dataset, indicator_name, column_name, param_name, param_values
         # generate the data and add it to the dataset
         inds.append(ind)
         if gen_data:
-            ind.genData(dataset, gen_new_values=False, value=column_name)
+            ind.genData(dataset, gen_new_values=False)
 
     return names, inds
 
@@ -478,5 +482,48 @@ def testModel(dataset, features, model_directory, model_name, scaler_name, strat
 
 
 
+'''
+'''
+def exportModel(model, name, new_version, indicators, features, proba_threshold=0.0, is_nn=False):
+    model_dict = dict()
+    model_dict['indicators'] = indicators
+    model_dict['features'] = features
+    model_dict['proba_threshold'] = proba_threshold
+    # check if name exists in saved_models directory -- if not we'll need to create a directory
+    version_str = ''
+    base_path = './v2/strategy/saved_models/'
+    model_dir = f'{base_path}{name}'
+    if os.path.isdir(model_dir):
+        highest_version = [0, 0]
+        for f in [x for x in os.scandir(f'{model_dir}/')if x.is_dir()]:
+            
+            parts = f.name.split('_')
+            version = int(parts[0])
+            subversion = int(parts[1])
+            if version == highest_version[0]:
+                if subversion > highest_version[1]:
+                    highest_version = [version, subversion]
+            elif version > highest_version[0]:
+                highest_version = [version, subversion]
+        
+        if new_version:
+            version_str = f'{highest_version[0] + 1}_0'
+        else:
+            version_str = f'{highest_version[0]}_{highest_version[1] + 1}'
+        
 
-# def exportModel()
+    else:
+        os.mkdir(model_dir)
+        version_str = '1_0'
+    
+    model_dir = f'{model_dir}/{version_str}'
+    os.mkdir(model_dir)
+        
+
+    if is_nn:
+        model.save(f'{model_dir}/')
+        model_dict['model'] = None
+    else:
+        model_dict['model'] = model
+
+    pickle.dump(model_dict, open(f'{model_dir}/{name}_{version_str}.sav', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
