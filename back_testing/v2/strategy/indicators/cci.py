@@ -37,7 +37,7 @@ class CCI(Indicator):
     TODO:
         -> This has not been tested
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         # param named 'period' must be present
         period = findParams(self.params, ['period'])[0]

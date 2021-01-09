@@ -33,7 +33,7 @@ class Ichimoku(Indicator):
     WHAT: 
         -> calculates and adds the Ichimoku Cloud values of the specified value to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         #standard vals are short_window = 9, medium_window = 26, long_window = 52
         short_window, medium_window, long_window = findParams(self.params, ['short_window', 'medium_window', 'long_window'])
         

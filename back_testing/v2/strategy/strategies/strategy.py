@@ -49,7 +49,8 @@ class Strategy:
             model, indicators = self.importModel(name, version)
             self.exit_models.append(model)
             self.indicators.extend(indicators)
-
+        
+        self.algo_indicators = []
         self.name = self.__class__.__name__
 
     '''

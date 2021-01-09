@@ -36,7 +36,7 @@ class Beta(Indicator):
     WHAT: 
         -> adds the beta of the specified value over the given period
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()

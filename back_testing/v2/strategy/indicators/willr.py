@@ -33,7 +33,7 @@ class WILLR(Indicator):
     WHAT: 
         -> calculates and adds the Ichimoku Cloud values of the specified value to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period = findParams(self.params, ['period'])[0]
         
         if gen_new_values:

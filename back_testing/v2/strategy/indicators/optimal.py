@@ -34,7 +34,7 @@ class Optimal(Indicator):
     WHAT: 
         -> Adds columns with optimal buy/sell
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         penalty = findParams(self.params, ['penalty'])[0]
         penalty_value = 0.0

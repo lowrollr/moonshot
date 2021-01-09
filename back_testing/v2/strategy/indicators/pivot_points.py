@@ -32,17 +32,17 @@ class PivotPoints(Indicator):
     WHAT: 
         -> calculates and adds the slope of the specified value over the given period to the dataset
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         period = findParams(self.params, ['period'])[0]
         if gen_new_values:
             period.genValue()
         
-        dataset['pp_high' + self.appended_name] = dataset[value].rolling(int(period.value)).max()
-        dataset['pp_low' + self.appended_name] = dataset[value].rolling(int(period.value)).min()
+        dataset['pp_high' + self.appended_name] = dataset[self.value].rolling(int(period.value)).max()
+        dataset['pp_low' + self.appended_name] = dataset[self.value].rolling(int(period.value)).min()
         # this is the close price IRL but that skews the data when we compute on a rolling basis
         # will see how this goes
         pp_sma = SMA([period], _name='pp_sma', _appended_name=self.appended_name)
-        pp_sma.genData(dataset, gen_new_values=False, value=value)
+        pp_sma.genData(dataset, gen_new_values=False, value=self.value)
         dataset['pp_pp' + self.appended_name] = (dataset['pp_high'] + dataset['pp_low'] + dataset['pp_sma']) / 3
         dataset['pp_r1' + self.appended_name] = (2 * dataset['pp_pp']) - dataset['pp_low']
         dataset['pp_s1' + self.appended_name] = (2 * dataset['pp_pp']) - dataset['pp_high']

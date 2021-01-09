@@ -38,7 +38,7 @@ class MACD(Indicator):
         -> Uses values from these columns to calculate MACD value
         -> the resultant value from the MACD calculation is placed in the 'macd_diff' column
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
         
         # params named 'ema_slow', 'ema_fast', and 'signal' must all be present
         ema_slow_param, ema_fast_param, signal_param = findParams(self.params, ['ema_slow', 'ema_fast', 'signal'])
@@ -55,7 +55,7 @@ class MACD(Indicator):
             signal_param.low = ema_fast_value
             signal_param.genValue()
 
-        dataset[self.name], dataset[self.name + '_signal'], dataset[self.name + '_hist'] = talib_MACD(dataset[value], slowperiod=ema_slow_param.value, fastperiod=ema_fast_param.value, signalperiod=signal_param.value)
+        dataset[self.name], dataset[self.name + '_signal'], dataset[self.name + '_hist'] = talib_MACD(dataset[self.value], slowperiod=ema_slow_param.value, fastperiod=ema_fast_param.value, signalperiod=signal_param.value)
 
         return [self.name, self.name + '_signal', self.name + '_hist']
 

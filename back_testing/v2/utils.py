@@ -14,6 +14,7 @@ import numpy as np
 import random
 import os
 import re
+import sys
 
 '''
 ARGS:
@@ -250,3 +251,25 @@ TODO:
 #                 base_currencies.append(match[0])
 
 #     return base_currencies
+
+def realtimeScale(dataset):
+    cols = dataset.columns
+
+    minmax_cols = dict()
+
+    for c in cols:
+        minmax_cols[c] = dict()
+        minmax_cols[c]['min'] = sys.maxsize
+        minmax_cols[c]['max'] = -1 * sys.maxsize
+
+    for row in dataset.itertuples():
+        for c in cols:
+            cur_min = minmax_cols[c]['min']
+            cur_max = minmax_cols[c]['max']
+            row_val = getattr(row, c)
+            new_val = (row_val - cur_min) / (cur_max - cur_min)
+            minmax_cols[c]['min'] = min(cur_min, row_val)
+            minmax_cols[c]['max'] = max(cur_max, row_val)
+            setattr(row, c, new_val)
+
+    

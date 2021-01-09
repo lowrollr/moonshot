@@ -6,6 +6,8 @@ WHAT:
     -> This file is used for the testing and debugging of indicators
 '''
 from v2.strategy.strategies.strategy import Strategy
+from v2.strategy.indicators.param import Param
+from v2.strategy.indicators.ultimate_oscillator import UltimateOscillator
 
 '''
 CLASS: indicator_test
@@ -29,5 +31,8 @@ class indicator_test(Strategy):
         super().__init__(entry_models, exit_models)
         # wanna test some indicators?
         # do that here 
-        self.indicators.extend([])
+        
+        ult_osc = UltimateOscillator(_params=[])
+        ult_osc.setDefaultParams()
+        self.algo_indicators.extend([ult_osc])
         

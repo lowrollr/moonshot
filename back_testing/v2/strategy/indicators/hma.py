@@ -35,7 +35,7 @@ class HMA(Indicator):
     TODO:
         -> This has not been tested
     '''
-    def genData(self, dataset, gen_new_values=True, value='close'):
+    def genData(self, dataset, gen_new_values=True):
 
         # param named 'period' must be present
         hma_period = findParams(self.params, ['period'])[0]
@@ -45,12 +45,12 @@ class HMA(Indicator):
         
         normal_wma_param = Param(_name='period', _default=hma_period.value)
         normal_wma = WMA([normal_wma_param], _name="normal_wma")
-        normal_wma.genData(dataset, gen_new_values=False, value=value)
+        normal_wma.genData(dataset, gen_new_values=False, value=self.value)
 
         half_period = int(hma_period.value/2)
         half_period_wma_param = Param(_name="period", _default=half_period)
         half_period_wma = WMA([half_period_wma_param], _name="half_period_wma")
-        half_period_wma.genData(dataset, gen_new_values=False, value=value)
+        half_period_wma.genData(dataset, gen_new_values=False, value=self.value)
 
         dataset["difference"] = (2 * dataset["half_period_wma"]) - dataset["normal_wma"]
         
