@@ -406,8 +406,9 @@ class Trading:
                 # generate data for each dataset in the group
 
                 print('Generating Model Data...')
-                self.generateIndicatorData(dataset_chunks, x.indicators)
+                new_features = self.generateIndicatorData(dataset_chunks, x.indicators)
 
+                
                 # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
                 first_times = set()
 
@@ -416,7 +417,9 @@ class Trading:
                 first_times = set()
                 for d in dataset_chunks:
                     dataset = dataset.append(d)
-                print('Preprocessing Model Predictions')
+                print('Scaling Model Data...')
+                utils.realtimeScale(dataset, new_features)
+                print('Preprocessing Model Predictions...')
                 x.preProcessing(dataset)
                 
                 print('Generating Algo Data...')
@@ -432,12 +435,19 @@ class Trading:
                 self.executeStrategy(x, dataset, first_times, dataset_name, plot=self.plot)
 
     def generateIndicatorData(self, dataset_chunks, indicator_objects, gen_new_values=False):
+        got_new_features = False
+        new_features =  []
         for chunk in dataset_chunks:
+            
             for ind in indicator_objects:
-                ind.genData(chunk, False)
+                new_fs = ind.genData(chunk, False)
+                if not got_new_features:
+                    new_features.extend(new_fs)
+            got_new_features = True
 
             chunk.dropna(inplace=True)
             chunk.reset_index(inplace=True, drop=True)
+        return new_features
 
     '''
     ARGS:
