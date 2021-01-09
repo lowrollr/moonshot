@@ -28,7 +28,7 @@ import os
 import numpy as np
 from sklearn.model_selection import train_test_split
 import pandas as pd
-from sklearn.utils import class_weight
+from sklearn.utils.class_weight import compute_class_weight
 import matplotlib.pyplot as plt
 from concurrent.futures import ThreadPoolExecutor
 import copy
@@ -56,34 +56,31 @@ class notebookUtils:
         -> DO NOT CALL THIS FUNCTION UNLESS YOU ARE DOING SO FROM A NOTEBOOK >:(
     '''
     def fetchIndicators(self, indicator_list, param_specification={}):
-        with self.lock:
-            indicator_objects = []
-            for indicator, value in indicator_list:
-                base_dir = 'v2.strategy.indicators.'
-                module = import_module(base_dir + indicator.lower())
-                indicator_object = None
-                # print(indicator, value)
+        indicator_objects = []
+        for indicator, value in indicator_list:
+            base_dir = 'v2.strategy.indicators.'
+            module = import_module(base_dir + indicator.lower())
+            indicator_object = None
 
-                # print(list(readmodule(module.__name__).values())[0].module)
-
+            with self.lock:
                 local_class = list(readmodule(module.__name__).values())[0].module
                 for mod in dir(module):
                     obj = getattr(module, mod)
                     if isclass(obj) and obj.__module__ == local_class:
                         indicator_object = obj
                         break
-                if indicator_object:
-                    ind_obj = indicator_object(_params=[], _value=value)
-                    ind_obj.setDefaultParams()
-                    if indicator in param_specification:
-                        params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
-                        for p in params_to_set:
-                            p.value = param_specification[indicator][p.name]
-                    indicator_objects.append(ind_obj)
-                else:
-                    raise Exception(f'Indicator object <{indicator}> could not be found!')
-            
-            return indicator_objects
+            if indicator_object:
+                ind_obj = indicator_object(_params=[], _value=value)
+                ind_obj.setDefaultParams()
+                if indicator in param_specification:
+                    params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
+                    for p in params_to_set:
+                        p.value = param_specification[indicator][p.name]
+                indicator_objects.append(ind_obj)
+            else:
+                raise Exception(f'Indicator object <{indicator}> could not be found!')
+        
+        return indicator_objects
 
 
     '''
@@ -211,47 +208,6 @@ class notebookUtils:
                     indicator_objs.extend(chunk[2])
                 
                 features = set(features)
-
-                # for i,d in enumerate(g):
-
-
-
-                #     print(f'Loading data from chunk {i}...')
-                #     new_indicators = fetchIndicators(indicators, param_spec)
-                    
-                #     new_features = genDataForAll(dataset=d, indicators=new_indicators)
-                #     new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
-                #     if 'Optimal_v2' in new_features or 'Optimal' in new_features:
-                #         optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
-                #         if len(list(optimal_threshold.keys())) == 1:
-                #             threshold_key = list(optimal_threshold.keys())[0]
-
-                #             d["optimal"] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
-
-                #             d.drop(optimal_col_name, inplace=True, axis=1)
-                #         elif len(optimal_threshold.keys()) == 2:
-                #             for key in list(optimal_threshold.keys()):
-                #                 d["optimal_" + key] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
-                #             d.drop(optimal_col_name, axis=1, inplace=True)
-
-                #         else: raise Exception("Please provide either one or two thresholds")
-                        
-                #         new_features.remove(optimal_col_name)
-
-                #     if compiling_features:
-                #         features.extend(new_features)
-                #         indicator_objs.extend(new_indicators)
-                #     for span in spans:
-                #         new_features, new_inds = generateSpans(dataset=d, 
-                #                                     indicator_name=span['indicator_name'],
-                #                                     column_name=span['column_name'],
-                #                                     param_name=span['param_name'],
-                #                                     param_values=span['param_values'])
-                #         if compiling_features:
-                #             features.extend(new_features)
-                #             indicator_objs.extend(new_inds)
-                #     coin_dataset.append(d)
-                #     compiling_features = False
 
             coin_dataset = concat(coin_dataset)
             if scale:
@@ -401,7 +357,7 @@ class notebookUtils:
             return balanced_data_all.drop([y_column_name], axis=1), test.drop([y_column_name], axis=1), balanced_data_all[[y_column_name]], test[[y_column_name]]
 
         raise Exception("when balance == true balance_info must specify params for balancing. Specify in the form of:\
-            {'multiplier_val':4, 'superset_class_val':0, 'randomize_concat':true}")
+            {'multiplier_val':4, 'superset_class_val':0, 'randomize_concat':True}")
 
 
     '''
@@ -413,7 +369,7 @@ class notebookUtils:
         -> creates a dictionary with the weights of the classes for 
     '''
     def getWeights(self, y_dataset):
-        weights = class_weight.compute_class_weight('balanced', np.unique(y_dataset.to_numpy()[:,0]), y_dataset.to_numpy()[:,0])
+        weights = compute_class_weight('balanced', np.unique(y_dataset.to_numpy()[:,0]), y_dataset.to_numpy()[:,0])
         return {i : weights[i] for i in range(len(np.unique(y_dataset.values)))}
 
 

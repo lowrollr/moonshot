@@ -109,9 +109,6 @@ class Strategy:
             else:
                 self.exit_models[model_num]['model'] = model_data['model']
 
-
-        
-
         ret_model = model_data["model"]
         indicators = model_data["indicators"]
         #features (string)
