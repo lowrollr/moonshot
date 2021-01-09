@@ -27,7 +27,7 @@
     # Strategy to execute (file name sans version no.)
     
     strategies: [{
-                    type: 'indicator_test',
+                    type: 'my_first_strategy',
                     version: 'latest',
                     entry_models: [
                         {
@@ -48,7 +48,7 @@
     # Indicators to plot on the results graph
     indicators_to_graph: [],
     # Whether or not results should be plotted
-    plot: false,
+    plot: true,
     # Slippage to factor into profits
     slippage: 0,
     # Report movement plots as individual pages or embedded divs (choose 'pages', 'divs', or 'auto')
