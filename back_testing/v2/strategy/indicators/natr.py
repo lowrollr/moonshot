@@ -50,5 +50,5 @@ class NATR(Indicator):
 
     def setDefaultParams(self):
         self.params = [
-            Param(5,10000,0,'period',400)
+            Param(5,10000,0,'period',100)
         ]
