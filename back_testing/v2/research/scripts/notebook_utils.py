@@ -28,6 +28,9 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 from sklearn.utils import class_weight
 import matplotlib.pyplot as plt
+from concurrent.futures import ThreadPoolExecutor
+import copy
+from itertools import repeat
 '''
 ARGS:
     -> indicator_list ([String]): list of strings that are matched to Indicator objects
@@ -47,6 +50,7 @@ def fetchIndicators(indicator_list, param_specification={}):
         base_dir = 'v2.strategy.indicators.'
         module = import_module(base_dir + indicator.lower())
         indicator_object = None
+        print(readmodule(module.__name__).values())
         local_class = list(readmodule(module.__name__).values())[0].module
         for mod in dir(module):
             obj = getattr(module, mod)
@@ -183,43 +187,58 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
     for g,n in groups:
         coin_dataset = []
         print(f'Loading data from {n}...')
-        for i,d in enumerate(g):
-            print(f'Loading data from chunk {i}...')
-            new_indicators = fetchIndicators(indicators, param_spec)
-            
-            new_features = genDataForAll(dataset=d, indicators=new_indicators)
-            new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
-            if 'Optimal_v2' in new_features or 'Optimal' in new_features:
-                optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
-                if len(list(optimal_threshold.keys())) == 1:
-                    threshold_key = list(optimal_threshold.keys())[0]
 
-                    d["optimal"] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
+        with ThreadPoolExecutor() as executor:
+            d_dataset, feature, ind_obj = executor.map(loadDataThread, g, repeat(copy.deepcopy(spans)), repeat(copy.deepcopy(indicators)), repeat(copy.deepcopy(param_spec)), repeat(copy.deepcopy(optimal_threshold)), repeat(compiling_features))
+            print(d_dataset)
+            coin_dataset.extend(d_dataset)
+            for f in feature:
+                features.extend(f)
+            for i in ind_obj:
+                indicator_objs.extend(i)
 
-                    d.drop(optimal_col_name, inplace=True, axis=1)
-                elif len(optimal_threshold.keys()) == 2:
-                    for key in list(optimal_threshold.keys()):
-                        d["optimal_" + key] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
-                    d.drop(optimal_col_name, axis=1, inplace=True)
 
-                else: raise Exception("Please provide either one or two thresholds")
+            # futures = []
+            # for i,d in enumerate(g):
+
+
+
+            #     print(f'Loading data from chunk {i}...')
+            #     new_indicators = fetchIndicators(indicators, param_spec)
                 
-                new_features.remove(optimal_col_name)
+            #     new_features = genDataForAll(dataset=d, indicators=new_indicators)
+            #     new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
+            #     if 'Optimal_v2' in new_features or 'Optimal' in new_features:
+            #         optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
+            #         if len(list(optimal_threshold.keys())) == 1:
+            #             threshold_key = list(optimal_threshold.keys())[0]
 
-            if compiling_features:
-                features.extend(new_features)
-                indicator_objs.extend(new_indicators)
-            for span in spans:
-                new_features, new_inds = generateSpans(dataset=d, 
-                                            indicator_name=span['indicator_name'],
-                                            column_name=span['column_name'],
-                                            param_name=span['param_name'],
-                                            param_values=span['param_values'])
-                if compiling_features:
-                    features.extend(new_features)
-                    indicator_objs.extend(new_inds)
-            coin_dataset.append(d)
-            compiling_features = False
+            #             d["optimal"] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
+
+            #             d.drop(optimal_col_name, inplace=True, axis=1)
+            #         elif len(optimal_threshold.keys()) == 2:
+            #             for key in list(optimal_threshold.keys()):
+            #                 d["optimal_" + key] = d.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
+            #             d.drop(optimal_col_name, axis=1, inplace=True)
+
+            #         else: raise Exception("Please provide either one or two thresholds")
+                    
+            #         new_features.remove(optimal_col_name)
+
+            #     if compiling_features:
+            #         features.extend(new_features)
+            #         indicator_objs.extend(new_indicators)
+            #     for span in spans:
+            #         new_features, new_inds = generateSpans(dataset=d, 
+            #                                     indicator_name=span['indicator_name'],
+            #                                     column_name=span['column_name'],
+            #                                     param_name=span['param_name'],
+            #                                     param_values=span['param_values'])
+            #         if compiling_features:
+            #             features.extend(new_features)
+            #             indicator_objs.extend(new_inds)
+            #     coin_dataset.append(d)
+            #     compiling_features = False
 
         coin_dataset = concat(coin_dataset)
         if scale:
@@ -231,7 +250,6 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
                 scaler = QuantileTransformer(n_quantiles=100)
             else:
                 raise Exception(f'Unknown scaler: {scaler}')
-              
 
             if coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()] is not None:
                 for val in coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()]:
@@ -250,6 +268,52 @@ def loadData(indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={},
     dataset.dropna(inplace=True)
     return dataset, features, indicator_objs, scalers
 
+
+"""
+ARGS:
+
+RETURN:
+    -> (pandas Dataframe):
+"""
+def loadDataThread(data, spans, indicators, param_spec, optimal_threshold, compiling_features):
+    # print(f'Loading data from chunk {i}...')
+    new_indicators = fetchIndicators(indicators, param_spec)
+    
+    new_features = genDataForAll(dataset=data, indicators=new_indicators)
+    new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
+    if 'Optimal_v2' in new_features or 'Optimal' in new_features:
+        optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
+        if len(list(optimal_threshold.keys())) == 1:
+            threshold_key = list(optimal_threshold.keys())[0]
+
+            data["optimal"] = data.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
+
+            data.drop(optimal_col_name, inplace=True, axis=1)
+        elif len(optimal_threshold.keys()) == 2:
+            for key in list(optimal_threshold.keys()):
+                data["optimal_" + key] = data.apply(lambda x: filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
+            data.drop(optimal_col_name, axis=1, inplace=True)
+
+        else: raise Exception("Please provide either one or two thresholds")
+        
+        new_features.remove(optimal_col_name)
+    
+    features = []
+    indicator_objs = []
+
+    if compiling_features:
+        features.extend(new_features)
+        indicator_objs.extend(new_indicators)
+    for span in spans:
+        new_features, new_inds = generateSpans(dataset=data, 
+                                    indicator_name=span['indicator_name'],
+                                    column_name=span['column_name'],
+                                    param_name=span['param_name'],
+                                    param_values=span['param_values'])
+        if compiling_features:
+            features.extend(new_features)
+            indicator_objs.extend(new_inds)
+    return data
 
 '''
 ARGS:
@@ -300,7 +364,7 @@ RETURN:
 WHAT: 
     -> wrapper for splitting up the data
 '''
-def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=False, balance_unbalanced_data=False, balance_info={}}):
+def splitData(dataset, split_size=0.2, y_column_name="Optimal_v2", shuffle_data=False, balance_unbalanced_data=False, balance_info={}):
     if not balance_unbalanced_data:
         return train_test_split(dataset.drop([y_column_name], axis=1), dataset[[y_column_name]], test_size=split_size, shuffle=shuffle_data)
 
