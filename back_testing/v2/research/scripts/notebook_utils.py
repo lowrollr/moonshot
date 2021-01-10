@@ -369,7 +369,7 @@ class notebookUtils:
         -> creates a dictionary with the weights of the classes for 
     '''
     def getWeights(self, y_dataset):
-        weights = compute_class_weight('balanced', np.unique(y_dataset.to_numpy()[:,0]), y_dataset.to_numpy()[:,0])
+        weights = compute_class_weight('balanced', np.unique(y_dataset.values[:,0]), y_dataset.values[:,0])
         return {i : weights[i] for i in range(len(np.unique(y_dataset.values)))}
 
 
