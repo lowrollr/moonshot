@@ -25,21 +25,18 @@
     # Fees to subtract from trades (percentage)
     fees: 0.001,
     # Strategoes to execute (file name sans version no.)
-    
+    scale: false,
+
     strategies: [{
-                    type: 'my_first_strategy',
+                    type: 'benchmark',
                     version: 'latest',
                     entry_models: [
                         {
-                            name: 'test_model',
+                            name: 'test_classification',
                             version: 'latest'
                         }
                     ],
                     exit_models: [
-                        {
-                            name: 'test_model',
-                            version: 'latest'
-                        }
                     ]
                 }]
 

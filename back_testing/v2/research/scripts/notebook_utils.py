@@ -194,20 +194,47 @@ class notebookUtils:
             groups = [[[dataset], f'{test_coin}USDT-{test_freq}m']]
 
         dataset_list = []
-        scalers = []
         compiling_features = True
         for g,n in groups:
             coin_dataset = []
             print(f'Loading data from {n}...')
-
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                chunked_data  = executor.map(self.loadDataThread, g, repeat(copy.deepcopy(spans)), repeat(copy.deepcopy(indicators)), repeat(copy.deepcopy(param_spec)), repeat(copy.deepcopy(optimal_threshold)), repeat(compiling_features))
-                for chunk in chunked_data:
-                    coin_dataset.append(chunk[0])
-                    features.extend(chunk[1])
-                    indicator_objs.extend(chunk[2])
+            for i,d in enumerate(g):
+                print(f'Loading data from chunk {i}...')
+                new_indicators = self.fetchIndicators(indicators, param_spec)
                 
-                features = set(features)
+                new_features = self.genDataForAll(dataset=d, indicators=new_indicators)
+                new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
+                if 'Optimal_v2' in new_features or 'Optimal' in new_features:
+                    optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
+                    if len(list(optimal_threshold.keys())) == 1:
+                        threshold_key = list(optimal_threshold.keys())[0]
+
+                        d["optimal"] = d.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
+
+                        d.drop(optimal_col_name, inplace=True, axis=1)
+                    elif len(optimal_threshold.keys()) == 2:
+                        for key in list(optimal_threshold.keys()):
+                            d["optimal_" + key] = d.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
+                        d.drop(optimal_col_name, axis=1, inplace=True)
+
+                    else: raise Exception("Please provide either one or two thresholds")
+                    
+                    new_features.remove(optimal_col_name)
+
+                if compiling_features:
+                    features.extend(new_features)
+                    indicator_objs.extend(new_indicators)
+                for span in spans:
+                    new_features, new_inds = self.generateSpans(dataset=d, 
+                                                indicator_name=span['indicator_name'],
+                                                column_name=span['column_name'],
+                                                param_name=span['param_name'],
+                                                param_values=span['param_values'])
+                    if compiling_features:
+                        features.extend(new_features)
+                        indicator_objs.extend(new_inds)
+                coin_dataset.append(d)
+                compiling_features = False
 
             coin_dataset = concat(coin_dataset)
             if scale:
@@ -219,27 +246,24 @@ class notebookUtils:
                     scaler = QuantileTransformer(n_quantiles=100)
                 else:
                     raise Exception(f'Unknown scaler: {scaler}')
+                
 
-                infinity_cols = np.isinf(coin_dataset).any()
-
-                if coin_dataset.columns.to_series()[infinity_cols] is not None:
-                    for val in coin_dataset.columns.to_series()[infinity_cols]:
+                if coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()] is not None:
+                    for val in coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()]:
                         if val in features:
                             features.remove(val)
 
                         coin_dataset[val].replace([np.inf], np.nan, inplace=True)
                         coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
 
-                features = list(features)
-
-                coin_dataset[features] = scaler.fit_transform(coin_dataset[features])
-                scalers.append([scaler, n]) 
+                coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
+                
             dataset_list.append(coin_dataset)
             
         dataset = concat(dataset_list)
         dataset.reset_index(inplace=True, drop=True)
         dataset.dropna(inplace=True)
-        return dataset, features, indicator_objs, scalers
+        return dataset, features, indicator_objs
 
 
     """

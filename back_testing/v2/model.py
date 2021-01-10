@@ -46,7 +46,7 @@ class Trading:
     WHAT: 
         -> initializes and configures the Trading class using the values read in from the config file
     '''
-    def __init__(self, config):
+    def __init__(self, config, get_data=True):
         
         # Ensure logging/plotting directories are set up correctly
         utils.checkLogPlotDir()
@@ -64,6 +64,7 @@ class Trading:
         self.slippage = float(config["slippage"])
         self.report_format = config['report_format']
         self.data_source = config['data_source']
+        self.scale = config['scale']
         self.padding = config['padding']
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, 9999999999]
@@ -81,7 +82,8 @@ class Trading:
         self.df_groups = []
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
-        self.getDatasets()
+        if get_data:
+            self.getDatasets()
 
 
     '''
@@ -209,7 +211,7 @@ class Trading:
     def executeStrategy(self, strategy, dataset, first_times, dataset_name, should_print=True, plot=True, *args):
         # remove the first x rows equal to the amount of padding specified
         dataset = dataset[self.padding:]
-        
+
         # initialize starting position to 1000000 units
         position_quote = 1000000.00
         account_value = position_quote
@@ -419,8 +421,9 @@ class Trading:
                 first_times = set()
                 for d in dataset_chunks:
                     dataset = dataset.append(d)
-                print('Scaling Model Data...')
-                utils.realtimeScale(dataset, new_features)
+                if self.scale:
+                    print('Scaling Model Data...')
+                    utils.realtimeScale(dataset, new_features)
                 print('Preprocessing Model Predictions...')
                 x.preProcessing(dataset)
                 

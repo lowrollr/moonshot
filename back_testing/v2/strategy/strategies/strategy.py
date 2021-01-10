@@ -142,7 +142,7 @@ class Strategy:
     WHAT: 
         -> Driving function for creating the process pool and then executing the model prediction there
     '''
-    def preProcessingHelper(self, model_path, dataset, numProcesses=-1):
+    def preProcessingHelper(self, model_path, dataset, numProcesses=1):
         #get number of processors 
         processes = numProcesses
         if processes == -1:
