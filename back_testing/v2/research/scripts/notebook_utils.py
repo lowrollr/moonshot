@@ -431,14 +431,29 @@ class notebookUtils:
     '''
 
     '''
-    def testModel(self, dataset, features, model_directory, model_name, scaler_name, strategy_type='buy', num_minutes=4000):
-        dataset[0][0] = dataset[0][0].head(4000)
-        model = pickle.load(open(f'{model_directory}/{model_name}', 'rb'))
-        scaler = pickle.load(open(f'{model_directory}/{scaler_name}', 'rb'))
-        trading_model = Trading(load_config('config.hjson'))
-        strategy = trading_model.importStrategy(f'{strategy_type}_benchmark', 'latest')(scaler=scaler, buy_model=model, buy_model_features=features)
-        result, entries, exits = trading_model.executeStrategy(strategy=strategy, my_dataset_group=dataset, should_print=True, plot=False)
-        return result, len(entries), len(exits)
+    def testModel(self, model_name, version='latest', coin='UNI'):
+        trading_model = Trading(load_config('config.hjson'), get_data=False)
+        trading_model.daisy_chain = True
+        trading_model.currencies = [coin]
+        trading_model.getDatasets()
+        trading_model.plot = True
+        trading_model.test_param_ranges = False
+        trading_model.padding = 1000
+        trading_model.freq = 1
+        trading_model.strategies = [{
+            'type': 'benchmark',
+            'version': 'latest',
+            'entry_models': [
+                {
+                    'name': model_name,
+                    'version': version
+                }
+            ],
+            'exit_models': []
+        }]
+        
+
+        trading_model.backtest()
 
 
 
