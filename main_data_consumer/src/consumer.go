@@ -21,8 +21,14 @@ import (
 )
 
 func printNumSockets() {
-	out, _ := exec.Command("netstat -penut | wc -l").Output()
-	log.Println("Number of sockets in use: " + string(out))
+	command := "netstat -penut | grep ESTABLISHED | wc -l"
+	out, err := exec.Command("sh", "-c", command).Output()
+	if err != nil {
+		panic(err)
+	}
+	// netstat_out, _ := exec.Command("netstat -penut").Output()
+	// log.Println("testing netstat: " + strings.TrimSpace(string(netstat_out)))
+	log.Println("\n\nNumber of sockets in use: " + strings.TrimSpace(string(out)))
 }
 
 /*
@@ -293,6 +299,8 @@ func ConsumeData(coins *[]string) {
 		// trade feature not implemented correctly yet
 		// go TradeGoRoutine(symbol)
 	}
+	log.Println("\n\nTotal Number of sockets at the beginning: ")
+	printNumSockets()
 	//perpetual wait
 	waitFunc()
 }
