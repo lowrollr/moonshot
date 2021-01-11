@@ -12,6 +12,7 @@ warnings.simplefilter(action='ignore')
 
 import pandas as pd
 import os
+import sys
 import time
 import importlib
 import inspect
@@ -67,11 +68,11 @@ class Trading:
         self.scale = config['scale']
         self.padding = config['padding']
         if config['timespan'] == 'max': # test over entire dataset
-            self.timespan = [0, 9999999999]
+            self.timespan = [0, sys.maxsize]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
             self.timespan = utils.convertTimespan(config["timespan"])
         elif len(config['timespan']) == 1: # date_a already defined in unix time, no need to convert
-            self.timespan = [int(config['timespan'][0]), 9999999999]
+            self.timespan = [int(config['timespan'][0]), sys.maxsize]
         else: 
             self.timespan = [int(x) for x in config['timespan']]
         
