@@ -14,10 +14,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os/exec"
 
 	"github.com/adshao/go-binance/v2"
 	log "github.com/sirupsen/logrus"
 )
+
+func printNumSockets() {
+	out, _ := exec.Command("netstat -penut | wc -l").Output()
+	log.Println("Number of sockets in use: " + string(out))
+}
 
 /*
 	ARGS:
@@ -53,8 +59,8 @@ func EfficientSleep(partition int, prev_time time.Time, duration time.Duration) 
 			diagnostic, restart service, etc
 */
 func ErrorTradeHandler(err error) {
-	fmt.Println("There error encountered " + err.Error())
-	fmt.Println(err)
+	log.Warn("There error encountered " + err.Error())
+	log.Warn(err)
 }
 
 /*
@@ -67,7 +73,8 @@ func ErrorTradeHandler(err error) {
 */
 func waitFunc() {
 	for {
-		time.Sleep(24 * time.Hour)
+		time.Sleep(5 * time.Minute)
+		printNumSockets()
 	}
 }
 
@@ -88,13 +95,11 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 		binance.WebsocketKeepalive = false
 	}
 	times_per_min := 3
-
-	fmt.Println(event)
 	// store the event in database
 	err := Dumbo.StoreCryptoBidAsk(event)
 	if err != nil {
-		// fmt.Println("Was not able to store crypto information " + err.Error())
 		log.Warn("Was not able to store order data with error:" + err.Error())
+		printNumSockets()
 	}
 	// sleep to get maximum efficiency from socket
 	EfficientSleep(times_per_min, now, time.Minute)
@@ -118,14 +123,11 @@ var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsK
 	}
 	//Time to wait: 1 / 1 minute
 	times_per_min := 1
-
-	fmt.Println(event)
 	// store the event in database
 	err := Dumbo.StoreCryptoKline(event)
 	if err != nil {
-		// fmt.Println("Was not able to store crypto information " + err.Error())
-		//panic(err)
 		log.Warn("Was not able to store kline data with error: " + err.Error())
+		printNumSockets()
 		
 	}
 	// sleep to get maximum efficiency from socket
@@ -152,13 +154,12 @@ var singularTradeDataConsumer func(*binance.WsTradeEvent) = func(event *binance.
 	} else if now.Minute()%3 == 1 {
 		binance.WebsocketKeepalive = false
 	}
-	// fmt.Println(event)
 	volume, err1 := strconv.ParseFloat(event.Quantity, 32)
 	curPrice, err2 := strconv.ParseFloat(event.Price, 32)
 	symbol := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
 
 	if err1 != nil || err2 != nil {
-		fmt.Println(err1.Error() + err2.Error())
+		log.Warn(err1.Error() + err2.Error())
 	}
 
 	if err1 == nil && err2 == nil {
@@ -180,8 +181,8 @@ var singularTradeDataConsumer func(*binance.WsTradeEvent) = func(event *binance.
 		if now.Second()%20 == 0 {
 			err := Dumbo.StoreCryptosCandle(shortCandleStickData)
 			if err != nil {
-				fmt.Println("Was not able to store crypto information " + err.Error())
-				fmt.Println(shortCandleStickData)
+				log.Warn("Was not able to store crypto information " + err.Error())
+				log.Warn(shortCandleStickData)
 			}
 		}
 	}
@@ -202,12 +203,16 @@ var singularTradeDataConsumer func(*binance.WsTradeEvent) = func(event *binance.
 */
 func OrderBookGoRoutine(symbol string, depth string) {
 	for {
+		log.Println("Starting goroutine for getting the order book data from coin: " + symbol)
 		stop_order_chan, _, err := binance.WsPartialDepthServe(symbol, depth, tradeOrderDataConsumer, ErrorTradeHandler)
 		if err != nil {
 			// panic(err)
 			log.Warn("Was not able to open websocket to the orderbook data with error: " + err.Error())
+			printNumSockets()
 		}
 		<-stop_order_chan
+		log.Println("Restarting socket for obtaining order book data from coin: " + symbol)
+		printNumSockets()
 	}
 }
 
@@ -223,12 +228,16 @@ func OrderBookGoRoutine(symbol string, depth string) {
 */
 func KlineGoRoutine(symbol string, kline_interval string) {
 	for {
+		log.Println("Starting goroutine for getting the minute kline candlestick data from coin: " + symbol)
 		stop_candle_chan, _, err := binance.WsKlineServe(symbol, kline_interval, tradeKlineDataConsumer, ErrorTradeHandler)
 		if err != nil {
 			// panic(err)
 			log.Warn("Was not able to open websocket to the kline data with error: " + err.Error())
+			printNumSockets()
 		}
 		<-stop_candle_chan
+		log.Println("Restarting socket for obtaining minute kline data from coin: " + symbol)
+		printNumSockets()
 	}
 }
 
@@ -244,12 +253,16 @@ func KlineGoRoutine(symbol string, kline_interval string) {
 */
 func TradeGoRoutine(symbol string) {
 	for {
+		log.Println("Starting goroutine for getting custom kline information from coin: " + symbol)
 		stop_candle_chan, _, err := binance.WsTradeServe(symbol, singularTradeDataConsumer, ErrorTradeHandler)
 		if err != nil {
 			// panic(err)
 			log.Warn("Wasa not able to open websocket to the trade data information with error: " + err.Error())
+			printNumSockets()
 		}
 		<-stop_candle_chan
+		log.Println("Restarting socket for obtaining custom kline information from coin: " + symbol)
+		printNumSockets()
 	}
 }
 
@@ -270,6 +283,7 @@ func ConsumeData(coins *[]string) {
 	order_book_depth := "20"
 
 	fmt.Println("Starting consuming...")
+	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true})
 
 	for _, symbol := range *coins {
 		//Using quote currency as tether to open socket to binance
