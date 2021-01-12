@@ -15,6 +15,7 @@ import random
 import os
 import re
 import sys
+from collections import deque
 
 '''
 ARGS:
@@ -252,27 +253,52 @@ TODO:
 
 #     return base_currencies
 
-def realtimeScale(dataset, columns):
+def realtimeScale(dataset, columns, windowsize):
     cols = columns
 
     minmax_cols = dict()
 
     for c in cols:
-        minmax_cols[c] = dict()
-        minmax_cols[c]['min'] = sys.maxsize
-        minmax_cols[c]['max'] = -1 * sys.maxsize
+        dataset[f'{c}_max_window'] = slidingWindow(dataset[c].values, windowsize, findmin=False)
+        dataset[f'{c}_min_window'] = slidingWindow(dataset[c].values, windowsize, findmin=True)
 
     for row in dataset.itertuples():
         for c in cols:
-            cur_min = minmax_cols[c]['min']
-            cur_max = minmax_cols[c]['max']
+            cur_min = getattr(row, f'{c}_min_window')
+            cur_max = getattr(row, f'{c}_max_window')
             row_val = getattr(row, c)
             
             new_val = 0.5
             if cur_max != cur_min:
                 new_val = (row_val - cur_min) / (cur_max - cur_min)
-            minmax_cols[c]['min'] = min(cur_min, row_val)
-            minmax_cols[c]['max'] = max(cur_max, row_val)
             dataset.set_value(row.Index, c, new_val)
+
+
+
+def slidingWindow(values, windowsize, findmin=False):
+    result = []
+    q = deque()
+    l = r = 0
+
+    while r < len(values):
+        if not findmin:
+            while q and values[q[-1]] < values[r]:
+                q.pop()
+        else:
+            while q and values[q[-1]] > values[r]:
+                q.pop()
+        q.append(r)
+
+        
+        if l > q[0]:
+            q.popleft()
+        
+        result.append(values[q[0]])
+        if r + 1 >= windowsize:
+            l += 1
+        r += 1
+    
+    return result
+
 
     

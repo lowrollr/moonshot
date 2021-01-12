@@ -266,53 +266,6 @@ class notebookUtils:
         return dataset, features, indicator_objs
 
 
-    """
-    ARGS:
-
-    RETURN:
-        -> (pandas Dataframe):
-    """
-    def loadDataThread(self, data, spans, indicators, param_spec, optimal_threshold, compiling_features):
-        # print(f'Loading data from chunk {i}...')
-        new_indicators = self.fetchIndicators(indicators, param_spec)
-        
-        new_features = self.genDataForAll(dataset=data, indicators=new_indicators)
-        new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
-        if 'Optimal_v2' in new_features or 'Optimal' in new_features:
-            optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
-            if len(list(optimal_threshold.keys())) == 1:
-                threshold_key = list(optimal_threshold.keys())[0]
-
-                data["optimal"] = data.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
-
-                data.drop(optimal_col_name, inplace=True, axis=1)
-            elif len(optimal_threshold.keys()) == 2:
-                for key in list(optimal_threshold.keys()):
-                    data["optimal_" + key] = data.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
-                data.drop(optimal_col_name, axis=1, inplace=True)
-
-            else: raise Exception("Please provide either one or two thresholds")
-            
-            new_features.remove(optimal_col_name)
-        
-        features = []
-        indicator_objs = []
-
-        if compiling_features:
-            features.extend(new_features)
-            indicator_objs.extend(new_indicators)
-        for span in spans:
-            new_features, new_inds = self.generateSpans(dataset=data, 
-                                        indicator_name=span['indicator_name'],
-                                        column_name=span['column_name'],
-                                        param_name=span['param_name'],
-                                        param_values=span['param_values'])
-            if compiling_features:
-                features.extend(new_features)
-                indicator_objs.extend(new_inds)
-        
-        return data, features, indicator_objs
-
     '''
     ARGS:
         -> models ([[model, String]]): list of model object-model name pairs

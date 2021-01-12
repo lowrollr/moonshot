@@ -48,9 +48,9 @@ class Benchmark(Strategy):
             self.looking_to_enter = False
             self.stop_loss = data.close * 0.99
             return True
+        self.looking_to_enter = False
         time = data.time
         prediction = self.entry_models[1]['results'][time]
-        model_1_data = np.array([getattr(data, x) for x in self.entry_models[1]['features']])
         if prediction:
             self.limit_up = data.close * 1.001
             self.looking_to_enter = True
@@ -65,4 +65,6 @@ class Benchmark(Strategy):
             return True
         elif data.close > data.boll_upper:
             self.crossed_upper = True
+
+        return False
         

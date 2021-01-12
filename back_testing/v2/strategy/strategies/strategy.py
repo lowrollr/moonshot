@@ -152,7 +152,7 @@ class Strategy:
 
         #split data
         N = int(len(dataset)/processes)
-        frames = [ dataset.iloc[i*processes:(i+1)*processes if (i+1)*processes < len(dataset) else len(dataset)].copy() for i in range(N+1) ]
+        frames = [ dataset.iloc[i*N:(i+1)*N if i < processes - 1 else len(dataset)].copy() for i in range(processes) ]
 
         params = zip(frames, repeat(model_path))
         results = process_pool.starmap(self.modelProcess, params)
