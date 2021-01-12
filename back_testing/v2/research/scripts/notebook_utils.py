@@ -433,8 +433,9 @@ class notebookUtils:
         }]
         
 
-        trading_model.backtest()
+        return trading_model.backtest()
 
+        
 
 
 
