@@ -256,7 +256,7 @@ class notebookUtils:
                         coin_dataset[val].replace([np.inf], np.nan, inplace=True)
                         coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
 
-                coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
+                # coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
                 
             dataset_list.append(coin_dataset)
             
@@ -410,18 +410,27 @@ class notebookUtils:
     WHAT: 
         -> creates the predictions from the dataframe with the model
     '''
-    def classifyPoints(self, clf, dataset, predict_proba=False, proba_thresh=0.7, plot_optimal=False, optimal=None):
+    def classifyPoints(self, clf, dataset, predict_proba=False, proba_thresh=0.7, plot_optimal=False, optimal=None, is_nn=False):
         classifyingDF = dataset.copy()
-        if not predict_proba:
-            classifyingDF["classify"] = clf.predict(dataset.drop("close", axis=1).values)
+        if not is_nn:
+            if not predict_proba:
+                classifyingDF["classify"] = clf.predict(dataset.drop("close", axis=1).values)
+            else:
+                classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+                classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, proba_thresh, "buy"))
+                classifyingDF.drop("predict", axis=1, inplace=True)
+
+            if plot_optimal:
+                classifyingDF["optimal"] = optimal.values
+                return classifyingDF[["close", "classify", "optimal"]]
         else:
             classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
             classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, proba_thresh, "buy"))
             classifyingDF.drop("predict", axis=1, inplace=True)
 
-        if plot_optimal:
-            classifyingDF["optimal"] = optimal.values
-            return classifyingDF[["close", "classify", "optimal"]]
+            if plot_optimal:
+                classifyingDF["optimal"] = optimal.values
+                return classifyingDF[["close", "classify", "optimal"]]
 
         return classifyingDF[["close", "classify"]]
     
