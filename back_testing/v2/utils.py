@@ -256,7 +256,6 @@ TODO:
 def realtimeScale(dataset, columns, windowsize):
     cols = columns
 
-    minmax_cols = dict()
 
     for c in cols:
         dataset[f'{c}_max_window'] = slidingWindow(dataset[c].values, windowsize, findmin=False)
@@ -273,6 +272,10 @@ def realtimeScale(dataset, columns, windowsize):
                 new_val = (row_val - cur_min) / (cur_max - cur_min)
             dataset.set_value(row.Index, c, new_val)
 
+    for c in cols:
+        dataset.drop(f'{c}_max_window', axis=1, inplace=True)
+        dataset.drop(f'{c}_min_window', axis=1, inplace=True)
+        
 
 
 def slidingWindow(values, windowsize, findmin=False):

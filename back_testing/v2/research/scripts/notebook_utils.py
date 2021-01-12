@@ -17,7 +17,7 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
 import pickle
-from v2.utils import findParams
+from v2.utils import findParams, realtimeScale
 from load_config import load_config
 from v2.model import Trading
 from alive_progress import alive_bar
@@ -179,7 +179,7 @@ class notebookUtils:
         -> returns the generated dataset and a list of the features added
         -> will add optimal features if specified but those will NOT be included in the returned features list
     '''
-    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale=''):
+    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000):
         features = []
         indicator_objs = []
         groups = None
@@ -244,6 +244,8 @@ class notebookUtils:
 
                 elif scale == 'quartile':
                     scaler = QuantileTransformer(n_quantiles=100)
+                elif scale == 'minmaxwindow':
+                    realtimeScale(coin_dataset, features, minmaxwindowsize)
                 else:
                     raise Exception(f'Unknown scaler: {scaler}')
                 
@@ -255,8 +257,9 @@ class notebookUtils:
 
                         coin_dataset[val].replace([np.inf], np.nan, inplace=True)
                         coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
+                if scaler:
+                    coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
 
-                coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
                 
             dataset_list.append(coin_dataset)
             
