@@ -265,7 +265,7 @@ def realtimeScaleMP(values, windowsize):
 
     return values
 
-def realtimeScale(dataset, columns, windowsize, multiprocess=False):
+def realtimeScale(dataset, columns, windowsize, multiprocess=True):
 
     if multiprocess:
         processes = mp.cpu_count()
