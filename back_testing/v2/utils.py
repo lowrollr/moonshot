@@ -15,7 +15,9 @@ import random
 import os
 import re
 import sys
+import multiprocessing as mp
 from collections import deque
+from itertools import repeat
 
 '''
 ARGS:
@@ -252,29 +254,48 @@ TODO:
 #                 base_currencies.append(match[0])
 
 #     return base_currencies
+def realtimeScaleMP(values, windowsize):
+    max_v = slidingWindow(values, windowsize, findmin=False)
+    min_v = slidingWindow(values, windowsize, findmin=True)
+    for i,v in enumerate(values):
+        if max_v[i] == min_v[i]:
+            values[i] = 0.5
+        else:
+            values[i] = (values[i] - min_v[i]) / (max_v[i] - min_v[i])
 
-def realtimeScale(dataset, columns, windowsize):
-    cols = columns
+    return values
+
+def realtimeScale(dataset, columns, windowsize, multiprocess=False):
+
+    if multiprocess:
+        processes = mp.cpu_count()
+        process_pool = mp.Pool(processes)
+        col_values = [dataset[c].values for c in columns]
+        params = zip(col_values, repeat(windowsize))
+        results = process_pool.starmap(realtimeScaleMP, params)
+        for i, r in enumerate(results):
+            dataset[columns[i]] = r
 
 
-    for c in cols:
-        dataset[f'{c}_max_window'] = slidingWindow(dataset[c].values, windowsize, findmin=False)
-        dataset[f'{c}_min_window'] = slidingWindow(dataset[c].values, windowsize, findmin=True)
+    else:
+        for c in columns:
+            dataset[f'{c}_max_window'] = slidingWindow(dataset[c].values, windowsize, findmin=False)
+            dataset[f'{c}_min_window'] = slidingWindow(dataset[c].values, windowsize, findmin=True)
 
-    for row in dataset.itertuples():
-        for c in cols:
-            cur_min = getattr(row, f'{c}_min_window')
-            cur_max = getattr(row, f'{c}_max_window')
-            row_val = getattr(row, c)
-            
-            new_val = 0.5
-            if cur_max != cur_min:
-                new_val = (row_val - cur_min) / (cur_max - cur_min)
-            dataset.set_value(row.Index, c, new_val)
+        for row in dataset.itertuples():
+            for c in columns:
+                cur_min = getattr(row, f'{c}_min_window')
+                cur_max = getattr(row, f'{c}_max_window')
+                row_val = getattr(row, c)
+                
+                new_val = 0.5
+                if cur_max != cur_min:
+                    new_val = (row_val - cur_min) / (cur_max - cur_min)
+                dataset.set_value(row.Index, c, new_val)
 
-    for c in cols:
-        dataset.drop(f'{c}_max_window', axis=1, inplace=True)
-        dataset.drop(f'{c}_min_window', axis=1, inplace=True)
+        for c in columns:
+            dataset.drop(f'{c}_max_window', axis=1, inplace=True)
+            dataset.drop(f'{c}_min_window', axis=1, inplace=True)
         
 
 

@@ -425,7 +425,7 @@ class Trading:
                 dataset = pd.concat(dataset_chunks)
                 if self.scale:
                     print('Scaling Model Data...')
-                    utils.realtimeScale(dataset, new_features, 15000)
+                    utils.realtimeScale(dataset, new_features, 15000, multiprocess=True)
                 print('Preprocessing Model Predictions...')
                 x.preProcessing(dataset)
                 
