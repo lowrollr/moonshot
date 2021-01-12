@@ -483,3 +483,5 @@ class notebookUtils:
             model_dict['model'] = model
 
         pickle.dump(model_dict, open(f'{model_dir}/{name}_{version_str}.sav', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+        return version_str

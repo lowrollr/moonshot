@@ -390,6 +390,7 @@ class Trading:
     '''
     def backtest(self):
         print('Importing Strategies...')
+        score, trades = 0, 0
         strategy_objs = []
         # dynamically load strategy objects and call their constructors
         for x in self.strategies:
@@ -438,7 +439,9 @@ class Trading:
                     
                 print('Executing Strategy...')
                 # execute the strategy on the dataset       
-                self.executeStrategy(x, dataset, first_times, dataset_name, plot=self.plot)
+                score, entries, exits = self.executeStrategy(x, dataset, first_times, dataset_name, plot=self.plot)
+                trades = len(entries)
+        return score, trades
 
     def generateIndicatorData(self, dataset_chunks, indicator_objects, gen_new_values=False):
         got_new_features = False
