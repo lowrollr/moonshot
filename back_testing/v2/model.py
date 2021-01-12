@@ -12,6 +12,7 @@ warnings.simplefilter(action='ignore')
 
 import pandas as pd
 import os
+import sys
 import time
 import importlib
 import inspect
@@ -67,11 +68,11 @@ class Trading:
         self.scale = config['scale']
         self.padding = config['padding']
         if config['timespan'] == 'max': # test over entire dataset
-            self.timespan = [0, 9999999999]
+            self.timespan = [0, sys.maxsize]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
             self.timespan = utils.convertTimespan(config["timespan"])
         elif len(config['timespan']) == 1: # date_a already defined in unix time, no need to convert
-            self.timespan = [int(config['timespan'][0]), 9999999999]
+            self.timespan = [int(config['timespan'][0]), sys.maxsize]
         else: 
             self.timespan = [int(x) for x in config['timespan']]
         
@@ -113,6 +114,7 @@ class Trading:
                         my_df = pd.read_csv(b_file)
                         my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
                         my_df.rename(columns={'close_time': 'time'}, inplace=True)
+                        my_df = my_df[(my_df['time'] > self.timespan[0]) & (my_df['time'] < self.timespan[1])]
                         cur_group.append(my_df)
                 # otherwise, find the specified chunk in the config file and add the single dataframe corresponding to that chunk to the group list
                 else:
@@ -125,7 +127,7 @@ class Trading:
                         my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
                         # this will need to be adapted to other datasets (other than binance), probably should standardize how we pass dataframes in but this is fine for now
                         my_df.rename(columns={'close_time': 'time'}, inplace=True)
-
+                        my_df = my_df[(my_df['time'] > self.timespan[0]) & (my_df['time'] < self.timespan[1])]
                         cur_group.append(my_df)
                     except Exception:
                         # will be raised if the chunk id given in the config file doesn't exist
@@ -419,11 +421,10 @@ class Trading:
                 # construct a single dataframe from all of the individual dataframes in the group, and construct the first_times set
                 dataset = pd.DataFrame()
                 first_times = set()
-                for d in dataset_chunks:
-                    dataset = dataset.append(d)
+                dataset = pd.concat(dataset_chunks)
                 if self.scale:
                     print('Scaling Model Data...')
-                    utils.realtimeScale(dataset, new_features)
+                    utils.realtimeScale(dataset, new_features, 15000)
                 print('Preprocessing Model Predictions...')
                 x.preProcessing(dataset)
                 

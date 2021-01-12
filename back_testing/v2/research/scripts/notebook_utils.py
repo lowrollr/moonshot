@@ -17,7 +17,7 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
 import pickle
-from v2.utils import findParams
+from v2.utils import findParams, realtimeScale
 from load_config import load_config
 from v2.model import Trading
 from alive_progress import alive_bar
@@ -179,7 +179,7 @@ class notebookUtils:
         -> returns the generated dataset and a list of the features added
         -> will add optimal features if specified but those will NOT be included in the returned features list
     '''
-    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale=''):
+    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000):
         features = []
         indicator_objs = []
         groups = None
@@ -244,6 +244,8 @@ class notebookUtils:
 
                 elif scale == 'quartile':
                     scaler = QuantileTransformer(n_quantiles=100)
+                elif scale == 'minmaxwindow':
+                    realtimeScale(coin_dataset, features, minmaxwindowsize)
                 else:
                     raise Exception(f'Unknown scaler: {scaler}')
                 
@@ -255,8 +257,9 @@ class notebookUtils:
 
                         coin_dataset[val].replace([np.inf], np.nan, inplace=True)
                         coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
+                if scaler:
+                    coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
 
-                # coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
                 
             dataset_list.append(coin_dataset)
             
@@ -265,53 +268,6 @@ class notebookUtils:
         dataset.dropna(inplace=True)
         return dataset, features, indicator_objs
 
-
-    """
-    ARGS:
-
-    RETURN:
-        -> (pandas Dataframe):
-    """
-    def loadDataThread(self, data, spans, indicators, param_spec, optimal_threshold, compiling_features):
-        # print(f'Loading data from chunk {i}...')
-        new_indicators = self.fetchIndicators(indicators, param_spec)
-        
-        new_features = self.genDataForAll(dataset=data, indicators=new_indicators)
-        new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
-        if 'Optimal_v2' in new_features or 'Optimal' in new_features:
-            optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
-            if len(list(optimal_threshold.keys())) == 1:
-                threshold_key = list(optimal_threshold.keys())[0]
-
-                data["optimal"] = data.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
-
-                data.drop(optimal_col_name, inplace=True, axis=1)
-            elif len(optimal_threshold.keys()) == 2:
-                for key in list(optimal_threshold.keys()):
-                    data["optimal_" + key] = data.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
-                data.drop(optimal_col_name, axis=1, inplace=True)
-
-            else: raise Exception("Please provide either one or two thresholds")
-            
-            new_features.remove(optimal_col_name)
-        
-        features = []
-        indicator_objs = []
-
-        if compiling_features:
-            features.extend(new_features)
-            indicator_objs.extend(new_indicators)
-        for span in spans:
-            new_features, new_inds = self.generateSpans(dataset=data, 
-                                        indicator_name=span['indicator_name'],
-                                        column_name=span['column_name'],
-                                        param_name=span['param_name'],
-                                        param_values=span['param_values'])
-            if compiling_features:
-                features.extend(new_features)
-                indicator_objs.extend(new_inds)
-        
-        return data, features, indicator_objs
 
     '''
     ARGS:
@@ -484,11 +440,8 @@ class notebookUtils:
             ],
             'exit_models': []
         }]
-        
 
-        trading_model.backtest()
-
-
+        return trading_model.backtest()
 
 
     '''
