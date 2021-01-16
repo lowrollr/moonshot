@@ -265,17 +265,13 @@ def realtimeScaleMP(values, windowsize):
 
     return values
 
-def realtimeScale(dataset, columns, windowsize, multiprocess=True):
+def realtimeScale(dataset, columns, windowsize, process):
 
-    if multiprocess:
-        processes = mp.cpu_count()
-        process_pool = mp.Pool(processes)
-        col_values = [dataset[c].values for c in columns]
-        params = zip(col_values, repeat(windowsize))
-        results = process_pool.starmap(realtimeScaleMP, params)
-        for i, r in enumerate(results):
-            dataset[columns[i]] = r
-
+    col_values = [dataset[c].values for c in columns]
+    params = zip(col_values, repeat(windowsize))
+    results = process.getPool.starmap(realtimeScaleMP, params)
+    for i, r in enumerate(results):
+        dataset[columns[i]] = r
 
     else:
         for c in columns:

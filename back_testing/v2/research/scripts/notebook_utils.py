@@ -36,6 +36,8 @@ from itertools import repeat
 from glob import glob
 import threading
 
+"""
+"""
 class notebookUtils:
     def __init__(self):
         self.lock = threading.Lock()
@@ -420,7 +422,7 @@ class notebookUtils:
     '''
 
     '''
-    def testModel(self, model_name, version='latest', coin='UNI'):
+    def testModel(self, model_name, version='latest', coin='UNI', num_processes=-1):
         trading_model = Trading(load_config('config.hjson'), get_data=False)
         trading_model.daisy_chain = True
         trading_model.currencies = [coin]
@@ -441,7 +443,7 @@ class notebookUtils:
             'exit_models': []
         }]
 
-        return trading_model.backtest()
+        return trading_model.backtest(processes=num_processes)
 
 
     '''

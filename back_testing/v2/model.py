@@ -30,6 +30,7 @@ from v2.strategy.strategies.strategy import Strategy
 from v2.report import write_report
 import v2.utils as utils
 from load_config import load_config
+from v2.multiprocess import Multiprocess
 
 '''
 CLASS: Trading
@@ -388,7 +389,7 @@ class Trading:
         -> backtests each strategy on each dataset pair
         -> handles genetic algorithm if we are attempting to optimize parameters
     '''
-    def backtest(self):
+    def backtest(self, processes=-1):
         print('Importing Strategies...')
         score, trades = 0, 0
         strategy_objs = []
@@ -423,11 +424,15 @@ class Trading:
                 dataset = pd.DataFrame()
                 first_times = set()
                 dataset = pd.concat(dataset_chunks)
+                
+                process_pool = Multiprocess(num_processes=processes)
+
                 if self.scale:
                     print('Scaling Model Data...')
-                    utils.realtimeScale(dataset, new_features, 15000, multiprocess=True)
+                    utils.realtimeScale(dataset, new_features, 15000, process=process_pool)
                 print('Preprocessing Model Predictions...')
-                x.preProcessing(dataset)
+
+                x.preProcessing(dataset, process=process_pool, n_process=processes)
                 
                 print('Generating Algo Data...')
                 dataset = pd.DataFrame()

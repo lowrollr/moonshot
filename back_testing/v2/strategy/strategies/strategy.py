@@ -9,7 +9,8 @@ import os
 import pickle
 import multiprocessing as mp
 from itertools import chain, repeat
-
+import numpy as np
+import tensorflow as tf
 '''
 CLASS: Strategy
 WHAT:
@@ -86,7 +87,7 @@ class Strategy:
         
         # this code attempts to find the module (strategy) with the given name, 
         # and gets the corresponding object if it exists
-        full_path = base_dir + '/' + version + '/' + model + '_' + version + '.sav'
+        full_path = base_dir + version + '/' + model + '_' + version + '.sav'
         
         model_data = pickle.load(open(full_path, 'rb'))
         self.indicators.extend(model_data['indicators'])
@@ -126,11 +127,11 @@ class Strategy:
     WHAT: 
         -> This function is the wrapper for completing pre-processing for each of the models that we have in the strat
     '''
-    def preProcessing(self, dataset, numProcesses=-1):
+    def preProcessing(self, dataset, process, n_process):
         for k in list(self.entry_models.keys()):
-            self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, numProcesses)
+            self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, process, n_process)
         for k in list(self.exit_models.keys()):
-            self.exit_models[k]['results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset, numProcesses)
+            self.exit_models[k]['results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset, process, n_process)
 
     '''
     ARGS:
@@ -142,25 +143,17 @@ class Strategy:
     WHAT: 
         -> Driving function for creating the process pool and then executing the model prediction there
     '''
-    def preProcessingHelper(self, model_path, dataset, numProcesses=1):
-        #get number of processors 
-        processes = numProcesses
-        if processes == -1:
-            processes = mp.cpu_count()
-        #initialize process pool
-        process_pool = mp.Pool(processes)
-
+    def preProcessingHelper(self, model_path, dataset, process, numProcesses):
         #split data
-        N = int(len(dataset)/processes)
-        frames = [ dataset.iloc[i*N:(i+1)*N if i < processes - 1 else len(dataset)].copy() for i in range(processes) ]
+        N = int(len(dataset)/numProcesses)
+        frames = [ dataset.iloc[i*N:(i+1)*N if i < numProcesses - 1 else len(dataset)].copy() for i in range(numProcesses) ]
 
         params = zip(frames, repeat(model_path))
-        results = process_pool.starmap(self.modelProcess, params)
+        results = process.getPool.starmap(self.modelProcess, params)
         cur_dict = dict()
         for r in results:
             cur_dict.update(r)
         return cur_dict
-
 
     '''
     ARGS:
@@ -173,12 +166,23 @@ class Strategy:
     '''
     def modelProcess(self, data, model_path):
         model_obj = pickle.load(open(model_path, 'rb'))
-        model = model_obj["model"]
+        if not model_obj["model"]:
+            model_path = "/".join(model_path.split("/")[:-1])
+            print(model_path)
+            model = tf.keras.models.load_model(model_path)
+            model_obj["is_nn"] = True
+        else:
+            model = model_obj["model"]
+            model_obj["is_nn"] = False
 
         model_predictions = dict()
 
         if model_obj["proba_threshold"]:
-            ret = model.predict_proba(data)[:,1]
+            ret = np.array([])
+            if model_obj["is_nn"]:
+                ret = model.predict(data[model_obj['features']])[:,1]
+            else:
+                ret = model.predict_proba(data[model_obj['features']])[:,1]
             
             def filter_proba(prediction):
                 if model_obj["proba_threshold"] < prediction:
