@@ -14,6 +14,7 @@ from plotly.offline import plot
 from numpy import mean
 from dominate.tags import *
 from dominate.util import raw
+from alive_progress import alive_bar
 import chart_studio.tools as tls
 import os
 
@@ -57,80 +58,81 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
 
     # list of hold times compiled through appending all hold times from each individual movement
     overall_hold_times = []
+    with alive_bar(len(exits)) as bar:
+        # consider each entry exit pair (their lengths are identical)
+        for i, x in enumerate(entries):
+            # holds stats for the individual movement
+            movement_stats = {}
 
-    # consider each entry exit pair (their lengths are identical)
-    for i, x in enumerate(entries):
-        # holds stats for the individual movement
-        movement_stats = {}
+            # get the entry time and price, and use the entry time to calculate the start of the timeframe to be plotted
+            time_entry = x[0]
+            price_entry = x[1]
+            starting_time = time_entry - (padding * 60000)
 
-        # get the entry time and price, and use the entry time to calculate the start of the timeframe to be plotted
-        time_entry = x[0]
-        price_entry = x[1]
-        starting_time = time_entry - (padding * 60000)
-
-        # plot the entry point
-        ent_graph = go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')
-        
-        # make sure we aren't considering an entry point without a corresponding exit point
-        if i < len(exits):
-            # get the exit time and price, and use the exit time to calculate the end of the timeframe to be plotted
-            time_exit = exits[i][0]
-            price_exit = exits[i][1]
-            ending_time = time_exit + (padding * 60000)
-
-            # plot the exit point
-            exit_graph = go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')
-        
-            # filter the dataframe to only include data from our specified timeframe
-            cur_dataframe = dataframe[(dataframe.time >= starting_time) & (dataframe.time <= ending_time)]
-
-            # generate a candlestick for the data
-            candle = go.Candlestick(x=cur_dataframe['time'], open=cur_dataframe['open'], close=cur_dataframe['close'], high=cur_dataframe['high'], low=cur_dataframe['low'], name='Candlesticks')
-
-            # if we are plotting entries/exits, add the appropriate scatter plots to the graph
-            inds = []
-            secondary_inds = []
-            for ind in indicators_to_graph:
-                if ind in cur_dataframe.columns: 
-                    # give the indicator a random color
-                    rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
-                    if ind in ALT_AXIS_COLS:
-                        secondary_inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
-                    else:
-                        inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
-
-            # bundle all of our plots together into a single object
-            # data = candle + inds + ent_graph + exit_graph
-
-            # initialize the plot and save it to a div formatted string that we can embed
+            # plot the entry point
+            ent_graph = go.Scatter(x=[time_entry], y=[price_entry], name='Entry', mode='markers', marker_color='aqua')
             
-            fig = make_subplots(specs=[[{"secondary_y": True}]])
-            fig.update_layout(template='plotly_dark', title_text='Movement ' + str(i))
-            fig.add_trace(candle, secondary_y=False)
-            if inds:
-                for ind in inds:
-                    fig.add_trace(ind, secondary_y=False)
-            # add any secondary indicators to their own axis
-            if secondary_inds:
-                for ind in secondary_inds:
-                    fig.add_trace(ind, secondary_y=True)
+            # make sure we aren't considering an entry point without a corresponding exit point
+            if i < len(exits):
+                # get the exit time and price, and use the exit time to calculate the end of the timeframe to be plotted
+                time_exit = exits[i][0]
+                price_exit = exits[i][1]
+                ending_time = time_exit + (padding * 60000)
+
+                # plot the exit point
+                exit_graph = go.Scatter(x=[time_exit], y=[price_exit], name='Exit', mode='markers', marker_color='purple')
+            
+                # filter the dataframe to only include data from our specified timeframe
+                cur_dataframe = dataframe[(dataframe.time >= starting_time) & (dataframe.time <= ending_time)]
+
+                # generate a candlestick for the data
+                candle = go.Candlestick(x=cur_dataframe['time'], open=cur_dataframe['open'], close=cur_dataframe['close'], high=cur_dataframe['high'], low=cur_dataframe['low'], name='Candlesticks')
+
+                # if we are plotting entries/exits, add the appropriate scatter plots to the graph
+                inds = []
+                secondary_inds = []
+                for ind in indicators_to_graph:
+                    if ind in cur_dataframe.columns: 
+                        # give the indicator a random color
+                        rand_color = 'rgba(' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', ' + str(random.randint(0, 255)) + ', 50)'
+                        if ind in ALT_AXIS_COLS:
+                            secondary_inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
+                        else:
+                            inds.append(go.Scatter(x=cur_dataframe['time'], y=cur_dataframe[ind], name=ind, line=dict(color=(rand_color))))
+
+                # bundle all of our plots together into a single object
+                # data = candle + inds + ent_graph + exit_graph
+
+                # initialize the plot and save it to a div formatted string that we can embed
                 
-            fig.add_trace(ent_graph, secondary_y=False)
-            fig.add_trace(exit_graph, secondary_y=False)
-            plot_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
+                fig = make_subplots(specs=[[{"secondary_y": True}]])
+                fig.update_layout(template='plotly_dark', title_text='Movement ' + str(i))
+                fig.add_trace(candle, secondary_y=False)
+                if inds:
+                    for ind in inds:
+                        fig.add_trace(ind, secondary_y=False)
+                # add any secondary indicators to their own axis
+                if secondary_inds:
+                    for ind in secondary_inds:
+                        fig.add_trace(ind, secondary_y=True)
+                    
+                fig.add_trace(ent_graph, secondary_y=False)
+                fig.add_trace(exit_graph, secondary_y=False)
+                plot_as_div = plot(fig, include_plotlyjs=False, output_type='div')  
 
-            # calculate hold time and percent profit for the movement
-            hold_time = (time_exit - time_entry) / 60000
-            profit = round(((price_exit / price_entry) * 100) - 100, 2)
-            movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
-            movement_stats['% Profit'] = str(profit) + '%'
+                # calculate hold time and percent profit for the movement
+                hold_time = (time_exit - time_entry) / 60000
+                profit = round(((price_exit / price_entry) * 100) - 100, 2)
+                movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
+                movement_stats['% Profit'] = str(profit) + '%'
 
-            # append the hold time and profit to the overall set of hold times and profits
-            overall_hold_times.append(hold_time)
-            overall_profits.append(profit)
+                # append the hold time and profit to the overall set of hold times and profits
+                overall_hold_times.append(hold_time)
+                overall_profits.append(profit)
 
-            # append a tuple containing the stringified plot and movement stats
-            plots.append((plot_as_div, movement_stats))
+                # append a tuple containing the stringified plot and movement stats
+                plots.append((plot_as_div, movement_stats))
+                bar()
 
     # calculate metrics for the overall performance
     overall_stats['Total Trades'] = len(overall_hold_times)
