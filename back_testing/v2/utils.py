@@ -265,33 +265,16 @@ def realtimeScaleMP(values, windowsize):
 
     return values
 
-def realtimeScale(dataset, columns, windowsize, process, multiprocessing=True):
-    if multiprocessing:
-        col_values = [dataset[c].values for c in columns]
-        params = zip(col_values, repeat(windowsize))
-        results = process.getPool().starmap(realtimeScaleMP, params)
-        for i, r in enumerate(results):
-            dataset[columns[i]] = r
+def realtimeScale(dataset, columns, windowsize):
+    
+    process_pool = mp.Pool(mp.cpu_count())
+    col_values = [dataset[c].values for c in columns]
+    params = zip(col_values, repeat(windowsize))
+    results = process_pool.starmap(realtimeScaleMP, params)
+    for i, r in enumerate(results):
+        dataset[columns[i]] = r
+        
 
-    else:
-        for c in columns:
-            dataset[f'{c}_max_window'] = slidingWindow(dataset[c].values, windowsize, findmin=False)
-            dataset[f'{c}_min_window'] = slidingWindow(dataset[c].values, windowsize, findmin=True)
-
-        for row in dataset.itertuples():
-            for c in columns:
-                cur_min = getattr(row, f'{c}_min_window')
-                cur_max = getattr(row, f'{c}_max_window')
-                row_val = getattr(row, c)
-                
-                new_val = 0.5
-                if cur_max != cur_min:
-                    new_val = (row_val - cur_min) / (cur_max - cur_min)
-                dataset.set_value(row.Index, c, new_val)
-
-        for c in columns:
-            dataset.drop(f'{c}_max_window', axis=1, inplace=True)
-            dataset.drop(f'{c}_min_window', axis=1, inplace=True)
         
 
 

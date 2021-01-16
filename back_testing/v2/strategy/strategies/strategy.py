@@ -127,11 +127,11 @@ class Strategy:
     WHAT: 
         -> This function is the wrapper for completing pre-processing for each of the models that we have in the strat
     '''
-    def preProcessing(self, dataset, process, n_process):
+    def preProcessing(self, dataset, n_process):
         for k in list(self.entry_models.keys()):
-            self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, process, n_process)
+            self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, n_process)
         for k in list(self.exit_models.keys()):
-            self.exit_models[k]['results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset, process, n_process)
+            self.exit_models[k]['results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset, n_process)
 
     '''
     ARGS:
@@ -143,17 +143,9 @@ class Strategy:
     WHAT: 
         -> Driving function for creating the process pool and then executing the model prediction there
     '''
-    def preProcessingHelper(self, model_path, dataset, process, numProcesses):
-        #split data
-        N = int(len(dataset)/numProcesses)
-        frames = [ dataset.iloc[i*N:(i+1)*N if i < numProcesses - 1 else len(dataset)].copy() for i in range(numProcesses) ]
-
-        params = zip(frames, repeat(model_path))
-        results = process.getPool().starmap(self.modelProcess, params)
-        cur_dict = dict()
-        for r in results:
-            cur_dict.update(r)
-        return cur_dict
+    def preProcessingHelper(self, model_path, dataset, numProcesses):
+    
+        return self.modelProcess(dataset, model_path)
 
     '''
     ARGS:
@@ -168,7 +160,6 @@ class Strategy:
         model_obj = pickle.load(open(model_path, 'rb'))
         if not model_obj["model"]:
             model_path = "/".join(model_path.split("/")[:-1])
-            print(model_path)
             model = tf.keras.models.load_model(model_path)
             model_obj["is_nn"] = True
         else:
@@ -199,7 +190,6 @@ class Strategy:
             times = list(data['time'].values)
             for i, p in enumerate(predictions):
                 model_predictions[times[i]] = p
-
         return model_predictions
 
     '''

@@ -425,17 +425,15 @@ class Trading:
                 first_times = set()
                 dataset = pd.concat(dataset_chunks)
                 
-                if processes == -1:
-                    processes = cpu_count()
-
-                process_pool = Multiprocess(num_processes=processes)
+                
 
                 if self.scale:
                     print('Scaling Model Data...')
-                    utils.realtimeScale(dataset, new_features, 15000, process=process_pool)
+                    utils.realtimeScale(dataset, new_features, 15000)
+                    
                 print('Preprocessing Model Predictions...')
 
-                x.preProcessing(dataset, process=process_pool, n_process=processes)
+                x.preProcessing(dataset, n_process=processes)
                 
                 print('Generating Algo Data...')
                 dataset = pd.DataFrame()
