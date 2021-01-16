@@ -24,7 +24,7 @@ from tqdm import tqdm
 from itertools import product, takewhile
 import random
 import numpy as np
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 from v2.strategy.strategies.strategy import Strategy
 from v2.report import write_report
@@ -425,6 +425,9 @@ class Trading:
                 first_times = set()
                 dataset = pd.concat(dataset_chunks)
                 
+                if processes == -1:
+                    processes = cpu_count()
+
                 process_pool = Multiprocess(num_processes=processes)
 
                 if self.scale:
