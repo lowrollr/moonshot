@@ -149,7 +149,7 @@ class Strategy:
         frames = [ dataset.iloc[i*N:(i+1)*N if i < numProcesses - 1 else len(dataset)].copy() for i in range(numProcesses) ]
 
         params = zip(frames, repeat(model_path))
-        results = process.getPool.starmap(self.modelProcess, params)
+        results = process.getPool().starmap(self.modelProcess, params)
         cur_dict = dict()
         for r in results:
             cur_dict.update(r)
