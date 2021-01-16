@@ -5,7 +5,7 @@
     # directory to pull data from
     data_source: "binance",
     # Currencies to trade against Tether (USDT)
-    currencies: ["BTC"],
+    currencies: ["UNI"],
     # Whether or not to daisy chain all data chunks for a particular coin
     daisy_chain: true,
     # If daisy_chain is false, the user must specify a chunk id to run on. Indexed at 1
@@ -25,18 +25,22 @@
     # Fees to subtract from trades (percentage)
     fees: 0.001,
     # Strategoes to execute (file name sans version no.)
-    scale: false,
+    scale: true,
 
     strategies: [{
                     type: 'benchmark',
                     version: 'latest',
                     entry_models: [
                         {
-                            name: 'test_classification',
+                            name: 'haymaker',
                             version: 'latest'
                         }
                     ],
                     exit_models: [
+                        {
+                            name: 'haymaker_sell',
+                            version: 'latest'
+                        }
                     ]
                 }]
 
