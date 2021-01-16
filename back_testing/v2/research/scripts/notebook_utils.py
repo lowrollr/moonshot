@@ -34,14 +34,13 @@ from concurrent.futures import ThreadPoolExecutor
 import copy
 from itertools import repeat
 from glob import glob
-import threading
+import multiprocessing as mp
 
 """
 """
 class notebookUtils:
     def __init__(self):
-        self.lock = threading.Lock()
-        self.count = 0
+        pass
 
     '''
     ARGS:
@@ -64,13 +63,12 @@ class notebookUtils:
             module = import_module(base_dir + indicator.lower())
             indicator_object = None
 
-            with self.lock:
-                local_class = list(readmodule(module.__name__).values())[0].module
-                for mod in dir(module):
-                    obj = getattr(module, mod)
-                    if isclass(obj) and obj.__module__ == local_class:
-                        indicator_object = obj
-                        break
+            local_class = list(readmodule(module.__name__).values())[0].module
+            for mod in dir(module):
+                obj = getattr(module, mod)
+                if isclass(obj) and obj.__module__ == local_class:
+                    indicator_object = obj
+                    break
             if indicator_object:
                 ind_obj = indicator_object(_params=[], _value=value)
                 ind_obj.setDefaultParams()
@@ -200,43 +198,51 @@ class notebookUtils:
         for g,n in groups:
             coin_dataset = []
             print(f'Loading data from {n}...')
-            for i,d in enumerate(g):
-                print(f'Loading data from chunk {i}...')
-                new_indicators = self.fetchIndicators(indicators, param_spec)
+            # for i,d in enumerate(g):
+
+            process_pool = mp.Pool(min(len(g), mp.cpu_count()))
+            chunked_data = process_pool.starmap(self.loadDataProcess, zip(g, repeat(spans), repeat(indicators), repeat(param_spec), repeat(optimal_threshold), repeat(compiling_features)))
+            for chunk in chunked_data:
+                coin_dataset.append(chunk[0])
+                features.extend(chunk[1])
+                indicator_objs.extend(chunk[2])
                 
-                new_features = self.genDataForAll(dataset=d, indicators=new_indicators)
-                new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
-                if 'Optimal_v2' in new_features or 'Optimal' in new_features:
-                    optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
-                    if len(list(optimal_threshold.keys())) == 1:
-                        threshold_key = list(optimal_threshold.keys())[0]
+                # print(f'Loading data from chunk {i}...')
+                # new_indicators = self.fetchIndicators(indicators, param_spec)
+                
+                # new_features = self.genDataForAll(dataset=d, indicators=new_indicators)
+                # new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
+                # if 'Optimal_v2' in new_features or 'Optimal' in new_features:
+                #     optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
+                #     if len(list(optimal_threshold.keys())) == 1:
+                #         threshold_key = list(optimal_threshold.keys())[0]
 
-                        d["optimal"] = d.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
+                #         d["optimal"] = d.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
 
-                        d.drop(optimal_col_name, inplace=True, axis=1)
-                    elif len(optimal_threshold.keys()) == 2:
-                        for key in list(optimal_threshold.keys()):
-                            d["optimal_" + key] = d.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
-                        d.drop(optimal_col_name, axis=1, inplace=True)
+                #         d.drop(optimal_col_name, inplace=True, axis=1)
+                #     elif len(optimal_threshold.keys()) == 2:
+                #         for key in list(optimal_threshold.keys()):
+                #             d["optimal_" + key] = d.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
+                #         d.drop(optimal_col_name, axis=1, inplace=True)
 
-                    else: raise Exception("Please provide either one or two thresholds")
+                #     else: raise Exception("Please provide either one or two thresholds")
                     
-                    new_features.remove(optimal_col_name)
+                #     new_features.remove(optimal_col_name)
 
-                if compiling_features:
-                    features.extend(new_features)
-                    indicator_objs.extend(new_indicators)
-                for span in spans:
-                    new_features, new_inds = self.generateSpans(dataset=d, 
-                                                indicator_name=span['indicator_name'],
-                                                column_name=span['column_name'],
-                                                param_name=span['param_name'],
-                                                param_values=span['param_values'])
-                    if compiling_features:
-                        features.extend(new_features)
-                        indicator_objs.extend(new_inds)
-                coin_dataset.append(d)
-                compiling_features = False
+                # if compiling_features:
+                #     features.extend(new_features)
+                #     indicator_objs.extend(new_indicators)
+                # for span in spans:
+                #     new_features, new_inds = self.generateSpans(dataset=d, 
+                #                                 indicator_name=span['indicator_name'],
+                #                                 column_name=span['column_name'],
+                #                                 param_name=span['param_name'],
+                #                                 param_values=span['param_values'])
+                #     if compiling_features:
+                #         features.extend(new_features)
+                #         indicator_objs.extend(new_inds)
+                # coin_dataset.append(d)
+                # compiling_features = False
 
             coin_dataset = concat(coin_dataset)
             if scale:
@@ -270,6 +276,47 @@ class notebookUtils:
         dataset.dropna(inplace=True)
         return dataset, features, indicator_objs
 
+
+    def loadDataProcess(self, data, spans, indicators, param_spec, optimal_threshold, compiling_features):
+        # print(f'Loading data from chunk {i}...')
+        new_indicators = self.fetchIndicators(indicators, param_spec)
+        
+        new_features = self.genDataForAll(dataset=data, indicators=new_indicators)
+        new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
+        if 'Optimal_v2' in new_features or 'Optimal' in new_features:
+            optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
+            if len(list(optimal_threshold.keys())) == 1:
+                threshold_key = list(optimal_threshold.keys())[0]
+
+                data["optimal"] = data.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[threshold_key], threshold_key),  axis=1)
+
+                data.drop(optimal_col_name, inplace=True, axis=1)
+            elif len(optimal_threshold.keys()) == 2:
+                for key in list(optimal_threshold.keys()):
+                    data["optimal_" + key] = data.apply(lambda x: self.filter_optimal(x.Optimal_v2, optimal_threshold[key], key),  axis=1)
+                data.drop(optimal_col_name, axis=1, inplace=True)
+
+            else: raise Exception("Please provide either one or two thresholds")
+            
+            new_features.remove(optimal_col_name)
+        
+        features = []
+        indicator_objs = []
+
+        if compiling_features:
+            features.extend(new_features)
+            indicator_objs.extend(new_indicators)
+        for span in spans:
+            new_features, new_inds = self.generateSpans(dataset=data, 
+                                        indicator_name=span['indicator_name'],
+                                        column_name=span['column_name'],
+                                        param_name=span['param_name'],
+                                        param_values=span['param_values'])
+            if compiling_features:
+                features.extend(new_features)
+                indicator_objs.extend(new_inds)
+        
+        return data, features, indicator_objs
 
     '''
     ARGS:
@@ -391,6 +438,34 @@ class notebookUtils:
                 return classifyingDF[["close", "classify", "optimal"]]
 
         return classifyingDF[["close", "classify"]]
+
+
+    """
+
+    """
+    def alterThreshold(self, new_thresh, model_name):
+        version_str = ''
+        base_path = './v2/strategy/saved_models/'
+        model_dir = f'{base_path}{model_name}'
+        if os.path.isdir(model_dir):
+            highest_version = [0, 0]
+            for f in [x for x in os.scandir(f'{model_dir}/')if x.is_dir()]:
+                
+                parts = f.name.split('_')
+                version = int(parts[0])
+                subversion = int(parts[1])
+                if version == highest_version[0]:
+                    if subversion > highest_version[1]:
+                        highest_version = [version, subversion]
+                elif version > highest_version[0]:
+                    highest_version = [version, subversion]
+
+            version_str = f'{highest_version[0]}_{highest_version[1] + 1}'
+
+        model_dir = f'{model_dir}/{version_str}'
+
+        model_dict = pickle.load(open(f'{model_dir}/{name}_{version_str}.sav', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+        
     
 
     '''
