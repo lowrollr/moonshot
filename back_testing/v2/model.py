@@ -25,6 +25,7 @@ from itertools import product, takewhile
 import random
 import numpy as np
 from multiprocessing import Pool, cpu_count
+from alive_progress import alive_bar
 
 from v2.strategy.strategies.strategy import Strategy
 from v2.report import write_report
@@ -254,87 +255,86 @@ class Trading:
         starting_base_value = dataset['close'].values[0]
         # grab all the rows in the dataset as Series objects
         rows = dataset.itertuples()
-        if should_print:
-            rows = tqdm(rows)
+        with alive_bar(len(dataset)) as bar:
 
-        # execute the strategy row by row (tick by tick)
-        for row in rows:
-
-            # if we are currently in a position in the base currency and reach the end of the chunk, revert to our last quote position
-            if not position_quote and row.time in first_times:
-                position_quote = old_quote
-                position_base = 0.0
-                # remove the last entry so entries/exits stay paired up
-                entries.pop()
-                position_taken = False
-
-            # keep track of the close price for the given tick
-            close = row.close
-            slippage_close = close
-
-            # run the process function (will execute anything that needs to happen each tick for the strategy)
-            strategy.process(row)
-            if position_quote:
-                account_value = position_quote
-            else:
-                account_value = position_base * close
-            account_history.append(account_value)
-            if not position_taken: # if we are not entered into a position
-
-                # run the entry function for our strategy
-                if strategy.calc_entry(row):
-                    # if the entry function returns True, it is signaling to enter, so take a position
-                    position_taken = True
-
-                    # calculate fees that will be incurred
-                    inc_fees = position_quote * self.fees
-
-                    # convert our position to the base currency
-                    old_quote = position_quote
-                    position_base = position_quote / close
-                    position_quote = 0.0
-
-                    # append entry to entries log for the graph as well as to the text log
-                    entries.append([row.time, close])
-                    
-                    # # do slippage things if we are keeping track of slippage
-                    # if self.slippage != 0:
-                    #     slippage_fees = slippage_pos_quote * self.fees
-                    #     slippage_close = utils.add_slippage("pos", close, self.slippage)
-                    #     slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
-                    #     slippage_pos_base = slippage_pos_quote / slippage_close
-                    #     slippage_tot += close - slippage_close
-                    #     slippage_pos_quote = 0.0
-                
-                
-            else: # otherwise, we are looking to exit a position
-                
-                # run the exit function of our strategy
-                if strategy.calc_exit(row):
-                    # if the exit function returns True, it is signaling to exit, so leave the position
+            # execute the strategy row by row (tick by tick)
+            for row in rows:
+                bar()
+                # if we are currently in a position in the base currency and reach the end of the chunk, revert to our last quote position
+                if not position_quote and row.time in first_times:
+                    position_quote = old_quote
+                    position_base = 0.0
+                    # remove the last entry so entries/exits stay paired up
+                    entries.pop()
                     position_taken = False
 
-                    # convert our position to the quote currency
-                    position_quote = position_base * close
-                    position_base = 0.0
+                # keep track of the close price for the given tick
+                close = row.close
+                slippage_close = close
 
-                    # subtract fees from this transaction as well as the fees from our entry transaction
-                    position_quote = position_quote * (1 - self.fees)
-                    position_quote -= inc_fees
-                    delta = position_quote - old_quote
+                # run the process function (will execute anything that needs to happen each tick for the strategy)
+                strategy.process(row)
+                if position_quote:
+                    account_value = position_quote
+                else:
+                    account_value = position_base * close
+                account_history.append(account_value)
+                if not position_taken: # if we are not entered into a position
 
-                    # append exit to exits log for the graph as well as to the text log
-                    exits.append([row.time, close])
+                    # run the entry function for our strategy
+                    if strategy.calc_entry(row):
+                        # if the entry function returns True, it is signaling to enter, so take a position
+                        position_taken = True
 
-                    # # do slippage things if we are keeping track of slippage
-                    # if self.slippage != 0:
-                    #     slippage_close = utils.add_slippage("neg", close, self.slippage)
-                    #     slippage_pos_quote = slippage_pos_base * slippage_close
-                    #     slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
-                    #     slippage_pos_quote -= slippage_fees
-                    #     slippage_tot += slippage_close - close
-                    #     slippage_pos_base = 0.0
-                    #     slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
+                        # calculate fees that will be incurred
+                        inc_fees = position_quote * self.fees
+
+                        # convert our position to the base currency
+                        old_quote = position_quote
+                        position_base = position_quote / close
+                        position_quote = 0.0
+
+                        # append entry to entries log for the graph as well as to the text log
+                        entries.append([row.time, close])
+                        
+                        # # do slippage things if we are keeping track of slippage
+                        # if self.slippage != 0:
+                        #     slippage_fees = slippage_pos_quote * self.fees
+                        #     slippage_close = utils.add_slippage("pos", close, self.slippage)
+                        #     slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
+                        #     slippage_pos_base = slippage_pos_quote / slippage_close
+                        #     slippage_tot += close - slippage_close
+                        #     slippage_pos_quote = 0.0
+                    
+                    
+                else: # otherwise, we are looking to exit a position
+                    
+                    # run the exit function of our strategy
+                    if strategy.calc_exit(row):
+                        # if the exit function returns True, it is signaling to exit, so leave the position
+                        position_taken = False
+
+                        # convert our position to the quote currency
+                        position_quote = position_base * close
+                        position_base = 0.0
+
+                        # subtract fees from this transaction as well as the fees from our entry transaction
+                        position_quote = position_quote * (1 - self.fees)
+                        position_quote -= inc_fees
+                        delta = position_quote - old_quote
+
+                        # append exit to exits log for the graph as well as to the text log
+                        exits.append([row.time, close])
+
+                        # # do slippage things if we are keeping track of slippage
+                        # if self.slippage != 0:
+                        #     slippage_close = utils.add_slippage("neg", close, self.slippage)
+                        #     slippage_pos_quote = slippage_pos_base * slippage_close
+                        #     slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
+                        #     slippage_pos_quote -= slippage_fees
+                        #     slippage_tot += slippage_close - close
+                        #     slippage_pos_base = 0.0
+                        #     slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
                 
         dataset['account_value'] = np.array(account_history)
 
