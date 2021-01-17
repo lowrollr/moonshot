@@ -17,8 +17,10 @@ import time
 import importlib
 import inspect
 import random
+from math import sqrt
 import plotly.graph_objs as go
 from plotly.offline import plot
+from collections import deque
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from itertools import product, takewhile
@@ -136,7 +138,7 @@ class Trading:
                         raise Exception(f"The specified chunk ({self.chunk_ids[i]}) for {b} does not exist!\n")
                 
                 # append the group to the master group list, paired with the dataset name
-                self.df_groups.append([cur_group, f'{b}USDT-{self.freq}m'])
+                self.df_groups.append([cur_group, b])
                 
 
 
@@ -273,7 +275,7 @@ class Trading:
                 slippage_close = close
 
                 # run the process function (will execute anything that needs to happen each tick for the strategy)
-                strategy.process(row)
+                strategy.process(row, dataset_name)
                 if position_quote:
                     account_value = position_quote
                 else:
@@ -282,7 +284,7 @@ class Trading:
                 if not position_taken: # if we are not entered into a position
 
                     # run the entry function for our strategy
-                    if strategy.calc_entry(row):
+                    if strategy.calc_entry(row, dataset_name):
                         # if the entry function returns True, it is signaling to enter, so take a position
                         position_taken = True
 
@@ -310,7 +312,7 @@ class Trading:
                 else: # otherwise, we are looking to exit a position
                     
                     # run the exit function of our strategy
-                    if strategy.calc_exit(row):
+                    if strategy.calc_exit(row, dataset_name):
                         # if the exit function returns True, it is signaling to exit, so leave the position
                         position_taken = False
 
@@ -380,7 +382,100 @@ class Trading:
         return conv_position, entries, exits
     
 
-    '''
+    def executePM(self, coin_datasets, start_times, strategy, should_print=True, plot=True):
+        coin_times = dict()
+        all_timestamps = []
+        coins = []
+        datasets = dict()
+
+        cash = 1000000.00
+        
+        for name, dataset in coin_datasets:
+            coins.append(name)
+            datasets[name] = dataset
+            coin_times[name] = dict()
+            for row in dataset.itertuples():
+                coin_times[name][row.time] = row.Index
+            all_timestamps.extend(list(coin_times[name].keys()))
+        all_timestamps = sorted(list(set(all_timestamps)))
+        coin_info = dict()
+        for coin in coins:
+            coin_info[coin] = dict()
+            coin_info[coin]['in_position'] = False
+            coin_info[coin]['enter_value'] = 0.0
+            coin_info[coin]['cash_invested'] = 0.0
+            coin_info[coin]['weight'] = 1/len(coins)
+            coin_info[coin]['last_start_time'] = 0
+            coin_info[coin]['recent_trade_results'] = deque(maxlen=10)
+
+        with alive_bar(len(all_timestamps)) as bar:
+            for time in all_timestamps:
+                enter_signals = []
+                exited_position = False
+                time_now = None
+                # get enter/exit signals from coins
+                for coin in coins:
+                    if time in coin_times[coin]:
+                        time_index = coin_times[coin][time]
+                        
+                        row = datasets[coin].iloc[time_index]
+                        time_now = row.time
+                        strategy.process(row, coin)
+
+                        if not coin_info[coin]['in_position']:
+                            
+                            if strategy.calc_entry(row, coin):
+                                enter_signals.append((coin, row.close))
+
+                        else:
+                            if time in start_times:
+                                coin_info[coin]['in_position'] = False
+                                cash += coin_info[coin]['cash_invested'] * (1 + self.fees)
+
+                            if strategy.calc_exit(row, coin):
+                                coin_info[coin]['in_position'] = False
+                                exited_position = True
+                                new_cash_value = (1-self.fees)*((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * row.close)
+                                profit = (new_cash_value / ((coin_info[coin]['cash_invested'] * (1 + self.fees)))) - 1
+                                coin_info[coin]['recent_trade_results'].append((profit, (coin_info[coin]['last_start_time'], row.time)))
+                                cash += new_cash_value
+
+                # process enter signals
+                weight_sum = sum([coin_info[x]['weight'] for x in coin_info if not coin_info[x]['in_position']])
+                subtract_cash = 0
+                for coin, value in enter_signals:
+                    enter_cash = cash * (coin_info[coin]['weight'] / weight_sum)
+                    subtract_cash += enter_cash
+                    coin_info[coin]['cash_invested'] = enter_cash * (1 - self.fees)
+                    coin_info[coin]['enter_value'] = value
+                    coin_info[coin]['in_position'] = True
+                    coin_info[coin]['last_start_time'] = time_now
+                cash -= subtract_cash
+
+                # update weights
+                if exited_position:
+                    scores = []
+                    for coin in coins:
+                        if coin_info[coin]['recent_trade_results']:
+                            avg_profit = sum([x[0] for x in coin_info[coin]['recent_trade_results']])/len(coin_info[coin]['recent_trade_results'])
+                            max_hold_time = max([(x[1][1] - x[1][0])/ 60000 for x in coin_info[coin]['recent_trade_results']])
+                            avg_profit = max(0.0001, avg_profit)
+                            scores.append(10*avg_profit / max_hold_time)
+                        else:
+                            scores.append(0)
+                        
+                    scores_sum = sum(scores)
+                    scores = [x/scores_sum for x in scores]
+                    scores = utils.adjustScores(scores)
+                    for i,x in enumerate(scores):
+                        coin_info[coins[i]]['weight'] = x
+
+                bar()
+                
+        for x in coins:
+            cash += coin_info[x]['cash_invested'] * (1 + self.fees)
+        print(f'Cash: {cash}')
+    '''         
     ARGS:
         -> None
     RETURN:
@@ -390,6 +485,7 @@ class Trading:
         -> handles genetic algorithm if we are attempting to optimize parameters
     '''
     def backtest(self, processes=-1):
+        coin_names = [x[1] for x in self.df_groups]
         print('Importing Strategies...')
         score, trades = 0, 0
         strategy_objs = []
@@ -400,7 +496,7 @@ class Trading:
                 entry_models_info.append([m['name'], m['version']])
             for m in x['exit_models']:
                 exit_models_info.append([m['name'], m['version']])
-            strategy_objs.append(self.importStrategy(x)(entry_models=entry_models_info, exit_models=exit_models_info))
+            strategy_objs.append(self.importStrategy(x)(coin_names=coin_names, entry_models=entry_models_info, exit_models=exit_models_info))
 
         self.strategies = strategy_objs
         # run genetic algorithm if specified by config
@@ -409,20 +505,22 @@ class Trading:
 
         # execute each strategy
         for x in self.strategies:
+            coin_datasets = []
+            first_times = set()
+            i = 0
             # execute the strategy on each dataset group
             for dataset_chunks, dataset_name in self.df_groups:
                 # generate data for each dataset in the group
-
+                print(f'Working on coin {dataset_name}...')
                 print('Generating Model Data...')
                 new_features = self.generateIndicatorData(dataset_chunks, x.indicators)
 
                 
                 # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
-                first_times = set()
+                
 
                 # construct a single dataframe from all of the individual dataframes in the group, and construct the first_times set
                 dataset = pd.DataFrame()
-                first_times = set()
                 dataset = pd.concat(dataset_chunks)
                 
                 
@@ -433,20 +531,30 @@ class Trading:
                     
                 print('Preprocessing Model Predictions...')
 
-                x.preProcessing(dataset, n_process=processes)
+                x.preProcessing(dataset, dataset_name)
                 
                 print('Generating Algo Data...')
                 dataset = pd.DataFrame()
-                self.generateIndicatorData(dataset_chunks, x.algo_indicators)
+                new_features = self.generateIndicatorData(dataset_chunks, x.algo_indicators)
+                
                 for d in dataset_chunks:
-                    dataset = dataset.append(d)
+                    
                     # DONT CHANGE THIS PLS THX
                     first_times.add(d.head(1).time.values[0])
-                    
-                print('Executing Strategy...')
+                dataset = pd.concat(dataset_chunks)
+                dataset = dataset[new_features + ['close', 'time']]
+                self.df_groups[i][0] = []
+                coin_datasets.append((dataset_name, dataset))
+                i += 1
+
+            print('Executing Strategy...')
+            if len(coin_datasets) == 1:      
+                
                 # execute the strategy on the dataset       
-                score, entries, exits = self.executeStrategy(x, dataset, first_times, dataset_name, plot=self.plot)
+                score, entries, exits = self.executeStrategy(x, coin_datasets[0][1], first_times, coin_datasets[0][0], plot=self.plot)
                 trades = len(entries)
+            else:
+                self.executePM(coin_datasets=coin_datasets, start_times=first_times, strategy=x)
         return score, trades
 
     def generateIndicatorData(self, dataset_chunks, indicator_objects, gen_new_values=False):

@@ -46,7 +46,8 @@ class BollingerBands(Indicator):
         else:
             dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=period.value)
 
-        return ['boll_upper' + self.appended_name, 'boll_upper' + self.appended_name]
+        return ['boll_upper' + self.appended_name, 'boll_lower' + self.appended_name]
+        
     def setDefaultParams(self):
         self.params = [
             Param(0.1, 5.0, 1, 'nbdevup', 2.0),
