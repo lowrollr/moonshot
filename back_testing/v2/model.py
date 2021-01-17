@@ -263,12 +263,12 @@ class Trading:
             for row in rows:
                 bar()
                 # if we are currently in a position in the base currency and reach the end of the chunk, revert to our last quote position
-                if not position_quote and row.time in first_times:
-                    position_quote = old_quote
-                    position_base = 0.0
-                    # remove the last entry so entries/exits stay paired up
-                    entries.pop()
-                    position_taken = False
+                # if not position_quote and row.time in first_times:
+                #     position_quote = old_quote
+                #     position_base = 0.0
+                #     # remove the last entry so entries/exits stay paired up
+                #     entries.pop()
+                #     position_taken = False
 
                 # keep track of the close price for the given tick
                 close = row.close
@@ -471,7 +471,7 @@ class Trading:
                         coin_info[coins[i]]['weight'] = x
 
                 bar()
-                
+
         for x in coins:
             cash += coin_info[x]['cash_invested'] * (1 + self.fees)
         print(f'Cash: {cash}')
@@ -542,7 +542,7 @@ class Trading:
                     # DONT CHANGE THIS PLS THX
                     first_times.add(d.head(1).time.values[0])
                 dataset = pd.concat(dataset_chunks)
-                dataset = dataset[new_features + ['close', 'time']]
+                dataset = dataset[new_features + ['close', 'time', 'open', 'high', 'low']]
                 self.df_groups[i][0] = []
                 coin_datasets.append((dataset_name, dataset))
                 i += 1
