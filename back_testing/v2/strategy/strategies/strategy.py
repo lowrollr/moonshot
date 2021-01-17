@@ -127,11 +127,11 @@ class Strategy:
     WHAT: 
         -> This function is the wrapper for completing pre-processing for each of the models that we have in the strat
     '''
-    def preProcessing(self, dataset, n_process):
+    def preProcessing(self, dataset, coin_name):
         for k in list(self.entry_models.keys()):
-            self.entry_models[k]['results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset, n_process)
+            self.entry_models[k][f'{coin_name}_results'] = self.preProcessingHelper(self.entry_models[k]['path'], dataset)
         for k in list(self.exit_models.keys()):
-            self.exit_models[k]['results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset, n_process)
+            self.exit_models[k][f'{coin_name}_results'] = self.preProcessingHelper(self.exit_models[k]['path'], dataset)
 
     '''
     ARGS:
@@ -143,7 +143,7 @@ class Strategy:
     WHAT: 
         -> Driving function for creating the process pool and then executing the model prediction there
     '''
-    def preProcessingHelper(self, model_path, dataset, numProcesses):
+    def preProcessingHelper(self, model_path, dataset):
     
         return self.modelProcess(dataset, model_path)
 
@@ -202,7 +202,7 @@ class Strategy:
         -> put things in here that you want to happen every tick
             or want to keep track of between ticks
     '''
-    def process(self, data):
+    def process(self, data, coin_name):
         pass
 
 
@@ -226,7 +226,7 @@ class Strategy:
     WHAT: 
         -> given the current data row, determine whether or not to enter a position
     '''  
-    def calc_entry(self, data):
+    def calc_entry(self, data, coin_name):
         return False
 
 
@@ -238,5 +238,5 @@ class Strategy:
     WHAT: 
         -> given the current data row, determine whether or not to exit a position
     '''  
-    def calc_exit(self, data):
+    def calc_exit(self, data, coin_name):
         return False
