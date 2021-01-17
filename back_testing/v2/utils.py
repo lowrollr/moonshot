@@ -304,4 +304,17 @@ def slidingWindow(values, windowsize, findmin=False):
     return result
 
 
-    
+def adjustScores(scores, min_value=0.05):
+    amount_added = 0.0
+    sum_non_min_scores = 0.0
+    for i,x in enumerate(scores):
+        if x <= min_value:
+            amount_added += min_value - x
+            scores[i] = min_value
+        else:
+            sum_non_min_scores += x
+    for i,x in enumerate(scores):
+        if x != min_value:
+            proportion = x / sum_non_min_scores
+            scores[i] -= amount_added * proportion
+    return scores
