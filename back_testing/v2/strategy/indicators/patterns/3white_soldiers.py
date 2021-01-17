@@ -8,7 +8,6 @@ WHAT:
 from v2.utils import findParams
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
-from v2.strategy.indicators.sma import SMA
 import numpy as np
 from talib import CDL3WHITESOLDIERS as talib_CDL3WHITESOLDIERS
 
