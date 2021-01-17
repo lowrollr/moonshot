@@ -389,13 +389,24 @@ class notebookUtils:
         return classifyingDF[["close", "classify"]]
 
 
-    """
-
-    """
+    '''
+    ARGS:
+        -> new_thresh (Float): new probability threshold for the given model
+        -> model_name (String): name of model to alter
+    RETURN:
+        -> None
+    WHAT: 
+        -> Alters the probability threshold for the latest version of a given model
+    TODO:
+        -> test this
+        -> add the ability to change a specific model version
+    '''
     def alterThreshold(self, new_thresh, model_name):
         version_str = ''
         base_path = './v2/strategy/saved_models/'
         model_dir = f'{base_path}{model_name}'
+
+        # get the latest version of the model
         if os.path.isdir(model_dir):
             highest_version = [0, 0]
             for f in [x for x in os.scandir(f'{model_dir}/')if x.is_dir()]:
@@ -411,6 +422,7 @@ class notebookUtils:
 
             version_str = f'{highest_version[0]}_{highest_version[1] + 1}'
 
+        # load the model, change the probability threshold, and save it again
         model_dir = f'{model_dir}/{version_str}'
         model_dict = pickle.load(open(f'{model_dir}/{model_name}_{version_str}.sav', 'rb'))
         model_dict["proba_threshold"] = new_thresh
@@ -418,7 +430,15 @@ class notebookUtils:
     
 
     '''
-
+    ARGS:
+        -> df (Dataframe): dataframe to plot points for
+        -> mode (String): should be either 'buy' or 'sell' and specifies whether buy or sell points are plotted
+        -> plot_optimal (Bool): whether or not to plot the optimal buy/sell points as well
+    RETURN:
+        -> None
+    WHAT: 
+        -> Plots the dataframe's buy or sell points alongside the close price
+        -> optionally plots the label data (optimal buy/sell points) for reference
     '''
     def graphPoints(self, df, mode="buy", plot_optimal=False):
         plt.clf()
@@ -431,22 +451,37 @@ class notebookUtils:
                 return row.close
             return np.nan
 
+        # plot the classification buy/sell points
         df["classify"] = df.apply(lambda x: inputPrice(x, "classify"), axis=1)
 
         plt.scatter(df.index, df['classify'], color=color, s=50)
 
+        # plot the optimal buy/sell points
         if plot_optimal:
             df['optimal'] = df.apply(lambda x: inputPrice(x, 'optimal'), axis=1)
             
             plt.scatter(df.index, df['optimal'], color="purple")
 
+        # plot the close price
         plt.plot(df.index, df['close'], color='blue')
         
 
     '''
-
+    ARGS:
+        -> model_name (String): name of model to test
+        -> version (String): version of model to test
+        -> coin (String): coin to test the model on 
+        -> num_processes (Int): number of processes to allow backtest() to use
+    RETURN:
+        -> score, entries, exits (Int, [(Int,  Int)], [(Int,  Int)]): 
+            -> overall ending cash value of portfolio
+            -> list of timestamp, coin value pairs for entries
+            -> list of timestamp, coin value pairs for exits
+    WHAT: 
+        -> Backtests the given model version on the given coin and returns the results
     '''
     def testModel(self, model_name, version='latest', coin='UNI', num_processes=-1):
+        # we need to altar the config prior to loading the data, so set get_data to False
         trading_model = Trading(load_config('config.hjson'), get_data=False)
         trading_model.daisy_chain = True
         trading_model.currencies = [coin]
@@ -471,6 +506,20 @@ class notebookUtils:
 
 
     '''
+    ARGS:
+        -> model (Model object): object holding an ML model
+        -> name (String): name to save the model as
+        -> new_version (Bool): whether or not to save the model as a new base version 
+            -> otherwise will be saved as a new subversion
+        -> indicators ([Indicator]): list of Indicator objects necessary to generate the features necessary as input for the model
+        -> features ([String]): ordered list of feature names that the model takes as input
+        -> proba_threshold (Float): the threshold value to accept classifications above (if this is a classifier and should use predict_proba)
+            -> if this is not important, an input of 0.0 (default) will not be considered
+        -> is_nn (Bool): whether or not the model is a nueral network (requires different import procedure)
+    RETURN:
+        -> version_str (String): the verison that the new model was saved as
+    WHAT: 
+        -> Saves a model to the 'saved_models' directory
     '''
     def exportModel(self, model, name, new_version, indicators, features, proba_threshold=0.0, is_nn=False):
         model_dict = dict()
