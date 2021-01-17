@@ -254,10 +254,24 @@ TODO:
 #                 base_currencies.append(match[0])
 
 #     return base_currencies
+
+'''
+ARGS:
+    -> values ([Float]): list of values from a dataframe column
+    -> windowsize (Int): size of the window to scale over
+RETURN:
+    -> values ([Float]): scaled list of values for the dataframe column
+WHAT: 
+    -> scales (minmax) the values of a column over a given window size and returns the new column values
+''' 
 def realtimeScaleMP(values, windowsize):
+    # get the min/max values over the time window for each row
     max_v = slidingWindow(values, windowsize, findmin=False)
     min_v = slidingWindow(values, windowsize, findmin=True)
+
+    # scale the values
     for i,v in enumerate(values):
+        # min == max will results in division by zero, so just set the value as 0.5
         if max_v[i] == min_v[i]:
             values[i] = 0.5
         else:
@@ -265,6 +279,17 @@ def realtimeScaleMP(values, windowsize):
 
     return values
 
+'''
+ARGS:
+    -> dataset (Dataframe): dataset to scale 
+    -> columns ([String]): names of the dataset columns that need to be scaled
+    -> windowsize (Int): size of the window to scale over
+RETURN:
+    -> None
+WHAT: 
+    -> scales (minmax) the values of each column in the dataset
+    -> uses multiprocessing to ensure this happens as fast as possible
+''' 
 def realtimeScale(dataset, columns, windowsize):
     
     process_pool = mp.Pool(mp.cpu_count())
@@ -275,9 +300,18 @@ def realtimeScale(dataset, columns, windowsize):
         dataset[columns[i]] = r
         
 
-        
-
-
+'''
+ARGS:
+    -> values ([Float]): values to find the minimum/maximum for over the given time window
+    -> windowsize (Int): size of the window to scale over
+    -> findmin (Bool): if true, find the minimum value for each row over the given time window
+        -> if false, find the maximum value for each row over the given time window
+RETURN:
+    -> result ([Float]): list of minimum/maximum values for each row over the given time window
+WHAT: 
+    -> for each value, finds the minimum/maximum value from the previous n values, where n = windowsize
+    -> stole this algorithm from leetcode LOL
+''' 
 def slidingWindow(values, windowsize, findmin=False):
     result = []
     q = deque()
@@ -304,6 +338,16 @@ def slidingWindow(values, windowsize, findmin=False):
     return result
 
 
+'''
+ARGS:
+    -> scores ([Float]): un-adjusted, normalized scores (sum up to 1)
+    -> min_value (Float): minimum value that each score can take
+    
+RETURN:
+    -> scores ([Float]): scores after adjustment
+WHAT: 
+    -> adjusts list of normalized scores such that they are all above a given minimum value while still adding up to 1
+''' 
 def adjustScores(scores, min_value=0.05):
     amount_added = 0.0
     sum_non_min_scores = 0.0
