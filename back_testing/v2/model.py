@@ -30,7 +30,7 @@ from multiprocessing import Pool, cpu_count
 from alive_progress import alive_bar
 
 from v2.strategy.strategies.strategy import Strategy
-from v2.report import write_report
+from v2.report import write_report, writePMReport
 import v2.utils as utils
 from load_config import load_config
 from v2.multiprocess import Multiprocess
@@ -263,12 +263,12 @@ class Trading:
             for row in rows:
                 bar()
                 # if we are currently in a position in the base currency and reach the end of the chunk, revert to our last quote position
-                if not position_quote and row.time in first_times:
-                    position_quote = old_quote
-                    position_base = 0.0
-                    # remove the last entry so entries/exits stay paired up
-                    entries.pop()
-                    position_taken = False
+                # if not position_quote and row.time in first_times:
+                #     position_quote = old_quote
+                #     position_base = 0.0
+                #     # remove the last entry so entries/exits stay paired up
+                #     entries.pop()
+                #     position_taken = False
 
                 # keep track of the close price for the given tick
                 close = row.close
@@ -382,13 +382,17 @@ class Trading:
         return conv_position, entries, exits
     
 
-    def executePM(self, coin_datasets, start_times, strategy, should_print=True, plot=True):
+    def executePM(self, coin_datasets, start_times, strategy, allocation_mode='aggressive', should_print=True, plot=True):
         coin_times = dict()
         all_timestamps = []
         coins = []
         datasets = dict()
 
         cash = 1000000.00
+        entries = dict()
+        exits = dict()
+        coin_allocations = dict()
+        portfolio_value = []
         
         for name, dataset in coin_datasets:
             coins.append(name)
@@ -401,56 +405,123 @@ class Trading:
         coin_info = dict()
         for coin in coins:
             coin_info[coin] = dict()
+            coin_info[coin]['last_close_price'] = 0.0
             coin_info[coin]['in_position'] = False
             coin_info[coin]['enter_value'] = 0.0
             coin_info[coin]['cash_invested'] = 0.0
             coin_info[coin]['weight'] = 1/len(coins)
             coin_info[coin]['last_start_time'] = 0
             coin_info[coin]['recent_trade_results'] = deque(maxlen=10)
+            coin_info[coin]['allocation'] = 0.0
+
+            entries[coin] = []
+            exits[coin] = []
+            coin_allocations[coin] = []
+
+        coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
+        cash_allocation = 1.0
+        
+
 
         with alive_bar(len(all_timestamps)) as bar:
             for time in all_timestamps:
                 enter_signals = []
                 exited_position = False
-                time_now = None
+                
                 # get enter/exit signals from coins
                 for coin in coins:
                     if time in coin_times[coin]:
                         time_index = coin_times[coin][time]
                         
                         row = datasets[coin].iloc[time_index]
-                        time_now = row.time
+                        
+                        coin_info[coin]['last_close_price'] = row.close
                         strategy.process(row, coin)
 
                         if not coin_info[coin]['in_position']:
                             
                             if strategy.calc_entry(row, coin):
-                                enter_signals.append((coin, row.close))
+                                enter_signals.append(coin)
 
                         else:
                             if time in start_times:
-                                coin_info[coin]['in_position'] = False
-                                cash += coin_info[coin]['cash_invested'] * (1 + self.fees)
+                                # coin_info[coin]['in_position'] = False
+                                # cash += coin_info[coin]['cash_invested'] * (1 + self.fees)
+                                pass
 
                             if strategy.calc_exit(row, coin):
                                 coin_info[coin]['in_position'] = False
+                                exits[coin].append((row.time, row.close))
                                 exited_position = True
                                 new_cash_value = (1-self.fees)*((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * row.close)
                                 profit = (new_cash_value / ((coin_info[coin]['cash_invested'] * (1 + self.fees)))) - 1
                                 coin_info[coin]['recent_trade_results'].append((profit, (coin_info[coin]['last_start_time'], row.time)))
+                                coin_info[coin]['cash_invested'] = 0.0
                                 cash += new_cash_value
 
-                # process enter signals
-                weight_sum = sum([coin_info[x]['weight'] for x in coin_info if not coin_info[x]['in_position']])
-                subtract_cash = 0
-                for coin, value in enter_signals:
-                    enter_cash = cash * (coin_info[coin]['weight'] / weight_sum)
-                    subtract_cash += enter_cash
-                    coin_info[coin]['cash_invested'] = enter_cash * (1 - self.fees)
-                    coin_info[coin]['enter_value'] = value
-                    coin_info[coin]['in_position'] = True
-                    coin_info[coin]['last_start_time'] = time_now
-                cash -= subtract_cash
+                
+
+                if enter_signals:
+                    # process enter signals
+                    if allocation_mode == 'conservative':
+                        weight_sum = sum([coin_info[x]['weight'] for x in coin_info if not coin_info[x]['in_position']])
+                        
+                        for coin in enter_signals:
+                            enter_cash = cash * (coin_info[coin]['weight'] / weight_sum)
+                            cash -= enter_cash
+                            weight_sum -= coin_info[coin]['weight']
+                            coin_info[coin]['cash_invested'] = enter_cash * (1 - self.fees)
+                            coin_info[coin]['enter_value'] = coin_info[coin]['last_close_price']
+                            coin_info[coin]['in_position'] = True
+                            entries[coin].append((time, coin_info[coin]['last_close_price']))
+                            coin_info[coin]['last_start_time'] = time
+                        
+                        
+                        
+                    elif allocation_mode == 'aggressive':
+                        weight_sum = sum([coin_info[x]['weight'] for x in coin_info if not coin_info[x]['in_position']])
+                        coin_weight_pairs = sorted([(coin, coin_info[coin]['weight']) for coin in enter_signals], key=lambda k: k[1], reverse=True)
+                        
+                        subtract_cash = 0.0
+                        for coin, weight in coin_weight_pairs:
+                            allocation = max(0.50, 2 * weight)
+                            if allocation < weight_sum:
+                                enter_cash = cash * (allocation / weight_sum)
+                                cash -= enter_cash
+                                weight_sum -= coin_info[coin]['weight']
+                                coin_info[coin]['cash_invested'] = enter_cash * (1 - self.fees)
+                                coin_info[coin]['enter_value'] = coin_info[coin]['last_close_price']
+                                coin_info[coin]['in_position'] = True
+                                entries[coin].append((time, coin_info[coin]['last_close_price']))
+                                coin_info[coin]['last_start_time'] = time
+                            else:
+                                current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
+                                for coin_c, profit in current_positions:
+                                    if allocation < weight_sum:
+                                        break
+                                    # close the position
+                                    coin_info[coin_c]['in_position'] = False
+                                    exited_position = True
+                                    exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
+                                    new_cash_value = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
+                                    profit = (new_cash_value / ((coin_info[coin_c]['cash_invested'] * (1 + self.fees)))) - 1
+                                    coin_info[coin_c]['recent_trade_results'].append((profit, (coin_info[coin_c]['last_start_time'], coin_info[coin_c]['last_close_price'])))
+                                    coin_info[coin_c]['cash_invested'] = 0.0
+                                    cash += new_cash_value
+                                    weight_sum += coin_info[coin_c]['weight']
+                                # sanity check with if statement 
+                                if allocation < weight_sum:
+                                    enter_cash = cash * (allocation / weight_sum)
+                                    cash -= enter_cash
+                                    weight_sum -= coin_info[coin]['weight']
+                                    coin_info[coin]['cash_invested'] = enter_cash * (1 - self.fees)
+                                    coin_info[coin]['enter_value'] = coin_info[coin]['last_close_price']
+                                    entries[coin].append((time, coin_info[coin]['last_close_price']))
+                                    coin_info[coin]['in_position'] = True
+                                    coin_info[coin]['last_start_time'] = time
+                    
+                    
+
 
                 # update weights
                 if exited_position:
@@ -464,17 +535,40 @@ class Trading:
                         else:
                             scores.append(0)
                         
+                   
+                    scores = [np.median([y for y in scores if y]) if x == 0.0 else x for x in scores ]
                     scores_sum = sum(scores)
                     scores = [x/scores_sum for x in scores]
                     scores = utils.adjustScores(scores)
                     for i,x in enumerate(scores):
                         coin_info[coins[i]]['weight'] = x
-
-                bar()
                 
-        for x in coins:
-            cash += coin_info[x]['cash_invested'] * (1 + self.fees)
+
+                # log coin allocations and portfolio value
+                portfolio_value.append((time, cash + sum([((coin_info[x]['cash_invested'] / coin_info[x]['enter_value']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])))
+                for coin in coins:
+                    if coin_info[coin]['in_position']:
+                        coin_allocations[coin].append((time, ((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price']) / portfolio_value[-1][1]))
+                    else:
+                        coin_allocations[coin].append((time, 0.0))
+                coin_allocations['CASH'].append((time, cash / portfolio_value[-1][1]))
+                bar()
+
+        for coin in coins:
+            if coin_info[coin]['in_position']:
+                coin_info[coin]['in_position'] = False
+                exits[coin].append((time, coin_info[coin]['last_close_price']))
+                new_cash_value = (1-self.fees)*((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price'])
+                profit = (new_cash_value / ((coin_info[coin]['cash_invested'] * (1 + self.fees)))) - 1
+                coin_info[coin]['recent_trade_results'].append((profit, (coin_info[coin]['last_start_time'], coin_info[coin]['last_close_price'])))
+                coin_info[coin]['cash_invested'] = 0.0
+                cash += new_cash_value
+
+        
+        
         print(f'Cash: {cash}')
+        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, self.indicators_to_graph, self.fees)
+
     '''         
     ARGS:
         -> None
@@ -542,7 +636,10 @@ class Trading:
                     # DONT CHANGE THIS PLS THX
                     first_times.add(d.head(1).time.values[0])
                 dataset = pd.concat(dataset_chunks)
-                dataset = dataset[new_features + ['close', 'time']]
+                dataset.dropna(inplace=True)
+                dataset.reset_index(inplace=True, drop=True)
+                dataset = dataset[new_features + ['close', 'time', 'open', 'high', 'low']]
+                
                 self.df_groups[i][0] = []
                 coin_datasets.append((dataset_name, dataset))
                 i += 1

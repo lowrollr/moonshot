@@ -37,6 +37,7 @@ class Benchmark(Strategy):
         
         
         boll_bands = BollingerBands(_params=[Param(0,0,0,'period',300)], _value='close')
+        # boll_bands_long = BollingerBands(_params=[Param(0,0,0,'period',3000)], _value='close', _appended_name='long')
         self.algo_indicators.extend([boll_bands, rsi, sma_goal])
 
 
@@ -73,7 +74,7 @@ class Benchmark(Strategy):
             self.looking_to_enter[coin_name] = False
             self.stop_loss[coin_name] = data.close * 0.0
         
-            self.profit_goal[coin_name] = data.SMA
+            self.profit_goal[coin_name] = data.close * 1.03
             return True
         
         self.looking_to_enter[coin_name] = False
