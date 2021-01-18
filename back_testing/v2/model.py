@@ -119,7 +119,8 @@ class Trading:
                         my_df = my_df[['close_time', 'high', 'low', 'close', 'open', 'volume']]
                         my_df.rename(columns={'close_time': 'time'}, inplace=True)
                         my_df = my_df[(my_df['time'] > self.timespan[0]) & (my_df['time'] < self.timespan[1])]
-                        cur_group.append(my_df)
+                        if not my_df.empty:
+                            cur_group.append(my_df)
                 # otherwise, find the specified chunk in the config file and add the single dataframe corresponding to that chunk to the group list
                 else:
                     try:
@@ -132,7 +133,8 @@ class Trading:
                         # this will need to be adapted to other datasets (other than binance), probably should standardize how we pass dataframes in but this is fine for now
                         my_df.rename(columns={'close_time': 'time'}, inplace=True)
                         my_df = my_df[(my_df['time'] > self.timespan[0]) & (my_df['time'] < self.timespan[1])]
-                        cur_group.append(my_df)
+                        if not my_df.empty:
+                            cur_group.append(my_df)
                     except Exception:
                         # will be raised if the chunk id given in the config file doesn't exist
                         raise Exception(f"The specified chunk ({self.chunk_ids[i]}) for {b} does not exist!\n")
