@@ -292,3 +292,82 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
+def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees):
+    doc = dominate.document(title='Portfolio Manager Report')
+
+    
+    coin_stats = dict()
+    filenames = dict()
+    coin_plots = dict()
+    coin_movement_plots = dict()
+    for name, dataset in coin_datasets:
+        coin_movement_plots[name], coin_stats[name] = generate_movement_graphs(dataset, entries[name], exits[name], indicators_to_graph, name, fees)
+        movement_num = 0
+        filenames[name] = []
+        for mp, mp_stats in coin_movement_plots[name]:
+            filenames[name].append(generate_movement_page(mp, mp_stats, name, movement_num))
+            movement_num += 1
+        
+        fig = make_subplots()
+        fig.update_layout(template='plotly_dark', title_text=f'{name}')
+        fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name=name))
+        fig.add_trace(go.Scatter(x=[a[0] for a in entries[name]], y=[a[1] for a in entries[name]], name='Entry', mode='markers', marker_color='aqua'))
+        fig.add_trace(go.Scatter(x=[a[0] for a in exits[name]], y=[a[1] for a in exits[name]], name='Exit', mode='markers', marker_color='purple'))
+        coin_plots[name] = plot(fig, include_plotlyjs=False, output_type='div')
+    
+    fig = make_subplots()
+    fig.update_layout(template='plotly_dark', title_text='Portfolio Growth')
+    times = [x[0] for x in portfolio_growth]
+    values = [x[1] for x in portfolio_growth]
+    fig.add_trace(go.Scatter(x=times, y=values))
+    growth_plot = plot(fig, include_plotlyjs=False, output_type='div')
+
+    fig = make_subplots()
+    
+    for coin in portfolio_allocation:
+        times = [x[0] for x in portfolio_allocation[coin]]
+        values = [x[1] for x in portfolio_allocation[coin]]
+        fig.add_trace(go.Bar(x=times, y=values, name=coin))
+    fig.update_layout(template='plotly_dark', title_text='Portfolio Allocation', barmode='stack')
+    allocation_plot = plot(fig, include_plotlyjs=False, output_type='div')
+    
+    with doc.head:
+        link(rel='stylesheet', href='style.css')
+        script(type='text/javascript', src='script.js')
+        script(src='https://cdn.plot.ly/plotly-latest.min.js')
+
+    with doc:
+        with div():
+            attr(cls='body')
+            h1('Overall Stats')
+            td(raw(growth_plot))
+            td(raw(allocation_plot))
+            any_coin = list(coin_plots.keys())[0]
+            stat_types = list(coin_movement_plots[any_coin][0][1].keys())
+            for coin in coin_plots:
+                coin_plot = coin_plots[coin] 
+                h1(f'{coin} Stats')
+                td(raw(coin_plot))
+                with table().add(tbody()):
+                    for stat in coin_stats[coin]:
+                        row = tr()
+                        row.add(td(stat))
+                        row.add(td(coin_stats[coin][stat]))
+                h1(f'{coin} Movements')
+                report_list = ul()
+                
+                
+                with table(id="ind_movements_data").add(tbody()):
+                    row = tr()
+                    row.add(td('Movement'))
+                    for i in range (len(stat_types)):
+                        row.add(th(stat_types[i], onclick="sortRows(" + str(i+1) + ")"))
+                    for i,f in enumerate(filenames[coin]):
+                        mp_stats = coin_movement_plots[coin][i][1]
+                        new_row = tr()
+                        new_row.add(td(a('Movement #' + str(i), href=f, target='_blank'), __pretty=False))
+                        for stat in stat_types:
+                            new_row.add(td(mp_stats[stat]))
+        # write the report to a file
+    with open('./reports/PM_overall_report.html', 'w') as output:
+        output.write(str(doc))

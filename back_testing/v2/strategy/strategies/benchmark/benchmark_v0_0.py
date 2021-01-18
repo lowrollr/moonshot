@@ -36,7 +36,7 @@ class Benchmark(Strategy):
         rsi = RSI(_params=[Param(0,0,0,'period',20)], _value='close')
         
         
-        boll_bands = BollingerBands(_params=[Param(0,0,0,'period',30000)], _value='close')
+        boll_bands = BollingerBands(_params=[Param(0,0,0,'period',300)], _value='close')
         # boll_bands_long = BollingerBands(_params=[Param(0,0,0,'period',3000)], _value='close', _appended_name='long')
         self.algo_indicators.extend([boll_bands, rsi, sma_goal])
 

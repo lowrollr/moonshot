@@ -348,9 +348,10 @@ RETURN:
 WHAT: 
     -> adjusts list of normalized scores such that they are all above a given minimum value while still adding up to 1
 ''' 
-def adjustScores(scores, min_value=0.05):
+def adjustScores(scores, min_value=0.01, max_value = 0.5):
     amount_added = 0.0
     sum_non_min_scores = 0.0
+    # lower bound scores by min_value and redistribute
     for i,x in enumerate(scores):
         if x <= min_value:
             amount_added += min_value - x
@@ -361,4 +362,17 @@ def adjustScores(scores, min_value=0.05):
         if x != min_value:
             proportion = x / sum_non_min_scores
             scores[i] -= amount_added * proportion
+    amount_subtracted = 0.0
+    sum_non_max_scores = 0.0
+    # upper bound scores by max_value and redistribute
+    for i,x in enumerate(scores):
+        if x >= max_value:
+            amount_subtracted += x - max_value
+            scores[i] = max_value
+        else:
+            sum_non_max_scores += x
+    for i,x in enumerate(scores):
+        if x != max_value:
+            proportion = x / sum_non_max_scores
+            scores[i] += amount_subtracted * proportion
     return scores
