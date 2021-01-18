@@ -636,7 +636,10 @@ class Trading:
                     # DONT CHANGE THIS PLS THX
                     first_times.add(d.head(1).time.values[0])
                 dataset = pd.concat(dataset_chunks)
+                dataset.dropna(inplace=True)
+                dataset.reset_index(inplace=True, drop=True)
                 dataset = dataset[new_features + ['close', 'time', 'open', 'high', 'low']]
+                
                 self.df_groups[i][0] = []
                 coin_datasets.append((dataset_name, dataset))
                 i += 1
