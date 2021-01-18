@@ -327,7 +327,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
     for coin in portfolio_allocation:
         times = [x[0] for x in portfolio_allocation[coin]]
         values = [x[1] for x in portfolio_allocation[coin]]
-        fig.add_trace(go.Bar(x=times, y=values, name=coin))
+        fig.add_trace(go.Scatter(x=times, y=values, name=coin))
     fig.update_layout(template='plotly_dark', title_text='Portfolio Allocation', barmode='stack')
     allocation_plot = plot(fig, include_plotlyjs=False, output_type='div')
     
