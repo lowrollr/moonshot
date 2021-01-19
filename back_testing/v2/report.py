@@ -301,7 +301,8 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
     coin_plots = dict()
     coin_movement_plots = dict()
     for name, dataset in coin_datasets:
-        coin_movement_plots[name], coin_stats[name] = generate_movement_graphs(dataset, entries[name], exits[name], indicators_to_graph, name, fees)
+        graphs = generate_movement_graphs(dataset, entries[name], exits[name], indicators_to_graph, name, fees)
+        coin_movement_plots[name], coin_stats[name] = graphs
         movement_num = 0
         filenames[name] = []
         for mp, mp_stats in coin_movement_plots[name]:
