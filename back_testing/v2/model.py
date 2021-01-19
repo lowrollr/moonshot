@@ -497,16 +497,16 @@ class Trading:
                                 entries[coin].append((time, coin_info[coin]['last_close_price']))
                                 coin_info[coin]['last_start_time'] = time
                             else:
-                                if allocation / 2 < weight_sum:
-                                    allocation = weight_sum
-                                else:
-                                    current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
-                                    for coin_c, profit in current_positions:
-                                        if profit >= 0:
-                                            break
-                                        if allocation <= weight_sum:
-                                            break
-                                        # close the position
+                                
+                                current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
+                                for coin_c, profit in current_positions:
+                                    if time <= coin_info[coin]['last_start_time']+5:
+                                        continue
+                                    if allocation <= weight_sum:
+                                        break
+                                    cash_needed = (cash * (allocation / weight_sum)) - cash
+                                    cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
+                                    if cash_needed >= cash_available:
                                         coin_info[coin_c]['in_position'] = False
                                         exited_position = True
                                         exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
@@ -516,6 +516,12 @@ class Trading:
                                         coin_info[coin_c]['cash_invested'] = 0.0
                                         cash += new_cash_value
                                         weight_sum += coin_info[coin_c]['weight']
+                                    else:
+                                        coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
+                                        cash += cash_needed
+                                        weight_sum = allocation
+                                        # close the position
+                                        
                                     # sanity check with if statement 
                                     if allocation <= weight_sum:
                                         enter_cash = cash * (allocation / weight_sum)

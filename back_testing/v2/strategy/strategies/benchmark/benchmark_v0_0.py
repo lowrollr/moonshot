@@ -12,7 +12,7 @@ from v2.strategy.indicators.bollinger_bands import BollingerBands
 from v2.strategy.indicators.roc import RateOfChange
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.cmo import CMO
-from v2.strategy.indicators.ema import EMA
+from v2.strategy.indicators.sma import SMA
 import numpy as np
 
 '''
@@ -32,7 +32,7 @@ class Benchmark(Strategy):
     '''
     def __init__(self, coin_names, entry_models=[], exit_models=[]):
         super().__init__(entry_models, exit_models)
-        sma_goal = EMA(_params=[Param(0,0,0,'period',120)], _value='close')
+        sma_goal = SMA(_params=[Param(0,0,0,'period',120)], _value='close')
         rsi = RSI(_params=[Param(0,0,0,'period',30)], _value='close')
         
         
@@ -76,7 +76,7 @@ class Benchmark(Strategy):
         if self.looking_to_enter[coin_name] and data.close > self.limit_up[coin_name]:
             
             self.looking_to_enter[coin_name] = False
-            self.stop_loss[coin_name] = data.close * 0.95
+            # self.stop_loss[coin_name] = data.close * 0.95
         
             # self.profit_goal[coin_name] = data.SMA
             return True
@@ -84,7 +84,7 @@ class Benchmark(Strategy):
         self.looking_to_enter[coin_name] = False
         time = data.time
         prediction = self.entry_models[1][f'{coin_name}_results'][time]
-        if prediction and data.close < data.EMA * (0.97):
+        if prediction and data.close < data.SMA * (0.97):
             
             self.limit_up[coin_name] = data.close * 1.005
             self.looking_to_enter[coin_name] = True
@@ -93,7 +93,7 @@ class Benchmark(Strategy):
 
     def calc_exit(self, data, coin_name):
         
-        if data.close > data.EMA:
+        if data.close > data.SMA:
             
             self.stop_loss[coin_name] = max(self.stop_loss[coin_name], data.close * 0.995)
        
