@@ -484,9 +484,10 @@ class Trading:
                         weight_sum = sum([coin_info[x]['weight'] for x in coin_info if not coin_info[x]['in_position']])
                         coin_weight_pairs = sorted([(coin, coin_info[coin]['weight']) for coin in enter_signals], key=lambda k: k[1], reverse=True)
                         
-                        subtract_cash = 0.0
+                        num_coins =  len([x for x in coin_info if coin_info[x]['last_close_price']])
+                        total_coins = len(coin_info)
                         for coin, weight in coin_weight_pairs:
-                            allocation = min(0.50, 2 * weight)
+                            allocation = min(0.50, ((3*total_coins)/num_coins) * weight)
                             if allocation <= weight_sum:
                                 enter_cash = cash * (allocation / weight_sum)
                                 cash -= enter_cash
@@ -541,7 +542,9 @@ class Trading:
                     scores = []
                     for coin in coins:
                         if coin_info[coin]['recent_trade_results']:
-                            avg_profit = sum([x[0] for x in coin_info[coin]['recent_trade_results']])/len(coin_info[coin]['recent_trade_results'])
+                            trade_results = [x[0] for x in coin_info[coin]['recent_trade_results']]
+                            avg_profit = sum(trade_results)/len(coin_info[coin]['recent_trade_results'])
+                            
                             max_hold_time = max([(x[1][1] - x[1][0])/ 60000 for x in coin_info[coin]['recent_trade_results']])
                             avg_profit = max(0.0001, avg_profit)
                             scores.append(10*avg_profit / max_hold_time)
