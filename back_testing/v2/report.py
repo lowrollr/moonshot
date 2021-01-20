@@ -295,7 +295,6 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
 def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees):
     doc = dominate.document(title='Portfolio Manager Report')
 
-    
     coin_stats = dict()
     filenames = dict()
     coin_plots = dict()
@@ -309,6 +308,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
             filenames[name].append(generate_movement_page(mp, mp_stats, name, movement_num))
             movement_num += 1
         
+        coin_stats[name]["Asset RateOfChange (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
         fig = make_subplots()
         fig.update_layout(template='plotly_dark', title_text=f'{name}')
         fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name=name))
@@ -319,8 +319,8 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
     fig = make_subplots()
     fig.update_layout(template='plotly_dark', title_text='Portfolio Growth')
     times = [x[0] for x in portfolio_growth]
-    values = [x[1] for x in portfolio_growth]
-    fig.add_trace(go.Scatter(x=times, y=values))
+    port_values = [x[1] for x in portfolio_growth]
+    fig.add_trace(go.Scatter(x=times, y=port_values))
     growth_plot = plot(fig, include_plotlyjs=False, output_type='div')
 
     fig = make_subplots()
@@ -337,11 +337,20 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
+    avg_asset_roc = round((sum([coin_stats[x]["Asset RateOfChange (%)"] for x in coin_stats])/len(coin_stats)), 1)
+    portfolio_roc = round((port_values[-1]*100 - port_values[0]*100)/(port_values[0]), 1)
+
     with doc:
         with div():
             attr(cls='body')
             h1('Overall Stats')
             td(raw(growth_plot))
+            with table().add(tbody()):
+                tr().add(td("Initial Portfolio Value :")).add(td(round(port_values[0], 2)))
+                tr().add(td("Exit Portfolio value: ")).add(td(round(port_values[-1], 2)))
+                tr().add(td("Portfolio RateOfChange (%)")).add(td(str(portfolio_roc) + "%"))
+                tr().add(td("Asset Avg. RateOfChange (%)")).add(td(str(avg_asset_roc) + "%"))
+
             td(raw(allocation_plot))
             any_coin = list(coin_plots.keys())[0]
             stat_types = list(coin_movement_plots[any_coin][0][1].keys())
@@ -353,10 +362,13 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                     for stat in coin_stats[coin]:
                         row = tr()
                         row.add(td(stat))
-                        row.add(td(coin_stats[coin][stat]))
+                        if stat == "Asset RateOfChange (%)":
+                            row.add(td(str(round(coin_stats[coin][stat], 1)) + "%"))
+                        else:
+                            row.add(td(coin_stats[coin][stat]))
                 h1(f'{coin} Movements')
                 report_list = ul()
-                
+
                 with table(id=f"ind_movements_data{coin_num}").add(tbody()):
                     row = tr()
                     row.add(td('Movement'))
