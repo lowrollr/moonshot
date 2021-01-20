@@ -393,6 +393,7 @@ class Trading:
         cash = 1000000.00
         entries = dict()
         exits = dict()
+        weights = dict()
         coin_allocations = dict()
         portfolio_value = []
         
@@ -418,6 +419,7 @@ class Trading:
 
             entries[coin] = []
             exits[coin] = []
+            weights[coin] = []
             coin_allocations[coin] = []
 
         coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
@@ -507,6 +509,7 @@ class Trading:
                                         break
                                     cash_needed = (cash * (allocation / weight_sum)) - cash
                                     cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
+                                    # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
                                     if cash_needed >= cash_available:
                                         coin_info[coin_c]['in_position'] = False
                                         exited_position = True
@@ -518,13 +521,15 @@ class Trading:
                                         cash += new_cash_value
                                         weight_sum += coin_info[coin_c]['weight']
                                     else:
+                                        # partially close the position, but keep the reamining capital that's not needed in the position
                                         coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
                                         cash += cash_needed
                                         weight_sum = allocation
-                                        # close the position
+                                        
                                         
                                     # sanity check with if statement 
                                     if allocation <= weight_sum:
+                                        # open the new position
                                         enter_cash = cash * (allocation / weight_sum)
                                         cash -= enter_cash
                                         weight_sum -= coin_info[coin]['weight']
@@ -563,11 +568,13 @@ class Trading:
                 # log coin allocations and portfolio value
                 portfolio_value.append((time, cash + sum([((coin_info[x]['cash_invested'] / coin_info[x]['enter_value']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])))
                 for coin in coins:
+                    weights[coin].append((time, coin_info[coin]['weight']))
                     if coin_info[coin]['in_position']:
                         coin_allocations[coin].append((time, ((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price']) / portfolio_value[-1][1]))
                     else:
                         coin_allocations[coin].append((time, 0.0))
                 coin_allocations['CASH'].append((time, cash / portfolio_value[-1][1]))
+
                 bar()
 
         for coin in coins:
@@ -583,7 +590,7 @@ class Trading:
         
         
         print(f'Cash: {cash}')
-        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, self.indicators_to_graph, self.fees)
+        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, weights, self.indicators_to_graph, self.fees)
 
     '''         
     ARGS:

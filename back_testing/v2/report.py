@@ -293,7 +293,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
-def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees):
+def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, coin_weights, indicators_to_graph, fees):
     doc = dominate.document(title='Portfolio Manager Report')
 
     
@@ -330,8 +330,17 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
         times = [x[0] for x in portfolio_allocation[coin]]
         values = [x[1] for x in portfolio_allocation[coin]]
         fig.add_trace(go.Scatter(x=times, y=values, name=coin))
-    fig.update_layout(template='plotly_dark', title_text='Portfolio Allocation', barmode='stack')
+    fig.update_layout(template='plotly_dark', title_text='Portfolio Allocation')
     allocation_plot = plot(fig, include_plotlyjs=False, output_type='div')
+
+    fig = make_subplots()
+    
+    for coin in coin_weights:
+        times = [x[0] for x in coin_weights[coin]]
+        weights = [x[1] for x in coin_weights[coin]]
+        fig.add_trace(go.Scatter(x=times, y=weights, name=coin))
+    fig.update_layout(template='plotly_dark', title_text='Coin Weights')
+    weights_plot = plot(fig, include_plotlyjs=False, output_type='div')
     
     with doc.head:
         link(rel='stylesheet', href='style.css')
@@ -344,6 +353,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
             h1('Overall Stats')
             td(raw(growth_plot))
             td(raw(allocation_plot))
+            td(raw(weights_plot))
             any_coin = list(coin_plots.keys())[0]
             stat_types = list(coin_movement_plots[any_coin][0][1].keys())
             for coin_num, coin in enumerate(coin_plots):
