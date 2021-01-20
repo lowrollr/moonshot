@@ -8,6 +8,8 @@ from binance.client import Client
 from datetime import timedelta, datetime
 from dateutil import parser
 from tqdm import tqdm #(Optional, used for progress-bars)
+import concurrent.futures
+from itertools import repeat
 
 
 binance_api_key = 'DM4oFXAb30B6lty130NAv4TvDblNl6l1Lg7amBfaEmcXjxKoDM1fRoDXVnHZENE4 '    #Enter your own API-key here
@@ -45,10 +47,28 @@ def get_all_binance(symbol, kline_size, save = False):
     data_df.set_index('timestamp', inplace=True)
     if save: data_df.to_csv(filename)
     print('All caught up..!')
-    return data_df
+    #return data_df
 
 
 # For Binance
-binance_symbols = ["ETHUSDT", "XRPUSDT", "ADAUSDT", "LTCUSDT", "UNIUSDT", "VETUSDT", "XLMUSDT", "BNBUSDT", "BCHUSDT", "COMPUSDT", "ATOMUSDT", "BATUSDT", "EGLDUSDT", "ETCUSDT"]
+binance_symbols = ["BTC", "LINK", "ENJ", "VTHO", "XTZ", "OMG", "ZIL", "ALGO", "NEO", "HBAR", 
+                    "ETH", "XRP", "ADA", "LTC", "UNI", "VET", "XLM", "BNB", "BCH", "COMP", "ATOM", "BAT", 
+                    "EGLD", "ETC", "EOS", "MKR", "NANO", "SOL", "BAND", "MATIC", "IOTA", "DOGE", "ICX", "HNT", 
+                    "ZEC", "WAVES", "BAT", "KNC", "ZRX", "ONE", "DASH", "OXT", "MANA", "ZEN", "ONT", "REP", 
+                    "RVN", "QTUM", "STORJ", "PAXG"]
+
+already_used = ["VET", "ZIL", "ONE", "ZEN", "BAND", "DOGE", "ETH", "UNI", "RVN", "REP", "OMG", "ETC", "EOS", "ADA", "BNB", "COMP", "ETC", "LINK", "QTUM"]
+
+binance_symbols = [x + "USDT" for x in list(set(binance_symbols)) if x not in already_used]
+
+# with concurrent.futures.ThreadPoolExecutor() as executor:
+#     for symbol in binance_symbols:
+#         executor.submit(get_all_binance, symbol, "1m", True)
+
+
+#     executor.map(get_all_binance, binance_symbols, repeat("1m"), repeat(True))
+
+
 for symbol in tqdm(binance_symbols):
+    # symbol = symbol + "USDT"
     get_all_binance(symbol, '1m', save = True)
