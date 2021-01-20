@@ -17,7 +17,7 @@ from dominate.util import raw
 from alive_progress import alive_bar
 import chart_studio.tools as tls
 import os
-from utils import getRandomSpinner
+from v2.utils import getRandomSpinner
 
 
 ALT_AXIS_COLS = {'macd_diff'}
@@ -293,7 +293,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
-def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees, per_coin_stats, overall_stats):
+def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees):
     doc = dominate.document(title='Portfolio Manager Report')
 
     
