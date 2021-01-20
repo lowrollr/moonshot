@@ -17,6 +17,7 @@ from dominate.util import raw
 from alive_progress import alive_bar
 import chart_studio.tools as tls
 import os
+from utils import getRandomSpinner
 
 
 ALT_AXIS_COLS = {'macd_diff'}
@@ -58,7 +59,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
 
     # list of hold times compiled through appending all hold times from each individual movement
     overall_hold_times = []
-    with alive_bar(len(exits)) as bar:
+    with alive_bar(len(exits), spinner=getRandomSpinner()) as bar:
         # consider each entry exit pair (their lengths are identical)
         for i, x in enumerate(entries):
             # holds stats for the individual movement
@@ -292,7 +293,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
-def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees):
+def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees, per_coin_stats, overall_stats):
     doc = dominate.document(title='Portfolio Manager Report')
 
     

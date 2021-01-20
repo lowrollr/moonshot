@@ -259,7 +259,7 @@ class Trading:
         starting_base_value = dataset['close'].values[0]
         # grab all the rows in the dataset as Series objects
         rows = dataset.itertuples()
-        with alive_bar(len(dataset)) as bar:
+        with alive_bar(len(dataset), spinner=utils.getRandomSpinner()) as bar:
 
             # execute the strategy row by row (tick by tick)
             for row in rows:
@@ -425,7 +425,7 @@ class Trading:
         
 
 
-        with alive_bar(len(all_timestamps)) as bar:
+        with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
             for time in all_timestamps:
                 enter_signals = []
                 exited_position = False
