@@ -1,5 +1,10 @@
-function sortRows(n) {
-    let table = document.getElementById("ind_movements_data");
+function sortRows(n, table_num=-1) {
+    var table;
+    if (table_num == -1) {
+        table = document.getElementById("ind_movements_data");
+    } else {
+        table = document.getElementById("ind_movements_data" + String(table_num))
+    }
 
     let header = table.rows[0];
     let final_arr;

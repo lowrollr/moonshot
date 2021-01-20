@@ -345,7 +345,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
             td(raw(allocation_plot))
             any_coin = list(coin_plots.keys())[0]
             stat_types = list(coin_movement_plots[any_coin][0][1].keys())
-            for coin in coin_plots:
+            for coin_num, coin in enumerate(coin_plots):
                 coin_plot = coin_plots[coin] 
                 h1(f'{coin} Stats')
                 td(raw(coin_plot))
@@ -357,12 +357,11 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 h1(f'{coin} Movements')
                 report_list = ul()
                 
-                
-                with table(id="ind_movements_data").add(tbody()):
+                with table(id=f"ind_movements_data{coin_num}").add(tbody()):
                     row = tr()
                     row.add(td('Movement'))
                     for i in range (len(stat_types)):
-                        row.add(th(stat_types[i], onclick="sortRows(" + str(i+1) + ")"))
+                        row.add(th(stat_types[i], onclick=f"sortRows({str(i+1)}, {coin_num})"))
                     for i,f in enumerate(filenames[coin]):
                         mp_stats = coin_movement_plots[coin][i][1]
                         new_row = tr()
