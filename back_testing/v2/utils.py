@@ -376,3 +376,44 @@ def adjustScores(scores, min_value=0.01, max_value = 0.5):
             proportion = x / sum_non_max_scores
             scores[i] += amount_subtracted * proportion
     return scores
+
+
+
+def getRandomSpinner():
+    return random.choice(['classic',
+                          'stars',
+                          'arrows',
+                          'arrow',
+                          'vertical',
+                          'waves',
+                          'waves2',
+                          'waves3',
+                          'horizontal',
+                          'dots',
+                          'dots_reverse',
+                          'dots_waves',
+                          'dots_waves2',
+                          'ball_scrolling',
+                          'balls_scrolling',
+                          'ball_bouncing',
+                          'balls_bouncing',
+                          'dots_recur',
+                          'bar_recur',
+                          'pointer',
+                          'arrows_recur',
+                          'triangles',
+                          'triangles2',
+                          'brackets',
+                          'balls_filling',
+                          'notes',
+                          'notes2',
+                          'notes_scrolling',
+                          'arrows_incoming',
+                          'arrows_outgoing',
+                          'real_arrow',
+                          'fish',
+                          'fish2',
+                          'fish_bouncing',
+                          'fishes',
+                          'pulse'])
+
