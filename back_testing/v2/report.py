@@ -17,6 +17,7 @@ from dominate.util import raw
 from alive_progress import alive_bar
 import chart_studio.tools as tls
 import os
+from v2.utils import getRandomSpinner
 
 
 ALT_AXIS_COLS = {'macd_diff'}
@@ -58,7 +59,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
 
     # list of hold times compiled through appending all hold times from each individual movement
     overall_hold_times = []
-    with alive_bar(len(exits)) as bar:
+    with alive_bar(len(exits), spinner=getRandomSpinner()) as bar:
         # consider each entry exit pair (their lengths are identical)
         for i, x in enumerate(entries):
             # holds stats for the individual movement
@@ -292,7 +293,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
-def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, indicators_to_graph, fees):
+def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, coin_weights, indicators_to_graph, fees):
     doc = dominate.document(title='Portfolio Manager Report')
 
     coin_stats = dict()
@@ -329,8 +330,17 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
         times = [x[0] for x in portfolio_allocation[coin]]
         values = [x[1] for x in portfolio_allocation[coin]]
         fig.add_trace(go.Scatter(x=times, y=values, name=coin))
-    fig.update_layout(template='plotly_dark', title_text='Portfolio Allocation', barmode='stack')
+    fig.update_layout(template='plotly_dark', title_text='Portfolio Allocation')
     allocation_plot = plot(fig, include_plotlyjs=False, output_type='div')
+
+    fig = make_subplots()
+    
+    for coin in coin_weights:
+        times = [x[0] for x in coin_weights[coin]]
+        weights = [x[1] for x in coin_weights[coin]]
+        fig.add_trace(go.Scatter(x=times, y=weights, name=coin))
+    fig.update_layout(template='plotly_dark', title_text='Coin Weights')
+    weights_plot = plot(fig, include_plotlyjs=False, output_type='div')
     
     with doc.head:
         link(rel='stylesheet', href='style.css')
@@ -352,6 +362,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 tr().add(td("Asset Avg. RateOfChange (%)")).add(td(str(avg_asset_roc) + "%"))
 
             td(raw(allocation_plot))
+            td(raw(weights_plot))
             any_coin = list(coin_plots.keys())[0]
             stat_types = list(coin_movement_plots[any_coin][0][1].keys())
             for coin_num, coin in enumerate(coin_plots):

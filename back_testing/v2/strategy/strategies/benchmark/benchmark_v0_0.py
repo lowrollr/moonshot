@@ -32,13 +32,10 @@ class Benchmark(Strategy):
     '''
     def __init__(self, coin_names, entry_models=[], exit_models=[]):
         super().__init__(entry_models, exit_models)
-        sma_goal = SMA(_params=[Param(0,0,0,'period',120)], _value='close')
-        rsi = RSI(_params=[Param(0,0,0,'period',30)], _value='close')
+        sma_goal = SMA(_params=[Param(0,0,0,'period',150)], _value='close')
         
-        
-        boll_bands = BollingerBands(_params=[Param(0,0,0,'period',120)], _value='close')
         # boll_bands_long = BollingerBands(_params=[Param(0,0,0,'period',3000)], _value='close', _appended_name='long')
-        self.algo_indicators.extend([boll_bands, rsi, sma_goal])
+        self.algo_indicators.extend([sma_goal])
 
 
         # Algorithm-centered class variables
