@@ -418,8 +418,6 @@ class Trading:
             coin_info[coin]['last_start_time'] = 0
             coin_info[coin]['recent_trade_results'] = deque(maxlen=10)
             coin_info[coin]['allocation'] = 0.0
-            coin_info[coin]['on_cooldown'] = False
-            coin_info[coin]['unlock_time'] = 0
 
             entries[coin] = []
             exits[coin] = []
@@ -429,7 +427,7 @@ class Trading:
         coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
         cash_allocation = 1.0
         
-        last_cooldown_trade_times = [0 for x in coins]
+        
 
 
         with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
@@ -440,8 +438,6 @@ class Trading:
                 # get enter/exit signals from coins
                 for coin in coins:
                     if time in coin_times[coin]:
-                        if coin_info[coin]['on_cooldown'] and time > coin_info[coin]['unlock_time']:
-                            coin_info[coin]['on_cooldown'] = False
                         time_index = coin_times[coin][time]
                         
                         row = datasets[coin].iloc[time_index]
@@ -451,7 +447,7 @@ class Trading:
 
                         if not coin_info[coin]['in_position'] :
                             
-                            if not coin_info[coin]['on_cooldown'] and strategy.calc_entry(row, coin):
+                            if strategy.calc_entry(row, coin):
                                 enter_signals.append(coin)
 
                         else:
@@ -470,34 +466,6 @@ class Trading:
                                 coin_info[coin]['cash_invested'] = 0.0
                                 cash += new_cash_value
                 
-                # tot = 0
-                # num_below = 0
-                # for coin in coin_info:
-                    
-                #     if coin_info[coin]['in_position']:
-                #         delt = coin_info[coin]['last_close_price']/coin_info[coin]['enter_value'] - 1
-                #         if delt <= -0.05:
-                #             num_below += 1
-                #         tot += 1
-                    
-                # if num_below > 1:
-                    
-                #     unlock_time = time + (60000 * 60 * 24)
-                #     for coin in coin_info:
-                #         coin_info[coin]['on_cooldown'] = True
-                #         coin_info[coin]['unlock_time'] = unlock_time
-                #         if coin_info[coin]['in_position'] and coin_info[coin]['last_close_price']/coin_info[coin]['enter_value'] - 1 <= -0.05:
-                            
-                #             coin_info[coin]['in_position'] = False
-                #             exits[coin].append((time, coin_info[coin]['last_close_price']))
-                #             exited_position = True
-                #             new_cash_value = (1-self.fees)*((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price'])
-                #             profit = (new_cash_value / ((coin_info[coin]['cash_invested'] * (1 + self.fees)))) - 1
-                #             coin_info[coin]['recent_trade_results'].append((profit, (coin_info[coin]['last_start_time'], time)))
-                #             coin_info[coin]['cash_invested'] = 0.0
-                #             cash += new_cash_value
-
-                                
                 
                 if enter_signals:
                     # process enter signals
@@ -536,8 +504,7 @@ class Trading:
                             else:
                                 
                                 current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
-                                for coin_c, profit in current_positions:
-                                    
+                                for coin_c, profit in current_positions: 
                                     if allocation <= weight_sum and cash:
                                         break
                                     if time <= coin_info[coin]['last_start_time']+5:
@@ -560,8 +527,6 @@ class Trading:
                                         coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
                                         cash += cash_needed
                                         weight_sum = allocation
-                                        
-                                        
                                         
                                 # sanity check with if statement 
                                 if allocation <= weight_sum and cash:
@@ -603,16 +568,7 @@ class Trading:
                     for i,x in enumerate(scores):
                         coin_info[coins[i]]['weight'] = x
 
-                    # if not on_cooldown:
-                    #     different_than_last_cooldown = sum([1 for i,x in enumerate(coin_info) if not coin_info[x]['recent_trade_results'] or coin_info[x]['recent_trade_results'][-1][1][1] != last_cooldown_trade_times[i]])/len(coin_info)
-                    #     if different_than_last_cooldown > 0.30:
-                    #         perc_negative = sum([1 for x in coin_info if coin_info[x]['recent_trade_results'] and coin_info[x]['recent_trade_results'][-1][0] < 0])/len(coin_info)
-                    #         if perc_negative > 0.50:
-                    #             last_cooldown_trade_times = [coin_info[x]['recent_trade_results'][-1][1][1] if coin_info[x]['recent_trade_results'] else 0 for x in coin_info]
-                    #             on_cooldown = True
-                    #             unlock_time = time + (60000 * 60)
-                    
-
+                
                 # log coin allocations and portfolio value
                 portfolio_value.append((time, cash + sum([((coin_info[x]['cash_invested'] / coin_info[x]['enter_value']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])))
                 for coin in coins:
