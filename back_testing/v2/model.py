@@ -139,8 +139,9 @@ class Trading:
                         # will be raised if the chunk id given in the config file doesn't exist
                         raise Exception(f"The specified chunk ({self.chunk_ids[i]}) for {b} does not exist!\n")
                 
-                # append the group to the master group list, paired with the dataset name
-                self.df_groups.append([cur_group, b])
+                if cur_group:
+                    # append the group to the master group list, paired with the dataset name
+                    self.df_groups.append([cur_group, b])
                 
 
 
@@ -510,7 +511,7 @@ class Trading:
                                     cash_needed = (cash * (allocation / weight_sum)) - cash
                                     cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
                                     # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
-                                    if cash_needed >= cash_available:
+                                    if cash_needed >= cash_available * (1/2):
                                         coin_info[coin_c]['in_position'] = False
                                         exited_position = True
                                         exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
