@@ -417,6 +417,7 @@ class Trading:
             coin_info[coin]['last_start_time'] = 0
             coin_info[coin]['recent_trade_results'] = deque(maxlen=10)
             coin_info[coin]['allocation'] = 0.0
+            # coin_info[coin]['frozen'] = False
 
             entries[coin] = []
             exits[coin] = []
@@ -426,7 +427,7 @@ class Trading:
         coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
         cash_allocation = 1.0
         
-
+        
 
         with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
             for time in all_timestamps:
@@ -465,7 +466,23 @@ class Trading:
                                 cash += new_cash_value
 
                 
+                # positions = [coin_info[coin]['last_close_price']/coin_info[coin]['enter_value'] - 1 < -0.05 for coin in coin_info if coin_info[coin]['in_position']]
+                # if positions and sum(positions)/len(positions) > 0.5:
+                    
+                #     for coin in coin_info:
+                #         coin_info[coin]['frozen'] = True
+                #         if coin_info[coin]['in_position']:
+                        
+                #             coin_info[coin]['in_position'] = False
+                #             exits[coin].append((time, coin_info[coin]['last_close_price']))
+                #             new_cash_value = (1-self.fees)*((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price'])
+                #             profit = (new_cash_value / ((coin_info[coin]['cash_invested'] * (1 + self.fees)))) - 1
+                #             coin_info[coin]['recent_trade_results'].clear()
+                #             coin_info[coin]['cash_invested'] = 0.0
+                #             cash += new_cash_value
+                
 
+                            
                 if enter_signals:
                     # process enter signals
                     if allocation_mode == 'conservative':
@@ -490,7 +507,10 @@ class Trading:
                         num_coins =  len([x for x in coin_info if coin_info[x]['last_close_price']])
                         total_coins = len(coin_info)
                         for coin, weight in coin_weight_pairs:
+                            
                             allocation = min(0.50, ((3*total_coins)/num_coins) * weight)
+                            # if coin_info[coin]['frozen']:
+                            #     allocation = min(allocation, 0.005)
                             if cash and allocation <= weight_sum :
                                 enter_cash = cash * (allocation / weight_sum)
                                 cash -= enter_cash
@@ -517,7 +537,7 @@ class Trading:
                                         exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
                                         new_cash_value = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
                                         profit = (new_cash_value / ((coin_info[coin_c]['cash_invested'] * (1 + self.fees)))) - 1
-                                        coin_info[coin_c]['recent_trade_results'].append((profit, (coin_info[coin_c]['last_start_time'], coin_info[coin_c]['last_close_price'])))
+                                        coin_info[coin_c]['recent_trade_results'].append((profit, (coin_info[coin_c]['last_start_time'], time)))
                                         coin_info[coin_c]['cash_invested'] = 0.0
                                         cash += new_cash_value
                                         weight_sum += coin_info[coin_c]['weight']
@@ -552,7 +572,8 @@ class Trading:
                             avg_profit = sum(trade_results)/len(coin_info[coin]['recent_trade_results'])
                             
                             # max_hold_time = max([(x[1][1] - x[1][0])/ 60000 for x in coin_info[coin]['recent_trade_results']])
-                            
+                            # if coin_info[coin]['frozen'] and len(coin_info[coin]['recent_trade_results']) >= 2 and avg_profit > 0.5:
+                            #     coin_info[coin]['frozen'] = False
                             scores.append(avg_profit)
                         else:
                             scores.append(-1.0)
@@ -567,6 +588,8 @@ class Trading:
                     scores = utils.adjustScores(scores)
                     for i,x in enumerate(scores):
                         coin_info[coins[i]]['weight'] = x
+
+                    
                 
 
                 # log coin allocations and portfolio value

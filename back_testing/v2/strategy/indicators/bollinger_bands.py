@@ -34,7 +34,7 @@ class BollingerBands(Indicator):
         -> calculates and adds the Bollinger Bands of the specified value over the given period to the dataset
     '''
     def genData(self, dataset, gen_new_values=True):
-        dev_down, dev_up, period = findParams(self.params, ['nbdevup', 'nbdevdn', 'period'])
+        dev_up, dev_down, period = findParams(self.params, ['nbdevup', 'nbdevdn', 'period'])
         
         if gen_new_values:
             if dev_down and dev_up:
@@ -42,7 +42,7 @@ class BollingerBands(Indicator):
                 dev_up.genValue()
             period.genValue()
         if dev_down and dev_up:
-            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=period.value, nbdevup=dev_up.value, nbdevdown=dev_down.value)
+            dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=period.value, nbdevup=dev_up.value, nbdevdn=dev_down.value)
         else:
             dataset['boll_upper' + self.appended_name], dataset['boll_middle' + self.appended_name], dataset['boll_lower' + self.appended_name] = BBANDS(dataset[self.value], timeperiod=period.value)
 

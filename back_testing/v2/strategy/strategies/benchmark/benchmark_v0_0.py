@@ -90,7 +90,7 @@ class Benchmark(Strategy):
 
     def calc_exit(self, data, coin_name):
         
-        if data.close > data.SMA:
+        if data.close > data.SMA * (1.02):
             
             self.stop_loss[coin_name] = max(self.stop_loss[coin_name], data.close * 0.995)
        
@@ -100,4 +100,3 @@ class Benchmark(Strategy):
             return True
         
         return False
-        
