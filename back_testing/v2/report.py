@@ -302,7 +302,6 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
     coin_movement_plots = dict()
     for name, dataset in coin_datasets:
         graphs = generate_movement_graphs(dataset, entries[name], exits[name], indicators_to_graph, name, fees)
-<<<<<<< HEAD
         if graphs:
             coin_movement_plots[name], coin_stats[name] = graphs
             movement_num = 0
@@ -311,28 +310,13 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 filenames[name].append(generate_movement_page(mp, mp_stats, name, movement_num))
                 movement_num += 1
             
+            coin_stats[name]["Asset RateOfChange (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
             fig = make_subplots()
             fig.update_layout(template='plotly_dark', title_text=f'{name}')
             fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name=name))
             fig.add_trace(go.Scatter(x=[a[0] for a in entries[name]], y=[a[1] for a in entries[name]], name='Entry', mode='markers', marker_color='aqua'))
             fig.add_trace(go.Scatter(x=[a[0] for a in exits[name]], y=[a[1] for a in exits[name]], name='Exit', mode='markers', marker_color='purple'))
             coin_plots[name] = plot(fig, include_plotlyjs=False, output_type='div')
-=======
-        coin_movement_plots[name], coin_stats[name] = graphs
-        movement_num = 0
-        filenames[name] = []
-        for mp, mp_stats in coin_movement_plots[name]:
-            filenames[name].append(generate_movement_page(mp, mp_stats, name, movement_num))
-            movement_num += 1
-        
-        coin_stats[name]["Asset RateOfChange (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
-        fig = make_subplots()
-        fig.update_layout(template='plotly_dark', title_text=f'{name}')
-        fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name=name))
-        fig.add_trace(go.Scatter(x=[a[0] for a in entries[name]], y=[a[1] for a in entries[name]], name='Entry', mode='markers', marker_color='aqua'))
-        fig.add_trace(go.Scatter(x=[a[0] for a in exits[name]], y=[a[1] for a in exits[name]], name='Exit', mode='markers', marker_color='purple'))
-        coin_plots[name] = plot(fig, include_plotlyjs=False, output_type='div')
->>>>>>> 0bb9906fa3472b4cd3b6739f9cd647d12e11a75b
     
     fig = make_subplots()
     fig.update_layout(template='plotly_dark', title_text='Portfolio Growth')
