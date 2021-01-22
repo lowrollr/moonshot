@@ -28,7 +28,6 @@ import random
 import numpy as np
 from multiprocessing import Pool, cpu_count
 from alive_progress import alive_bar
-from scipy.special import softmax
 
 from v2.strategy.strategies.strategy import Strategy
 from v2.report import write_report, writePMReport
@@ -427,7 +426,6 @@ class Trading:
         coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
         cash_allocation = 1.0
         
-        
 
 
         with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
@@ -445,7 +443,7 @@ class Trading:
                         coin_info[coin]['last_close_price'] = row.close
                         strategy.process(row, coin)
 
-                        if not coin_info[coin]['in_position'] :
+                        if not coin_info[coin]['in_position']:
                             
                             if strategy.calc_entry(row, coin):
                                 enter_signals.append(coin)
@@ -465,8 +463,9 @@ class Trading:
                                 coin_info[coin]['recent_trade_results'].append((profit, (coin_info[coin]['last_start_time'], row.time)))
                                 coin_info[coin]['cash_invested'] = 0.0
                                 cash += new_cash_value
+
                 
-                
+
                 if enter_signals:
                     # process enter signals
                     if allocation_mode == 'conservative':
@@ -492,7 +491,7 @@ class Trading:
                         total_coins = len(coin_info)
                         for coin, weight in coin_weight_pairs:
                             allocation = min(0.50, ((3*total_coins)/num_coins) * weight)
-                            if allocation <= weight_sum and cash:
+                            if cash and allocation <= weight_sum :
                                 enter_cash = cash * (allocation / weight_sum)
                                 cash -= enter_cash
                                 weight_sum -= coin_info[coin]['weight']
@@ -504,11 +503,11 @@ class Trading:
                             else:
                                 
                                 current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
-                                for coin_c, profit in current_positions: 
-                                    if allocation <= weight_sum and cash:
-                                        break
+                                for coin_c, profit in current_positions:
                                     if time <= coin_info[coin]['last_start_time']+5:
                                         continue
+                                    if cash and allocation <= weight_sum:
+                                        break
                                     cash_needed = (cash * (allocation / weight_sum)) - cash
                                     cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
                                     # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
@@ -527,9 +526,10 @@ class Trading:
                                         coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
                                         cash += cash_needed
                                         weight_sum = allocation
+                                
                                         
                                 # sanity check with if statement 
-                                if allocation <= weight_sum and cash:
+                                if allocation <= weight_sum:
                                     # open the new position
                                     enter_cash = cash * (allocation / weight_sum)
                                     cash -= enter_cash
@@ -539,7 +539,7 @@ class Trading:
                                     entries[coin].append((time, coin_info[coin]['last_close_price']))
                                     coin_info[coin]['in_position'] = True
                                     coin_info[coin]['last_start_time'] = time
-                    
+                
                     
 
 
@@ -567,15 +567,13 @@ class Trading:
                     scores = utils.adjustScores(scores)
                     for i,x in enumerate(scores):
                         coin_info[coins[i]]['weight'] = x
-
                 
+
                 # log coin allocations and portfolio value
                 portfolio_value.append((time, cash + sum([((coin_info[x]['cash_invested'] / coin_info[x]['enter_value']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])))
                 for coin in coins:
                     weights[coin].append((time, coin_info[coin]['weight']))
-                    
                     if coin_info[coin]['in_position']:
-                        
                         coin_allocations[coin].append((time, ((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price']) / portfolio_value[-1][1]))
                     else:
                         coin_allocations[coin].append((time, 0.0))
@@ -589,7 +587,7 @@ class Trading:
                 exits[coin].append((time, coin_info[coin]['last_close_price']))
                 new_cash_value = (1-self.fees)*((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price'])
                 profit = (new_cash_value / ((coin_info[coin]['cash_invested'] * (1 + self.fees)))) - 1
-                coin_info[coin]['recent_trade_results'].append((profit, (coin_info[coin]['last_start_time'], time)))
+                coin_info[coin]['recent_trade_results'].append((profit, (coin_info[coin]['last_start_time'], coin_info[coin]['last_close_price'])))
                 coin_info[coin]['cash_invested'] = 0.0
                 cash += new_cash_value
 
