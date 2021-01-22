@@ -310,6 +310,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 filenames[name].append(generate_movement_page(mp, mp_stats, name, movement_num))
                 movement_num += 1
             
+            coin_stats[name]["Asset RateOfChange (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
             fig = make_subplots()
             fig.update_layout(template='plotly_dark', title_text=f'{name}')
             fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name=name))
