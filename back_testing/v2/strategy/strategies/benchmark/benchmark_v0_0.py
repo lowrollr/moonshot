@@ -9,7 +9,7 @@ from v2.strategy.strategies.strategy import Strategy
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.ultimate_oscillator import UltimateOscillator
 from v2.strategy.indicators.bollinger_bands import BollingerBands
-from v2.strategy.indicators.roc import RateOfChange
+from v2.strategy.indicators.mmroc import MinMaxRateOfChange
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.cmo import CMO
 from v2.strategy.indicators.sma import SMA
@@ -32,10 +32,11 @@ class Benchmark(Strategy):
     '''
     def __init__(self, coin_names, entry_models=[], exit_models=[]):
         super().__init__(entry_models, exit_models)
+        sma_for_mmroc = SMA(_params=[Param(0,0,0,'period', 10)], _value='close', _appended_name='for_mmroc')
         sma_goal = SMA(_params=[Param(0,0,0,'period',150)], _value='close')
-        
+        mmroc = MinMaxRateOfChange(_params=[Param(0,0,0,'period',1440)], _value='SMA_for_mmroc')
         # boll_bands_long = BollingerBands(_params=[Param(0,0,0,'period',3000)], _value='close', _appended_name='long')
-        self.algo_indicators.extend([sma_goal])
+        self.algo_indicators.extend([sma_goal, sma_for_mmroc, mmroc])
 
 
         # Algorithm-centered class variables
@@ -89,8 +90,11 @@ class Benchmark(Strategy):
         return False
 
     def calc_exit(self, data, coin_name):
-        
-        if data.close > data.SMA * (1.02):
+        if data.MinMaxRateOfChange < 0:
+            amnt_above = 0.0
+        else:
+            amnt_above = max(data.MinMaxRateOfChange / 2, 0.035)
+        if data.close > data.SMA * (1 + amnt_above):
             
             self.stop_loss[coin_name] = max(self.stop_loss[coin_name], data.close * 0.995)
        
