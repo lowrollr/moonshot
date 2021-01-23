@@ -522,9 +522,10 @@ class Trading:
                                 coin_info[coin]['last_start_time'] = time
                             else:
                                 
-                                current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
+                                # current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
+                                current_positions = sorted([(c, time - coin_info[c]['last_start_time']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
                                 for coin_c, profit in current_positions:
-                                    if time <= coin_info[coin]['last_start_time']+5:
+                                    if time <= coin_info[coin_c]['last_start_time']+5:
                                         continue
                                     if cash and allocation <= weight_sum:
                                         break
@@ -579,12 +580,16 @@ class Trading:
                             scores.append(-1.0)
                         
                    
-                    scores = [np.median([y for y in scores if y != -1.0]) if x == -1.0 else x for x in scores ]
-                    min_value = min(scores)
+                    
+                    min_value = min(score for score in scores if score != -1.0)
                     if min_value < 0:
-                        scores = [x + abs(min_value) for x in scores]
+                        scores = [x + abs(min_value) if x != -1.0 else -1.0 for x in scores ]
+                    scores = [np.median([y for y in scores if y != -1.0]) if x == -1.0 else x for x in scores ]
                     scores_sum = sum(scores)
-                    scores = [x / scores_sum for x in scores]
+                    if scores_sum:
+                        scores = [x / scores_sum for x in scores]
+                    else:
+                        scores = [1/ len(scores) for x in scores]
                     scores = utils.adjustScores(scores)
                     for i,x in enumerate(scores):
                         coin_info[coins[i]]['weight'] = x
