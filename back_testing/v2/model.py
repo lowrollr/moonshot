@@ -522,8 +522,8 @@ class Trading:
                                 coin_info[coin]['last_start_time'] = time
                             else:
                                 
-                                # current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
-                                current_positions = sorted([(c, time - coin_info[c]['last_start_time']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
+                                current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
+                                # current_positions = sorted([(c, time - coin_info[c]['last_start_time']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
                                 for coin_c, profit in current_positions:
                                     if time <= coin_info[coin_c]['last_start_time']+5:
                                         continue
