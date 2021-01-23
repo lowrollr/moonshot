@@ -525,23 +525,24 @@ class Trading:
                                 current_positions = sorted([(c, (coin_info[c]['last_close_price'] - coin_info[c]['enter_value'])/coin_info[c]['last_close_price']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
                                 # current_positions = sorted([(c, time - coin_info[c]['last_start_time']) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1], reverse=True)
                                 for coin_c, profit in current_positions:
-                                    if time <= coin_info[coin_c]['last_start_time']+5:
-                                        continue
-                                    if cash and allocation <= weight_sum:
-                                        break
-                                    cash_needed = (cash * (allocation / weight_sum)) - cash
-                                    cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
-                                    # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
-                                    if not cash or cash_needed >= cash_available * (1/2):
-                                        coin_info[coin_c]['in_position'] = False
-                                        exited_position = True
-                                        exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
-                                        new_cash_value = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
-                                        profit = (new_cash_value / ((coin_info[coin_c]['cash_invested'] * (1 + self.fees)))) - 1
-                                        coin_info[coin_c]['recent_trade_results'].append((profit, (coin_info[coin_c]['last_start_time'], time)))
-                                        coin_info[coin_c]['cash_invested'] = 0.0
-                                        cash += new_cash_value
-                                        weight_sum += coin_info[coin_c]['weight']
+                                    if profit > -0.02:
+                                        if time <= coin_info[coin_c]['last_start_time']+5:
+                                            continue
+                                        if cash and allocation <= weight_sum:
+                                            break
+                                        cash_needed = (cash * (allocation / weight_sum)) - cash
+                                        cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
+                                        # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
+                                        if not cash or cash_needed >= cash_available * (1/2):
+                                            coin_info[coin_c]['in_position'] = False
+                                            exited_position = True
+                                            exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
+                                            new_cash_value = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
+                                            profit = (new_cash_value / ((coin_info[coin_c]['cash_invested'] * (1 + self.fees)))) - 1
+                                            coin_info[coin_c]['recent_trade_results'].append((profit, (coin_info[coin_c]['last_start_time'], time)))
+                                            coin_info[coin_c]['cash_invested'] = 0.0
+                                            cash += new_cash_value
+                                            weight_sum += coin_info[coin_c]['weight']
                                     else:
                                         # partially close the position, but keep the reamining capital that's not needed in the position
                                         coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
