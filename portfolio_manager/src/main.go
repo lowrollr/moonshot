@@ -2,25 +2,17 @@ package main
 
 import (
 	//"alert"
-	"fmt"
- )
+
+	"time"
+
+	"github.com/ross-hugo/go-binance/v2"
+)
 
 func main() {
-	fmt.Println("Connectting to database")
-	//Here going to connect to database
-	var err error = nil
-
-	global_db, err = Dumbo.connectDB(db_string)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Connected to database successfully")
-
-	fmt.Println("Creating tables in database")
-	err = Dumbo.autoMigrate(global_db)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Starting connecting to Python server...")
+	time.Sleep(5 * time.Second)
+	binanceClinet = *binance.NewClient(apiKey, secretKey)
+	// go userDataStream()
+	//connect to data consumer
+	// startServer()
 	startClient()
 }

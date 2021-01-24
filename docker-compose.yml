@@ -10,32 +10,26 @@ services:
     volumes:
       - ./data:/var/lib/postgres/data
     
-  portoflio_manager:
+  portfolio_manager:
     build: ./portfolio_manager
     depends_on:
       - crypto_db
+      - strategy_manager
     restart: "on-failure"
     env_file: portfolio_manager/.env
     ports:
-      - 2626:2626
+      - 4000:4000
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
 
   strategy_manager:
     build: ./strategy_manager
     depends_on: 
       - crypto_db
+      - main_data_consumer
     restart: "on-failure"
     env_file: strategy_manager/.env
-    ports:
-      - 1234:1234
-
-  executor:
-    build: ./executor
-    depends_on:
-      - crypto_db
-    restart: "on-failure"
-    #env_file
-    ports:
-      - 8787:8787
 
   main_data_consumer:
     build: ./main_data_consumer
@@ -44,22 +38,7 @@ services:
     restart: "on-failure"
     env_file: main_data_consumer/.env
     ports:
-      - 9090:9090
-      
-  alt_data_consumer:
-    build: ./alt_data_consumer
-    depends_on:
-      - crypto_db
-    restart: "on-failure"
-    #env_file
-    ports:
-      - 8787:8787
-
-  model_land:
-    build: ./model_land
-    depends_on:
-      - crypto_db
-    restart: "on-failure"
-    #env_file
-    ports:
-      - 2222:2222
+      - "4000:4040"
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined

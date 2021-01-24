@@ -163,6 +163,12 @@ class notebookUtils:
             raise ValueError("Did not provide either buy sell or both to the optimal_threshold dict")
 
     '''
+    '''
+    def filter_optimal_ensemble(self, optimal_arr, thresh_arr):
+        if optimal_arr.predict0 > thresh_arr[0] and optimal_arr.predict1 > thresh_arr[1]:
+            return 1.0
+        return 0.0
+    '''
     ARGS:
         -> indicators ([String]): list of indicators to add to the dataset
         -> param_spec ({String:{String:Value}}): dictionary defining parameter values to set,
@@ -364,27 +370,50 @@ class notebookUtils:
     WHAT: 
         -> creates the predictions from the dataframe with the model
     '''
-    def classifyPoints(self, clf, dataset, predict_proba=False, proba_thresh=0.7, plot_optimal=False, optimal=None, is_nn=False):
+    def classifyPoints(self, clf_list, dataset, predict_proba=False, proba_thresh=[0.7], plot_optimal=False, optimal=None, is_nn=False):
         classifyingDF = dataset.copy()
-        if not is_nn:
-            if not predict_proba:
-                classifyingDF["classify"] = clf.predict(dataset.drop("close", axis=1).values)
-            else:
-                classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+        if len(clf_list) == 1:
+            clf = clf_list[0]
+            proba_thresh = proba_thresh[0]
+
+            if is_nn or predict_proba:
+                if is_nn:
+                    classifyingDF["predict"] = clf.predict(dataset.drop("close", axis=1).values)[:,1]
+                else:
+                    classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+
                 classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, proba_thresh, "buy"))
                 classifyingDF.drop("predict", axis=1, inplace=True)
 
-            if plot_optimal:
-                classifyingDF["optimal"] = optimal.values
-                return classifyingDF[["close", "classify", "optimal"]]
-        else:
-            classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
-            classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, proba_thresh, "buy"))
-            classifyingDF.drop("predict", axis=1, inplace=True)
+            else:
+                classifyingDF["classify"] = clf.predict(dataset.drop("close", axis=1).values)
 
-            if plot_optimal:
-                classifyingDF["optimal"] = optimal.values
-                return classifyingDF[["close", "classify", "optimal"]]
+        elif len(clf_list) == 2:
+            clf0 = clf_list[0]
+            clf1 = clf_list[1]
+
+            if is_nn or predict_proba:
+                if is_nn:
+                    classifyingDF['predict0'] = clf0.predict(dataset.drop("close", axis=1).values)[:,1]
+                    classifyingDF['predict1'] = clf1.predict(dataset.drop("close", axis=1).values)[:,1]
+                else:
+                    classifyingDF['predict0'] = clf0.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+                    classifyingDF['predict1'] = clf1.predict_proba(dataset.drop("close", axis=1).values)[:,1]
+
+                classifyingDF["classify"] = classifyingDF.apply(lambda x: self.filter_optimal_ensemble(x, proba_thresh), axis=1)
+                classifyingDF.drop(["predict0", 'predict1'], axis=1, inplace=True)
+            else:
+                classifyingDF['class0'] = clf0.predict(dataset.drop('close', axis=1).values)
+                classifyingDF['class1'] = clf1.predict(dataset.drop('close', axis=1).values)
+
+                classifyingDF["classify"] = classifyingDF[["class0", 'class1']].any(1).astype(int)
+                classifyingDF.drop(["class0", "class1"], axis=1, inplace=True)
+        else:
+            raise Exception("We haven't added for more than one ensemble you code it if you want to try it")
+
+        if plot_optimal:
+            classifyingDF["optimal"] = optimal.values
+            return classifyingDF[["close", "classify", "optimal"]]
 
         return classifyingDF[["close", "classify"]]
 
