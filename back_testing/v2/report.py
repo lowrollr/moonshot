@@ -20,7 +20,7 @@ import os
 from v2.utils import getRandomSpinner
 
 
-ALT_AXIS_COLS = {'macd_diff', "PSAR"}
+ALT_AXIS_COLS = {'macd_diff', "PSAR", "RateOfChange", "RateOfChange_shorter"}
 
 
 '''

@@ -378,7 +378,16 @@ def adjustScores(scores, min_value=0.01, max_value = 0.5):
     return scores
 
 
-
+'''
+ARGS:
+    -> scores ([Float]): un-adjusted, normalized scores (sum up to 1)
+    -> min_value (Float): minimum value that each score can take
+    
+RETURN:
+    -> scores ([Float]): scores after adjustment
+WHAT: 
+    -> adjusts list of normalized scores such that they are all above a given minimum value while still adding up to 1
+''' 
 def getRandomSpinner():
     return random.choice(['classic',
                           'stars',
@@ -417,3 +426,57 @@ def getRandomSpinner():
                           'fishes',
                           'pulse'])
 
+'''
+ARGS:
+    -> info ({String: value}): item from PM executor coin_info dictionary
+    -> default_amnt (Float): allocation value to return if the trade queue is not ful
+    -> low_amnt (Float): allocation value to return if the kelly value is negative
+    
+RETURN:
+    -> kelly ([Float]): portion of portfolio to allocate
+WHAT: 
+    -> calculates the Kelly Criterion value for a specified asset given it's recent trade history
+    -> https://www.investopedia.com/articles/trading/04/091504.asp
+
+''' 
+def calcKellyPercent(info, default_amnt=0.05, low_amnt=0.01):
+    trades = info['recent_trade_results']
+    win_rate = info['win_rate']
+    avg_win = info['avg_win']
+    avg_loss = info['avg_loss']
+
+    if len(trades) == trades.maxlen:
+        if avg_win and avg_loss:
+            kelly = win_rate - ((1 - win_rate)/(avg_win/abs(avg_loss)))
+            if kelly > 0:
+                return kelly
+            else:
+                return low_amnt
+        
+    return default_amnt
+
+'''
+
+
+
+'''
+def getCurrentReturn(info):
+    return (info['last_close_price'] - info['enter_value'])/info['enter_value']
+
+def enterPosition(info, cash_allocated, fees, time):
+    info['cash_invested'] = cash_allocated * (1 - fees)
+    info['enter_value'] = info['last_close_price']
+    info['in_position'] = True
+    info['last_start_time'] = time
+
+
+
+def exitPosition(info, fees, time):
+    info['in_position'] = False
+    new_cash = (1-fees) * ((info['cash_invested'] / info['enter_value']) * info['last_close_price'])
+    profit = (new_cash / ((info['cash_invested'] * (1 + fees)))) - 1
+    info['recent_trade_results'].append((profit, (info['last_start_time'], time)))
+    info['cash_invested'] = 0.0
+
+
+    return new_cash
