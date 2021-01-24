@@ -53,7 +53,7 @@ func NewClient(connection net.Conn) *Client {
 
 func startClient() {
 	// conn, err := net.Dial("tcp", "strategy_manager:" + string(os.Getenv("STRATPORT")))
-	conn, err := net.Dial("tcp", "main_data_consumer:" + string(os.Getenv("DATAPORT")))
+	conn, err := net.Dial("tcp", "main_data_consumer:"+string(os.Getenv("DATAPORT")))
 
 	// conn, err := net.Dial("tcp", "main_data_consumer:" + string(os.Getenv("DATAPORT")))
 	if err != nil {

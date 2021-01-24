@@ -16,6 +16,8 @@ var (
 	apiKey    = os.Getenv("BINANCEAPIKEY")
 	secretKey = os.Getenv("BINANCESECRETKEY")
 
+	coins = []string{}
+	
 	binanceClinet = binance.Client{}
 	listenKey     = ""
 

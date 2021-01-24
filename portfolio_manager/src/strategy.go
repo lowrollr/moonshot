@@ -42,7 +42,7 @@ func initAtlas(_coins *[]string) *Atlas {
 //I know it's not a float but dunno how to do the data rn
 func (atlas *Atlas) Process(data *AtlasData, coinName string) {
 	if atlas.stop_loss[coinName] > 0 {
-		atlas.stop_loss[coinName] = maxFloat32(atlas.stop_loss[coinName], data.Close * 0.995)
+		atlas.stop_loss[coinName] = maxFloat32(atlas.stop_loss[coinName], data.Close*0.995)
 	}
 	return
 }
@@ -58,8 +58,8 @@ func (atlas *Atlas) CalcEnter(data *AtlasData, coinName string) bool {
 	//so have to make prediction with all data inside here... features also have to be here?
 	//when should features be computed? Not every time right?
 	prediction := true
-	
-	if prediction && data.Close < data.SMA * 0.97 {
+
+	if prediction && data.Close < data.SMA*0.97 {
 		atlas.limit_up[coinName] = data.Close * 1.005
 		atlas.looking_to_enter[coinName] = true
 	}
@@ -67,7 +67,7 @@ func (atlas *Atlas) CalcEnter(data *AtlasData, coinName string) bool {
 }
 
 func (atlas *Atlas) CalcExit(data *AtlasData, coinName string) bool {
-	amntAbove := maxFloat32(-0.015, data.RateOfChange / 2 )
+	amntAbove := maxFloat32(-0.015, data.RateOfChange/2)
 	if data.Close > data.SMA*(1+amntAbove) {
 		atlas.stop_loss[coinName] = maxFloat32(atlas.stop_loss[coinName], data.Close*0.995)
 	}
