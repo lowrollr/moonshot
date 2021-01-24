@@ -61,7 +61,6 @@ class Benchmark(Strategy):
             
             self.stop_loss[x] = 0.0
             
-            self.profit_goal[x] = 0.0
             
         # wanna test some indicators?
         # do that here 

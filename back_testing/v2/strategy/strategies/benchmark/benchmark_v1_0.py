@@ -9,13 +9,12 @@ from v2.strategy.strategies.strategy import Strategy
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.ultimate_oscillator import UltimateOscillator
 from v2.strategy.indicators.bollinger_bands import BollingerBands
-from v2.strategy.indicators.mmroc import MinMaxRateOfChange
 from v2.strategy.indicators.roc import RateOfChange
 from v2.strategy.indicators.rsi import RSI
 from v2.strategy.indicators.cmo import CMO
 from v2.strategy.indicators.sma import SMA
+from v2.strategy.indicators.roc import RateOfChange
 import numpy as np
-
 
 '''
 CLASS: Benchmark
@@ -34,15 +33,24 @@ class Benchmark(Strategy):
     '''
     def __init__(self, coin_names, entry_models=[], exit_models=[]):
         super().__init__(entry_models, exit_models)
-        sma_for_mmroc = SMA(_params=[Param(0,0,0,'period', 10)], _value='close', _appended_name='for_mmroc')
-        sma_goal = SMA(_params=[Param(0,0,0,'period',150)], _value='close')
-        sma_for_roc_short = SMA(_params=[Param(0,0,0,'period',30)], _value='close', _appended_name='for_short')
-        roc = RateOfChange(_params=[Param(0,0,0,'period',1440)], _value='SMA_for_mmroc')
-        roc_shorter = RateOfChange(_params=[Param(0,0,0,'period',360)], _value='SMA_for_short', _appended_name='shorter')
+        sma_90 = SMA(_params=[Param(0,0,0,'period',90)], _value='close', _appended_name='90')
+        sma_120 = SMA(_params=[Param(0,0,0,'period',120)], _value='close', _appended_name='120')
+        sma_150 = SMA(_params=[Param(0,0,0,'period',150)], _value='close', _appended_name='150')
+        sma_180 = SMA(_params=[Param(0,0,0,'period',180)], _value='close', _appended_name='180')
+        sma_210 = SMA(_params=[Param(0,0,0,'period',210)], _value='close', _appended_name='210')
+        sma_240 = SMA(_params=[Param(0,0,0,'period',240)], _value='close', _appended_name='240')
+        sma_270 = SMA(_params=[Param(0,0,0,'period',270)], _value='close', _appended_name='270')
+        sma_300 = SMA(_params=[Param(0,0,0,'period',300)], _value='close', _appended_name='300')
+        sma_330 = SMA(_params=[Param(0,0,0,'period',330)], _value='close', _appended_name='330')
+        sma_360 = SMA(_params=[Param(0,0,0,'period',360)], _value='close', _appended_name='360')
+        
+        roc = RateOfChange(_params=[Param(0,0,0,'period',30)], _value='close')
+        
+        
         # boll_bands_long = BollingerBands(_params=[Param(0,0,0,'period',3000)], _value='close', _appended_name='long')
-        self.algo_indicators.extend([sma_goal, sma_for_mmroc, sma_for_roc_short, roc, roc_shorter])
+        self.algo_indicators.extend([sma_90, sma_120, sma_150, sma_180, sma_210, sma_240, sma_270, sma_300, sma_330, sma_360, roc])
 
-
+        self.sma_period = dict()
         # Algorithm-centered class variables
         self.looking_to_enter = dict()
         
@@ -54,6 +62,7 @@ class Benchmark(Strategy):
         self.profit_goal = dict()
         
         for x in coin_names:
+            self.sma_period[x] = 120
             self.looking_to_enter[x] = False
             
             
@@ -86,7 +95,7 @@ class Benchmark(Strategy):
         self.looking_to_enter[coin_name] = False
         time = data.time
         prediction = self.entry_models[1][f'{coin_name}_results'][time]
-        if prediction and data.close < data.SMA *  (0.97 ):
+        if prediction and data.close < getattr(data, f'SMA_{self.sma_period[coin_name]}') * (0.97):
             
             self.limit_up[coin_name] = data.close * 1.005
             self.looking_to_enter[coin_name] = True
@@ -95,14 +104,23 @@ class Benchmark(Strategy):
 
     def calc_exit(self, data, coin_name):
         
-        amnt_above = max(-0.01, 2 * data.RateOfChange_shorter)
-        if data.close > data.SMA * (1 + amnt_above):
+        if data.close > getattr(data, f'SMA_{self.sma_period[coin_name]}'):
             
             self.stop_loss[coin_name] = max(self.stop_loss[coin_name], data.close * 0.995)
        
         if data.close < self.stop_loss[coin_name]:
             self.stop_loss[coin_name] = 0.0
-            
+            if data.RateOfChange < 0:
+                self.sma_period[coin_name] = 90
+            elif data.RateOfChange < 0.02:
+                self.sma_period[coin_name] = max(90, self.sma_period[coin_name] - 30)
+            elif data.RateOfChange < 0.04:
+                pass
+            else:
+                self.sma_period[coin_name] = min(360, self.sma_period[coin_name] + 30)
             return True
         
         return False
+        
+    # def getSMABucket(self, variance):
+    #     if 

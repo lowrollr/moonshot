@@ -293,7 +293,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
-def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, coin_weights, indicators_to_graph, fees):
+def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, coin_weights, indicators_to_graph, fees, buy_signals, sell_signals):
     doc = dominate.document(title='Portfolio Manager Report')
 
     coin_stats = dict()
@@ -313,9 +313,10 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
             coin_stats[name]["Asset RateOfChange (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
             fig = make_subplots()
             fig.update_layout(template='plotly_dark', title_text=f'{name}')
-            fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name=name))
+            fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name='Close Price'))
             fig.add_trace(go.Scatter(x=[a[0] for a in entries[name]], y=[a[1] for a in entries[name]], name='Entry', mode='markers', marker_color='aqua'))
             fig.add_trace(go.Scatter(x=[a[0] for a in exits[name]], y=[a[1] for a in exits[name]], name='Exit', mode='markers', marker_color='purple'))
+            
             coin_plots[name] = plot(fig, include_plotlyjs=False, output_type='div')
     
     fig = make_subplots()

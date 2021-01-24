@@ -407,6 +407,8 @@ class Trading:
         coin_allocations = dict()
         portfolio_value = []
         coin_info = dict()
+        buy_signals = dict()
+        sell_signals = dict()
 
         for coin in coins:
             coin_info[coin] = dict()
@@ -414,7 +416,6 @@ class Trading:
             coin_info[coin]['in_position'] = False
             coin_info[coin]['enter_value'] = 0.0
             coin_info[coin]['cash_invested'] = 0.0
-            coin_info[coin]['weight'] = 1/len(coins)
             coin_info[coin]['last_start_time'] = 0
             coin_info[coin]['recent_trade_results'] = deque(maxlen=history_size)
             coin_info[coin]['allocation'] = 0.0
@@ -426,8 +427,11 @@ class Trading:
             exits[coin] = []
             kelly_values[coin] = []
             coin_allocations[coin] = []
+            buy_signals[coin] =  []
+            sell_signals[coin] = []
 
         coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
+        
         
         with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
             for time in all_timestamps:
@@ -448,12 +452,14 @@ class Trading:
                             
                             if strategy.calc_entry(row, coin):
                                 enter_signals.append(coin)
+                                buy_signals[coin].append((row.time, row.close))
 
                         else:
                             if time in start_times:
                                 pass
 
                             if strategy.calc_exit(row, coin):
+                                sell_signals[coin].append((row.time, row.close))
                                 exits[coin].append((row.time, row.close))
                                 exited_position = True
                                 cash += utils.exitPosition(coin_info[coin], self.fees, time)
@@ -542,7 +548,7 @@ class Trading:
                 cash += utils.exitPosition(coin_info[coin], self.fees, time)
 
         print(f'Cash: {cash}')
-        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.fees)
+        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.fees, buy_signals, sell_signals)
 
     '''         
     ARGS:
@@ -613,7 +619,8 @@ class Trading:
                 dataset = pd.concat(dataset_chunks)
                 dataset.dropna(inplace=True)
                 dataset.reset_index(inplace=True, drop=True)
-                dataset = dataset[new_features + ['close', 'time', 'open', 'high', 'low']]
+                dataset['predict_buy'] = 0
+                dataset = dataset[new_features + ['close', 'time', 'open', 'high', 'low', 'predict_buy']]
                 
                 self.df_groups[i][0] = []
                 coin_datasets.append((dataset_name, dataset))
