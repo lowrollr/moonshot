@@ -437,7 +437,7 @@ RETURN:
 WHAT: 
     -> calculates the Kelly Criterion value for a specified asset given it's recent trade history
     -> https://www.investopedia.com/articles/trading/04/091504.asp
-    
+
 ''' 
 def calcKellyPercent(info, default_amnt=0.05, low_amnt=0.01):
     trades = info['recent_trade_results']
@@ -454,3 +454,29 @@ def calcKellyPercent(info, default_amnt=0.05, low_amnt=0.01):
                 return low_amnt
         
     return default_amnt
+
+'''
+
+
+
+'''
+def getCurrentReturn(info):
+    return (info['last_close_price'] - info['enter_value'])/info['enter_value']
+
+def enterPosition(info, cash_allocated, fees, time):
+    info['cash_invested'] = cash_allocated * (1 - fees)
+    info['enter_value'] = info['last_close_price']
+    info['in_position'] = True
+    info['last_start_time'] = time
+
+
+
+def exitPosition(info, fees, time):
+    info['in_position'] = False
+    new_cash = (1-fees) * ((info['cash_invested'] / info['enter_value']) * info['last_close_price'])
+    profit = (new_cash / ((info['cash_invested'] * (1 + fees)))) - 1
+    info['recent_trade_results'].append((profit, (info['last_start_time'], time)))
+    info['cash_invested'] = 0.0
+
+
+    return new_cash
