@@ -507,6 +507,8 @@ class Trading:
                                 cash -= cash_allocated
                                 utils.enterPosition(coin_info[coin], cash_allocated, self.fees, time)
                                 entries[coin].append((time, coin_info[coin]['last_close_price']))
+
+
                                 
                 # update weights
                 if exited_position:
