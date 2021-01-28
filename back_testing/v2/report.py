@@ -351,6 +351,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
 
     avg_asset_roc = round((sum([coin_stats[x]["Asset RateOfChange (%)"] for x in coin_stats])/len(coin_stats)), 1)
     portfolio_roc = round((port_values[-1]*100 - port_values[0]*100)/(port_values[0]), 1)
+    total_trades = int(sum(x for x["Total Trades"] in coin_stats))
 
     with doc:
         with div():
@@ -362,6 +363,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 tr().add(td("Exit Portfolio value: ")).add(td(round(port_values[-1], 2)))
                 tr().add(td("Portfolio RateOfChange (%)")).add(td(str(portfolio_roc) + "%"))
                 tr().add(td("Asset Avg. RateOfChange (%)")).add(td(str(avg_asset_roc) + "%"))
+                tr().add(td("Total Trades: ")).add(td(str(total_trades)))
 
             td(raw(allocation_plot))
             td(raw(weights_plot))
