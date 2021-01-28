@@ -18,6 +18,7 @@ import sys
 import multiprocessing as mp
 from collections import deque
 from itertools import repeat
+import csv
 
 '''
 ARGS:
@@ -232,28 +233,26 @@ def findParams(params, params_to_find):
 
 '''
 ARGS:
-    -> quote_currencies ([String]): list of quote currencies
-    -> frequncy (String): string representation of frequency of the data
+    -> data_source (String): source directory to retrieve datasets from
 RETURN:
-    -> list of strings of filenames to open
+    -> base_currencies ([String]): list of strings corresponding to coin datasets to retrive
 WHAT:
-    -> checks to see which files meet the specification and that are not empty
-TODO:
-    -> rewrtie to account for dataset refactor
+    -> retrieves all currencies from a certain data source
 '''
-# def retrieveAll(quote_currencies, frequency):
-#     base_currencies = []
-#     all_files = os.listdir("historical_data/")
-#     for filename in all_files:
-#         for q in quote_currencies:
-#             file_str = str(q) + "_" + str(frequency) + ".csv"
-#             if re.match(r'(\w+)'+ file_str, filename):
-#                 match = re.match(r'(\w+)'+ file_str, filename)
-#                 if os.stat("historical_data/" + match[0]).st_size == 0:
-#                     continue
-#                 base_currencies.append(match[0])
+def retrieveAll(starting_time=0, data_source='binance', freq='1m'):
+    base_currencies = []
+    data_dir = f"./historical_data/{data_source}/"
+    all_files = os.listdir(data_dir)
+    for filename in all_files:
+        if os.path.isdir(f'{data_dir}{filename}'):
+            
+            with open(f'{data_dir}{filename}/{freq}/{filename}USDT-{freq}-data_chunk000001.csv') as f:
+                r=list(csv.reader(f))
+                first_time = r[1][1]
+                if int(first_time) <= starting_time:
+                    base_currencies.append(filename)
 
-#     return base_currencies
+    return base_currencies
 
 '''
 ARGS:

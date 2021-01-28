@@ -87,8 +87,8 @@ class Trading:
         self.df_groups = []
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
-        if self.currencies == "all":
-            self.currencies = utils.retrieveAll()
+        if self.currencies[0] == "all":
+            self.currencies = list(set(utils.retrieveAll(self.timespan[0], self.data_source)).difference(set(self.currencies[1:])))
         if get_data:
             self.getDatasets()
 
