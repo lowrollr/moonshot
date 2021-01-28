@@ -135,17 +135,20 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
                 plots.append((plot_as_div, movement_stats))
                 bar()
 
+    profit_arr = [x for x in overall_profits if x > 0]
+    loss_arr = [x for x in overall_profits if x < 0]
+
     # calculate metrics for the overall performance
     overall_stats['Total Trades'] = len(overall_hold_times)
     overall_stats['Average Hold Time'] = str(round(mean(overall_hold_times), 2)) + ' min'
     overall_stats['Maximum Hold Time'] = str(round(max(overall_hold_times), 2)) + ' min'
     overall_stats['Minimum Hold Time'] = str(round(min(overall_hold_times), 2)) + ' min'
     overall_stats['Average Profit (%)'] = str(round(mean(overall_profits), 2)) + '%'
+    overall_stats['Profit Average (%)'] = round(mean(profit_arr), 2)
+    overall_stats['Loss Average (%)'] = round(mean(loss_arr), 2)
     overall_stats['Max Profit (%)'] = str(round(max(overall_profits), 2)) + '%'
     overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits), 2)) + '%'
-    overall_stats['Percentage of Trades Profitable'] = str(round(sum([x > fees for x in overall_profits]) / len(overall_profits) * 100, 2)) + '%'
-    
-
+    overall_stats['Percentage of Trades Profitable'] = round(sum([x > fees for x in overall_profits]) / len(overall_profits) * 100, 2)
     
     return (plots, overall_stats)
 
@@ -170,7 +173,6 @@ def generate_movement_page(plot_div, plot_stats, name, movement_num):
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
-    
     with doc:
         with div():
             attr(cls='body')
@@ -311,6 +313,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 movement_num += 1
             
             coin_stats[name]["Asset RateOfChange (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
+            # coin_stats[name]["Profit Average(%)"]
             fig = make_subplots()
             fig.update_layout(template='plotly_dark', title_text=f'{name}')
             fig.add_trace(go.Scatter(x=dataset['time'], y=dataset['close'], name='Close Price'))
@@ -356,9 +359,15 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
     avg_asset_roc = round((sum([coin_stats[x]["Asset RateOfChange (%)"] for x in coin_stats])/len(coin_stats)), 1)
-    # profit_avg = round((sum([])))
+    # profit_avg = round((sum([coin_stats[x]["Average Profit(%)"] for x in coin_stats if coin_stats[x]["Average Profit(%)"] > 0])))
+    # loss_avg = round((sum([coin_stats[x]["Average Profit(%)"] for x in coin_stats if coin_stats[x]["Average Profit(%)"] < 0])))
     portfolio_roc = round((port_values[-1]*100 - port_values[0]*100)/(port_values[0]), 1)
-    total_trades = int(sum([coin_stats[x]["Total Trades"] for x in coin_stats]))
+    total_trades =  int(sum([coin_stats[x]["Total Trades"] for x in coin_stats]))
+    #
+    avg_profit_avg = round(sum([float(coin_stats[x]['Percentage of Trades Profitable'])/100 * float(coin_stats[x]["Total Trades"]) * float(coin_stats[x]["Profit Average (%)"]) for x in coin_stats])/
+    sum([float(coin_stats[x]['Percentage of Trades Profitable'])/100 * int(coin_stats[x]['Total Trades']) for x in coin_stats]), 2)
+    avg_loss_avg = round(sum([float(1 - coin_stats[x]['Percentage of Trades Profitable'])/100 * float(coin_stats[x]["Total Trades"]) * float(coin_stats[x]["Loss Average (%)"]) for x in coin_stats])/
+    sum([float(1 - coin_stats[x]['Percentage of Trades Profitable'])/100 * int(coin_stats[x]['Total Trades']) for x in coin_stats]), 2)
 
     with doc:
         with div():
@@ -371,6 +380,8 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 tr().add(td("Portfolio RateOfChange (%)")).add(td(str(portfolio_roc) + "%"))
                 tr().add(td("Asset Avg. RateOfChange (%)")).add(td(str(avg_asset_roc) + "%"))
                 tr().add(td("Total Trades: ")).add(td(str(total_trades)))
+                tr().add(td("Total Average of Average Profit: ")).add(td(str(avg_profit_avg) + "%"))
+                tr().add(td("Total Average of Average Loss: ")).add(td(str(avg_loss_avg) + "%"))
 
             td(raw(allocation_plot))
             td(raw(weights_plot))
@@ -384,14 +395,15 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                     for stat in coin_stats[coin]:
                         row = tr()
                         row.add(td(stat))
-                        if stat == "Asset RateOfChange (%)":
-                            row.add(td(str(round(coin_stats[coin][stat], 1)) + "%"))
+                        if stat == "Percentage of Trades Profitable" or stat == "Asset RateOfChange (%)" or stat == "Profit Average (%)" or stat == "Loss Average (%)":
+                            row.add(td(str(round(coin_stats[coin][stat], 2)) + "%"))
                         else:
                             row.add(td(coin_stats[coin][stat]))
-                h1(f'{coin} Movements')
+                h1(f'{coin} Movements', onclick=f"revealTable({coin_num})")
                 report_list = ul()
 
-                with table(id=f"ind_movements_data{coin_num}").add(tbody()):
+                with table(style="display: none", id=f"ind_movements_data{coin_num}").add(tbody()):
+                    attr(cls="table_movements")
                     row = tr()
                     row.add(td('Movement'))
                     for i in range (len(stat_types)):
