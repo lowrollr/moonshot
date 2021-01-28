@@ -350,9 +350,9 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
     avg_asset_roc = round((sum([coin_stats[x]["Asset RateOfChange (%)"] for x in coin_stats])/len(coin_stats)), 1)
-    # profit_avg = round((sum()))
+    profit_avg = round((sum([])))
     portfolio_roc = round((port_values[-1]*100 - port_values[0]*100)/(port_values[0]), 1)
-    total_trades = int(sum(coin_stats[x]["Total Trades"] for x in coin_stats))
+    total_trades = int(sum([coin_stats[x]["Total Trades"] for x in coin_stats]))
 
     with doc:
         with div():
