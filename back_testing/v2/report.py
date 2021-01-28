@@ -295,7 +295,7 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
-def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, coin_weights, indicators_to_graph, fees, buy_signals, sell_signals):
+def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, coin_weights, indicators_to_graph, fees, buy_signals, sell_signals, volume_bars):
     doc = dominate.document(title='Portfolio Manager Report')
 
     coin_stats = dict()
@@ -322,11 +322,17 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
             
             coin_plots[name] = plot(fig, include_plotlyjs=False, output_type='div')
     
-    fig = make_subplots()
+    time_amount = volume_bars[-1][0] - volume_bars[0][0]
+    num_bars = len(volume_bars)
+
+    bar_width = int(0.9 * (time_amount / num_bars))
+
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.update_layout(template='plotly_dark', title_text='Portfolio Growth')
     times = [x[0] for x in portfolio_growth]
     port_values = [x[1] for x in portfolio_growth]
-    fig.add_trace(go.Scatter(x=times, y=port_values))
+    fig.add_trace(go.Scatter(x=times, y=port_values, name='Portfolito Value'), secondary_y=False)
+    fig.add_trace(go.Bar(x=[a[0] for a in volume_bars], y=[a[1] for a in volume_bars], name='Total Trade Volume', opacity=0.25, marker_color='grey', width=bar_width), secondary_y=True)
     growth_plot = plot(fig, include_plotlyjs=False, output_type='div')
 
     fig = make_subplots()

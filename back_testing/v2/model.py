@@ -87,6 +87,8 @@ class Trading:
         self.df_groups = []
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
+        if self.currencies == "all":
+            self.currencies = utils.retrieveAll()
         if get_data:
             self.getDatasets()
 
@@ -391,6 +393,7 @@ class Trading:
         coins = []
         datasets = dict()
 
+        volume_bars = []
         for name, dataset in coin_datasets:
             coins.append(name)
             datasets[name] = dataset
@@ -432,9 +435,14 @@ class Trading:
 
         coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
         
-        
+        next_bar_timestamp = all_timestamps[0] + (1440 * 60000)
+        trade_count = 0
         with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
             for time in all_timestamps:
+                if time >= next_bar_timestamp:
+                    volume_bars.append((time - (720 * 60000), trade_count))
+                    next_bar_timestamp += (1440 * 60000)
+                    trade_count = 0
                 enter_signals = []
                 exited_position = False
                 
@@ -463,6 +471,7 @@ class Trading:
                                 exits[coin].append((row.time, row.close))
                                 exited_position = True
                                 cash += utils.exitPosition(coin_info[coin], self.fees, time)
+                                trade_count += 1
       
                 if enter_signals:
                        
@@ -495,6 +504,7 @@ class Trading:
                                     exited_position = True
                                     exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
                                     cash +=  utils.exitPosition(coin_info[coin_c], self.fees, time)
+                                    trade_count += 1
                                     
                                 else:
                                     # partially close the position, but keep the reamining capital that's not needed in the position
@@ -507,6 +517,7 @@ class Trading:
                                 cash -= cash_allocated
                                 utils.enterPosition(coin_info[coin], cash_allocated, self.fees, time)
                                 entries[coin].append((time, coin_info[coin]['last_close_price']))
+                                
 
 
                                 
@@ -548,9 +559,10 @@ class Trading:
             if coin_info[coin]['in_position']:
                 exits[coin].append((time, coin_info[coin]['last_close_price']))
                 cash += utils.exitPosition(coin_info[coin], self.fees, time)
-
+                trade_count += 1
+        volume_bars.append((time - (720 * 60000), trade_count))
         print(f'Cash: {cash}')
-        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.fees, buy_signals, sell_signals)
+        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.fees, buy_signals, sell_signals, volume_bars)
 
     '''         
     ARGS:
