@@ -46,3 +46,5 @@ back_testing/reports/*
 
 #ignore changes to config file
 back_testing/config.config
+
+scratch/

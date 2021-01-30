@@ -20,6 +20,8 @@ for x in gaps:
     chunk_size = x - cur_chunk_start
     if chunk_size > good_amount:
         chunk = data.iloc[cur_chunk_start:x+1][['close_time', 'open', 'high', 'low', 'close', 'volume']]
+        if not os.path.isdir(f'../binance/{coin}/1m/'):
+            os.makedirs(f'../binance/{coin}/1m/')
         chunk.to_csv(f'../binance/{coin}/1m/{coin}USDT-1m-data_chunk' + '0'*(6 -len(str(chunk_num))) + str(chunk_num) + '.csv')
         chunk_num += 1
     cur_chunk_start = x + 2

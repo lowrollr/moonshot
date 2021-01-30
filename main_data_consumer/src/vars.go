@@ -10,17 +10,26 @@ WHAT:
 package main
 
 import (
+	"bufio"
+	"net"
 	"os"
-
-	"github.com/jinzhu/gorm"
 )
 
 var (
 	dbType    = os.Getenv("DBTYPE")
 	db_string = os.Getenv("DBTYPEURL") + "://" + os.Getenv("DBUSER") + ":" + os.Getenv("DBPASS") + "@" + os.Getenv("DBNETLOC") + ":" + os.Getenv("DBPORT") + "/" + os.Getenv("DBNAME") + "?sslmode=disable"
 
-	Dumbo     = &dumbo{}
-	global_db *gorm.DB
-
 	shortCandleStickData map[string]*OHCLData
+
+	allClients map[*Client]int
+	Dumbo *dumbo
 )
+
+type Client struct {
+	// incoming chan string
+	outgoing   chan string
+	reader     *bufio.Reader
+	writer     *bufio.Writer
+	conn       net.Conn
+	start      bool
+}

@@ -16,9 +16,12 @@ var (
 	apiKey    = os.Getenv("BINANCEAPIKEY")
 	secretKey = os.Getenv("BINANCESECRETKEY")
 
-	coins = []string{}
+	domainToUrl = map[string]string {
+		"main_data_consumer" : "main_data_consumer:" + os.Getenv("DATAPORT"),
+		// "beverly_hills" : "beverly_hills:" + os.Getenv("BEVPORT"),
+	}
 	
-	binanceClinet = binance.Client{}
+	binanceClient = binance.Client{}
 	listenKey     = ""
 
 	CONPORT = ":" + string(os.Getenv("SERVERPORT"))

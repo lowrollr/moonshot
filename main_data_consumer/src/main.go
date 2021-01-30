@@ -9,8 +9,7 @@ WHAT:
 package main
 
 import (
-	"fmt"
-	"strings"
+	"time"
 )
 
 /*
@@ -25,28 +24,22 @@ import (
         -> General review of this code since it is pretty critical
 */
 func main() {
-	fmt.Println("Connecting to database")
+	time.Sleep(5 * time.Second)
+	Dumbo = &dumbo{}
+	dataConsumer := DataConsumer{}
 
-	var err error
-	global_db, err = Dumbo.ConnectDB(db_string, dbType)
-	if err != nil {
-		//if we can't connect to db then panic and stop
-		panic(err)
-	}
-	fmt.Println("Connected to database successfully")
+	dataConsumer.SyncSetUp()
 
-	fmt.Println("Creating tables in database")
-	err = Dumbo.AutoMigrate()
-	if err != nil {
-		panic(err)
-	}
+	dataConsumer.ServerListen()
 
-	coins := Dumbo.SelectCoins(-1)
+	// dataConsumer.StartConsume()
 
-	fmt.Println("Coins collected: " + strings.Join(*coins, " "))
+	// coins := Dumbo.SelectCoins(-1)
 
-	InitializeShortCandleStick(coins)
+	// fmt.Println("Coins collected: " + strings.Join(*coins, " "))
 
-	fmt.Println("Consuming Data...")
-	ConsumeData(coins)
+	// InitializeShortCandleStick(coins)
+
+	// fmt.Println("Consuming Data...")
+	// ConsumeData(coins)
 }

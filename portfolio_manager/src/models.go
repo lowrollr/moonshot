@@ -31,13 +31,3 @@ type CryptoNames struct {
 	CoinAbv string `gorm:"Type:varchar(7);not null;unique;primary key"`
 	CoinName   string `gorm:"Type:varchar(50); not null;"`
 }
-
-type PortfolioManager struct {
-	gorm.Model
-	CoinAbv          string `gorm:"Type:varchar(7);not null;"`
-	CoinAmount    float32	`gorm:"Type:NUMERIC(8,2);not null;"`
-	Delta         float32	`gorm:"Type:NUMERIC(8,2);not null;"`
-	WhenEntered   int64		`gorm:"Type:money;not null;"`
-	StrategyUsing string	`gorm:"Type:varchar(20);not null;unique;primary key"`
-	StopLoss      float32	`gorm:"Type:money;not null;"`
-}

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"net"
+
 	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
-	"sort"
-	"math"
+	// "sort"
+	// "math"
 )
 
 type CoinInfo struct {
@@ -21,120 +23,126 @@ type CoinInfo struct {
 }
 
 type PortfolioManager struct {
-	coinDict map[string] *CoinInfo
-	coins *[]string
-	strat *Strategy
-	free_cash float32
-	portfolio_value float32
+	strat             *interface{}
+	clientConnections map[string]*net.Conn
+	coinDict          map[string]*CoinInfo
+	coins             *[]string
+	free_cash         float32
+	portfolio_value   float32
 }
 
 type EnterSignal struct {
-	coin string
+	coin   string
 	profit float32
 }
 
-func initPM(coins *[]string, strat *Strategy, starting_cash float32) *PortfolioManager {
-	coinInfoDict := make(map[string]CoinInfo)
-	for _, coin := range coins {
+func initPM(starting_cash float32) *PortfolioManager {
+	//starting cash commes from binance init
+	mapDomainConnection := startClient()
+	coins := getCoins(mapDomainConnection[domainToUrl["main_data_consumer"]])
+
+	coinInfoDict := make(map[string]*CoinInfo)
+	for _, coin := range *coins {
 		coinInfoDict[coin] = &CoinInfo{
-			last_close_price: 0.0,
+			last_close_price:     0.0,
 			in_position:          false,
 			enter_value:          0.0,
 			cash_invested:        0.0,
 			last_start_time:      0,
 			recent_trade_results: deque.New(),
-			allocation: 0.0,
-			avg_profit: 0.0,
-			win_rate: 0.0,
-			avg_win: 0.0,
-			avg_loss: 0.0
+			allocation:           0.0,
+			avg_profit:           0.0,
+			win_rate:             0.0,
+			avg_win:              0.0,
+			avg_loss:             0.0,
 		}
 	}
-	pm := &PortfolioManager{coinInfo, coins, strat, starting_cash, starting_cash}
+	pm := &PortfolioManager{clientConnections: mapDomainConnection,
+		coinDict:        coinInfoDict,
+		coins:           coins,
+		free_cash:       starting_cash,
+		portfolio_value: starting_cash,
+	}
 	return pm
 }
 
-func (pm PorfolioManager) PMAction(coin string, data *CandlestickData) {
-	recent_trades_maxlen := 20
-	strat := pm.strat
-	info := pm.coinDict[coin]
-	strat_data := strat.ProcessData(data)
-	strat.Process(strat_data)
-	enter_singals := []EnterSignal{}
-	if info.in_position {
-		if strat.CalcEnter(strat_data, coin){
-			append(enter_singals, EnterSignal{coin, info.avg_profit})
-		}
-
-	}
-	else{
-		if strat.CalcExit(strat_data, coin){
-			pm.cash += exitPosition(coin)
-		}
-	}
-	
-	sort.Slice(enter_singals, func(i, j int) bool {
-		return enter_signals[i].avg_profit > enter_signals[j].avg_profit
-	})
-	for i, sig := range enter_signals {
-		allocation := CalcKellyPercent(pm.coinDict[sig.coin], recent_trades_maxlen)
-		// somewhere we need to update the portfolio value 
-		cash_allocated := allocation * (pm.portfolio_value)
-		if cash_allocated > pm.cash {
-			cash -= enterPosition(coin, cash_allocated)
-
-		}
-		else {
-
-		}
-	}
-	
-	
-	
+func (pm *PortfolioManager) SetStrategy(strat interface{}) {
+	//test if strat has the methods we need.
+	// -> calcentry etc.
 }
 
+// func (pm *PortfolioManager) PMAction(coin string, data *CandlestickData) {
+// 	recent_trades_maxlen := 20
+// 	strat := pm.strat
+// 	info := pm.coinDict[coin]
+// 	strat_data := strat.ProcessData(data)
+// 	strat.Process(strat_data)
+// 	enter_singals := []EnterSignal{}
+// 	if info.in_position {
+// 		if strat.CalcEnter(strat_data, coin){
+// 			append(enter_signals, EnterSignal{coin, info.avg_profit})
+// 		}
+
+// 	} else {
+// 		if strat.CalcExit(strat_data, coin){
+// 			pm.cash += exitPosition(coin)
+// 		}
+// 	}
+
+// 	sort.Slice(enter_signals, func(i, j int) bool {
+// 		return enter_signals[i].avg_profit > enter_signals[j].avg_profit
+// 	})
+// 	for i, sig := range enter_signals {
+// 		allocation := CalcKellyPercent(pm.coinDict[sig.coin], recent_trades_maxlen)
+// 		// somewhere we need to update the portfolio value
+// 		cash_allocated := allocation * (pm.portfolio_value)
+// 		if cash_allocated > pm.cash {
+// 			cash -= enterPosition(coin, cash_allocated)
+
+// 		} else {
+
+// 		}
+// 	}
+
+// }
 
 func CalcKellyPercent(info *CoinInfo, maxlen int) float32 {
-	low_amnt := 0.01
+	// low_amnt := 0.01
 	default_amnt := 0.05
-	if info.trades.Size() == maxlen {
-		if info.avg_win && info.avg_loss {
-			kelly := info.win_rate - ((1 - info.win_rate) /(info.avg_win/math.Abs(info.avg_loss)))
-			if kelly > 0 {
-				return kelly
-			} 
-			else {
-				return low_amnt
-			}
-		}
+	if info.recent_trade_results.Size() == maxlen {
+		// if info.avg_win && info.avg_loss {
+		// 	kelly := info.win_rate - ((1 - info.win_rate) /(info.avg_win/math.Abs(info.avg_loss)))
+		// 	if kelly > 0 {
+		// 		return kelly
+		// 	} else {
+		// 		return float32(low_amnt)
+		// 	}
+		// }
 	}
-
-	return default_amnt
+	return float32(default_amnt)
 }
 
 func (pm PortfolioManager) getPositions() []*CoinInfo {
-	positions := []*CoinInfo
-	for i, coin in pm.coins {
-		
-	}
+	positions := []*CoinInfo{}
+	// for i, coin := range *pm.coins {
+
+	// }
 	return positions
 }
 
-func enterPosition(coin string, cash_allocated float32) float32{
+func enterPosition(coin string, cash_allocated float32) float32 {
 	//enter the position in coin
 
-	// return the amount of cash we actually allocated to the position, assuming it could be 
+	// return the amount of cash we actually allocated to the position, assuming it could be
 	// slightly different than the amount of cash we intended to allocate
-	return 
+	return 0.0
 }
 
-func exitPosition(coin string) float32{
+func exitPosition(coin string) float32 {
 	//exit the position in coin
-
-
 
 	new_cash := 0.0
 
 	// return the resultant cash we acquire from exiting the position
-	return new_cash
+	return float32(new_cash)
 }

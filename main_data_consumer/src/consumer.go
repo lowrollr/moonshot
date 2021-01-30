@@ -16,7 +16,7 @@ import (
 	"time"
 	"os/exec"
 
-	"github.com/adshao/go-binance/v2"
+	"github.com/ross-hugo/go-binance/v2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -79,7 +79,7 @@ func ErrorTradeHandler(err error) {
 */
 func waitFunc() {
 	for {
-		time.Sleep(5 * time.Minute)
+		time.Sleep(1 * time.Second)
 		printNumSockets()
 	}
 }
@@ -102,11 +102,12 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 	}
 	times_per_min := 3
 	// store the event in database
-	err := Dumbo.StoreCryptoBidAsk(event)
-	if err != nil {
-		log.Warn("Was not able to store order data with error:" + err.Error())
-		printNumSockets()
-	}
+	
+	// err := Dumbo.StoreCryptoBidAsk(event)
+	// if err != nil {
+	// 	log.Warn("Was not able to store order data with error:" + err.Error())
+	// 	printNumSockets()
+	// }
 	// sleep to get maximum efficiency from socket
 	EfficientSleep(times_per_min, now, time.Minute)
 }
@@ -122,19 +123,14 @@ var tradeOrderDataConsumer func(event *binance.WsPartialDepthEvent) = func(event
 */
 var tradeKlineDataConsumer func(*binance.WsKlineEvent) = func(event *binance.WsKlineEvent) {
 	now := time.Now()
-	if now.Minute()%3 == 2 {
-		binance.WebsocketKeepalive = true
-	} else if now.Minute()%3 == 1 {
-		binance.WebsocketKeepalive = false
-	}
 	//Time to wait: 1 / 1 minute
 	times_per_min := 1
 	// store the event in database
+	
 	err := Dumbo.StoreCryptoKline(event)
 	if err != nil {
 		log.Warn("Was not able to store kline data with error: " + err.Error())
 		printNumSockets()
-		
 	}
 	// sleep to get maximum efficiency from socket
 	EfficientSleep(times_per_min, now, time.Minute)
@@ -185,11 +181,11 @@ var singularTradeDataConsumer func(*binance.WsTradeEvent) = func(event *binance.
 		shortCandleStickData[symbol].Volume += float32(volume)
 
 		if now.Second()%20 == 0 {
-			err := Dumbo.StoreCryptosCandle(shortCandleStickData)
-			if err != nil {
-				log.Warn("Was not able to store crypto information " + err.Error())
-				log.Warn(shortCandleStickData)
-			}
+			// err := Dumbo.StoreCryptosCandle(shortCandleStickData)
+			// if err != nil {
+			// 	log.Warn("Was not able to store crypto information " + err.Error())
+			// 	log.Warn(shortCandleStickData)
+			// }
 		}
 	}
 	ZeroShortCandleStick(symbol)
@@ -284,6 +280,8 @@ func TradeGoRoutine(symbol string) {
 func ConsumeData(coins *[]string) {
 	// binance.WebsocketKeepalive = true
 	binance.WebsocketTimeout = time.Minute * 3
+
+	fmt.Println(binance.WebsocketTimeout)
 
 	kline_interval := "1m"
 	order_book_depth := "20"

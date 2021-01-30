@@ -13,8 +13,8 @@ services:
   portfolio_manager:
     build: ./portfolio_manager
     depends_on:
-      - crypto_db
-      - strategy_manager
+      # - beverly_hills
+      - main_data_consumer
     restart: "on-failure"
     env_file: portfolio_manager/.env
     ports:
@@ -23,13 +23,15 @@ services:
       - apparmor:unconfined
       - seccomp:unconfined
 
-  strategy_manager:
-    build: ./strategy_manager
+  beverly_hills:
+    build: ./beverly_hills
     depends_on: 
       - crypto_db
       - main_data_consumer
     restart: "on-failure"
-    env_file: strategy_manager/.env
+    env_file: beverly_hills/.env
+    ports:
+      - 1234:1234
 
   main_data_consumer:
     build: ./main_data_consumer
@@ -38,7 +40,8 @@ services:
     restart: "on-failure"
     env_file: main_data_consumer/.env
     ports:
-      - "4000:4040"
+      - "4040:4040"
+      - "9090:9090"
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined

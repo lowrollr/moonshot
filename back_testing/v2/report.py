@@ -295,6 +295,18 @@ def write_report(dataframe, entries, exits, indicators_to_graph, name, report_fo
     with open('./reports/' + name + '_overall_report.html', 'w') as output:
         output.write(str(doc))
 
+# def multiProcessCoinDataGen(name, dataset, entries, exits, indicators_to_graph, fees):
+#     coin_stats = dict()
+#     filename = []
+#     temp_coin_plots = dict()
+#     coin_movement_plots = []
+#     graphs = generate_movement_graphs(dataset, entries, exits, indicators_to_graph, name, fees)
+#     if graphs:
+#         coin_movement_plots, coin_stats = graphs
+#         movement_num = 0
+#         for mp, mp_stats in coin_movement_plots:
+#             filename.append()
+
 def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_allocation, coin_weights, indicators_to_graph, fees, buy_signals, sell_signals, volume_bars):
     doc = dominate.document(title='Portfolio Manager Report')
 
@@ -369,6 +381,8 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
     avg_loss_avg = round(sum([float(1 - coin_stats[x]['Percentage of Trades Profitable'])/100 * float(coin_stats[x]["Total Trades"]) * float(coin_stats[x]["Loss Average (%)"]) for x in coin_stats])/
     sum([float(1 - coin_stats[x]['Percentage of Trades Profitable'])/100 * int(coin_stats[x]['Total Trades']) for x in coin_stats]), 2)
 
+    tot_win = round((sum([float(coin_stats[x]['Percentage of Trades Profitable'])/100 * float(coin_stats[x]["Total Trades"]) for x in coin_stats])/sum([int(coin_stats[x]['Total Trades']) for x in coin_stats]) * 100), 2)
+
     with doc:
         with div():
             attr(cls='body')
@@ -382,6 +396,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 tr().add(td("Total Trades: ")).add(td(str(total_trades)))
                 tr().add(td("Total Average of Average Profit: ")).add(td(str(avg_profit_avg) + "%"))
                 tr().add(td("Total Average of Average Loss: ")).add(td(str(avg_loss_avg) + "%"))
+                td().add(td("Overall Win Rate: ")).add(td(str(tot_win) + "%"))
 
             td(raw(allocation_plot))
             td(raw(weights_plot))

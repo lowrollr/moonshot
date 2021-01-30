@@ -70,7 +70,7 @@ func startServer() {
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		_ = NewClient(conn)
+		_ = NewClient(&conn)
 		fmt.Println("Connected")
 	}
 }

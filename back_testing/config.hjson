@@ -5,7 +5,8 @@
     # directory to pull data from
     data_source: "binance",
     # Currencies to trade against Tether (USDT)
-    currencies: ["UNI"],
+    currencies: ['ALGO', 'ATOM',  'BAND', 'BAT', 'BNB', 'DASH', 'DOGE', 'ENJ', 'EOS', 'ETC', 'ETH', 'ICX', 'IOTA', 'LINK', 'LTC', 'MATIC', 'NANO', 'NEO', 'OMG', 'ONE', 'ONT', 'QTUM', 'RVN', 'VET', 'WAVES', 'XLM', 'XRP', 'XTZ', 'ZEC', 'ZIL', 'ZRX'],    
+    // currencies:
     # Whether or not to daisy chain all data chunks for a particular coin
     daisy_chain: true,
     # If daisy_chain is false, the user must specify a chunk id to run on. Indexed at 1
@@ -16,7 +17,7 @@
     # "max" = all data
     # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
     # ["2020.1.1"] = data for Jan. 1, 2020 forwards
-    timespan: "max",
+    timespan: ['1574654759999'],
     # Candle frequency to retrieve 
     # 1 = 1 minute
     freq: 1,
@@ -28,19 +29,16 @@
     scale: true,
 
     strategies: [{
-                    type: 'benchmark',
+                    type: 'atlas',
                     version: 'latest',
                     entry_models: [
                         {
-                            name: 'haymaker',
+                            name: 'strawmaker',
                             version: 'latest'
                         }
                     ],
                     exit_models: [
-                        {
-                            name: 'haymaker_sell',
-                            version: 'latest'
-                        }
+
                     ]
                 }]
 

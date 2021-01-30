@@ -30,7 +30,8 @@ function sortRows(n, table_num=-1) {
     for( let i = 0; i < final_arr.length; i++) {
         table.appendChild(final_arr[i][1]);
     }
-
+    table.style.display = null;
+    table.style['justify-content'] = 'center';
     this.direction = this.direction === true ? false : true;
     console.log(this.direction);
 }
@@ -73,4 +74,20 @@ function quickSort(items, left, right) {
         }
     }
     return items;
+}
+
+function revealTable(coin_num) {
+    var table;
+    if (coin_num == -1) {
+        table = document.getElementById("ind_movements_data");
+    } else {
+        table = document.getElementById("ind_movements_data" + String(coin_num))
+    }
+    
+    if (table.style.display == "none"){
+        table.style.display = null;
+        table.style['justify-content'] = 'center';
+    }  else {
+        table.style.display = 'none';
+    }
 }

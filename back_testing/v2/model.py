@@ -585,7 +585,10 @@ class Trading:
                 entry_models_info.append([m['name'], m['version']])
             for m in x['exit_models']:
                 exit_models_info.append([m['name'], m['version']])
-            strategy_objs.append(self.importStrategy(x)(coin_names=coin_names, entry_models=entry_models_info, exit_models=exit_models_info))
+            if len(coin_names) > 1:
+                strategy_objs.append(self.importStrategy(x)(coin_names=coin_names, entry_models=entry_models_info, exit_models=exit_models_info))
+            else: 
+                strategy_objs.append(self.importStrategy(x)(entry_models=entry_models_info, exit_models=exit_models_info))
 
         self.strategies = strategy_objs
         # run genetic algorithm if specified by config

@@ -14,15 +14,38 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/adshao/go-binance/v2"
+	"github.com/ross-hugo/go-binance/v2"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-type dumbo struct{}
+type dumbo struct{
+	DBInterface *gorm.DB
+}
+
+func (Dumbo *dumbo) InitializeDB(wg *sync.WaitGroup) {
+	defer wg.Done()
+	fmt.Println("Connecting to database")
+
+	var err error
+	global_db, err := Dumbo.ConnectDB(db_string, dbType)
+	Dumbo.DBInterface = global_db
+	if err != nil {
+		//if we can't connect to db then panic and stop
+		panic(err)
+	}
+	fmt.Println("Connected to database successfully")
+
+	fmt.Println("Creating tables in database")
+	err = Dumbo.AutoMigrate()
+	if err != nil {
+		panic(err)
+	}
+}
 
 /*
 	ARGS:
@@ -62,7 +85,7 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
     WHAT:
 		-> Creates the tables in the database
 */
-func (*dumbo) AutoMigrate() error {
+func (Dumbo *dumbo) AutoMigrate() error {
 	//Create tables specified in models.go
 	//get coins
 	coins := Dumbo.SelectCoins(-1)
@@ -70,7 +93,7 @@ func (*dumbo) AutoMigrate() error {
 		temp_order := OrderBook{coinName: strings.ToLower(coin) + "_order_book"}
 		temp_min_kline := MinuteKline{coinName: strings.ToLower(coin) + "_minute_kline"}
 		temp_custom_kline := OHCLData{coinName: strings.ToLower(coin) + "_custom_kline"}
-		err := global_db.AutoMigrate(&temp_order, &temp_min_kline, &temp_custom_kline).Error
+		err := Dumbo.DBInterface.AutoMigrate(&temp_order, &temp_min_kline, &temp_custom_kline).Error
 		if err != nil {
 			return err
 		}
@@ -134,7 +157,7 @@ func (o OHCLData) TableName() string {
     WHAT:
 		-> Inserts coin data into database
 */
-func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
+func (Dumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 	//Getting information needed to store
 	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
 
@@ -154,7 +177,7 @@ func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 			Time:        update_time,
 			PriorityVal: int8(i),
 		}
-		err = global_db.Table(strings.ToLower(coin_abb) + "_order_book").Create(&temp_order_entry).Error
+		err = Dumbo.DBInterface.Table(strings.ToLower(coin_abb) + "_order_book").Create(&temp_order_entry).Error
 		if err != nil {
 			return err
 		}
@@ -171,7 +194,7 @@ func (*dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
     WHAT:
 		-> Inserts volume and trade coin data into database
 */
-func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
+func (Dumbo *dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
 
 	kline_time := event.Time
@@ -191,7 +214,7 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
 		Open: float32(open), High: float32(high), Low: float32(low), Close: float32(close),
 		Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
 
-	return global_db.Table(strings.ToLower(coin_abb) + "_minute_kline").Create(&temp_kline).Error
+	return Dumbo.DBInterface.Table(strings.ToLower(coin_abb) + "_minute_kline").Create(&temp_kline).Error
 }
 
 /*
@@ -202,9 +225,9 @@ func (*dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
     WHAT:
 		-> Inserts volume and trade coin data into database
 */
-func (*dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) error {
+func (Dumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) error {
 	for symbol, data := range all_coin_candles {
-		err := global_db.Table(strings.ToLower(symbol) + "_custom_kline").Create(data).Error
+		err := Dumbo.DBInterface.Table(strings.ToLower(symbol) + "_custom_kline").Create(data).Error
 		if err != nil {
 			return err
 		}
