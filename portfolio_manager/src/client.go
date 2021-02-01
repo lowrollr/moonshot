@@ -113,7 +113,9 @@ func connectBeverlyHills(bevConsConn *net.Conn) {
 		}
 
 		response, err := bufio.NewReader(*bevConsConn).ReadBytes('\x00')
-		response = response[:len(response) - 1]
+		if len(repsonse) > 0 {
+			response = response[:len(response) - 1]
+		}
 		if err == nil {
 			var portKeyWord string
 			err = json.Unmarshal([]byte(response), &portKeyWord)

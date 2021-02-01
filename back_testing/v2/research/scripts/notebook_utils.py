@@ -305,7 +305,6 @@ class notebookUtils:
 
         return model_directory, model_filenames, scaler_filenames
 
-
     '''
     ARGS:
         -> dataset (pandas Dataframe): dataset to eventually feed into the model
@@ -577,19 +576,75 @@ class notebookUtils:
             else:
                 version_str = f'{highest_version[0]}_{highest_version[1] + 1}'
             
-
         else:
             os.mkdir(model_dir)
             version_str = '1_0'
         model_dir = f'{model_dir}/{version_str}'
         os.mkdir(model_dir)
             
-
         if is_nn:
             model.save(f'{model_dir}/')
             model_dict['model'] = None
         else:
             model_dict['model'] = model
+
+        pickle.dump(model_dict, open(f'{model_dir}/{name}_{version_str}.sav', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+
+        return version_str
+
+    def exportProductionModel(self, model, name, new_version, indicators, features, proba_threshold=0.0, is_nn=False):
+        model_dict = dict()
+        model_dict['proba_threshold'] = proba_threshold
+        
+        version_str = ''
+        base_path = './production_models/'
+        model_dir = f'{base_path}{name}'
+        if os.path.isdir(model_dir):
+            highest_version = [0, 0]
+            for f in [x for x in os.scandir(f'{model_dir}/')if x.is_dir()]:
+                
+                parts = f.name.split('_')
+                version = int(parts[0])
+                subversion = int(parts[1])
+                if version == highest_version[0]:
+                    if subversion > highest_version[1]:
+                        highest_version = [version, subversion]
+                elif version > highest_version[0]:
+                    highest_version = [version, subversion]
+            
+            if new_version:
+                version_str = f'{highest_version[0] + 1}_0'
+            else:
+                version_str = f'{highest_version[0]}_{highest_version[1] + 1}'
+            
+        else:
+            os.mkdir(model_dir)
+            version_str = '1_0'
+        model_dir = f'{model_dir}/{version_str}'
+        os.mkdir(model_dir)
+            
+        if is_nn:
+            model.save(f'{model_dir}/')
+            model_dict['model'] = None
+        else:
+            model_dict['model'] = model
+
+        ind_dict = dict()
+        for feat in features:
+            featChars = feat.split("_")
+            if len(featChars) > 1:
+                if not ind_dict.get(featChars[0], None):
+                    ind_dict[featChars[0]] = dict()
+                if not ind_dict.get(featChars[0]).get(featChars[1], None):
+                    ind_dict[featChars[0]][featChars[1]] = dict()
+                if not ind_dict.get(featChars[0]).get(featChars[1]).get(featChars[2], None):
+                    ind_dict[featChars[0]][featChars[1]][featChars[2]] = set()
+
+                ind_dict[featChars[0]][featChars[1]][featChars[2]].add(float(featChars[3]))
+            else:
+                ind_dict[featChars[0] + "$default"] = dict()
+
+        model_dict['features'] = ind_dict
 
         pickle.dump(model_dict, open(f'{model_dir}/{name}_{version_str}.sav', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 

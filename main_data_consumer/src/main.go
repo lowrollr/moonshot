@@ -30,7 +30,7 @@ func main() {
 
 	dataConsumer.SyncSetUp()
 
-	// dataConsumer.ServerListen()
+	dataConsumer.ServerListen()
 
 	dataConsumer.StartConsume()
 

@@ -13,7 +13,7 @@ services:
   portfolio_manager:
     build: ./portfolio_manager
     depends_on:
-      # - beverly_hills
+      - beverly_hills
       - main_data_consumer
     restart: "on-failure"
     env_file: portfolio_manager/.env
@@ -30,8 +30,6 @@ services:
       - main_data_consumer
     restart: "on-failure"
     env_file: beverly_hills/.env
-    ports:
-      - 1234:1234
 
   main_data_consumer:
     build: ./main_data_consumer
@@ -41,7 +39,6 @@ services:
     env_file: main_data_consumer/.env
     ports:
       - "4040:4040"
-      - "9090:9090"
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
