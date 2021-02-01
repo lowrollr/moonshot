@@ -52,7 +52,6 @@ func (data *DataConsumer) ServerListen() {
 			if err != nil {
 				log.Panic("Could not make connection " + err.Error())
 			}
-			data.NumConnections++
 			client := NewClient(conn)
 
 			CoinJson, err := json.Marshal(data.Coins)
@@ -60,17 +59,21 @@ func (data *DataConsumer) ServerListen() {
 				log.Panic("Could not send coins. Stop. Error: " + err.Error())
 			}
 
-			data.Clients[conn.RemoteAddr().Network()] = client
 			for {
-				PMString := bytes.Trim(*client.Receive(), "\x00")
-				
-				if string(PMString) == "'coins'" || string(PMString) == "\"coins\"" {
+				var ClientJson CoinMessage
+				ClientBytes := bytes.Trim(*client.Receive(), "\x00")
+				err = json.Unmarshal(ClientBytes, &ClientJson)
+
+				if ClientJson.Msg == "'coins'" || ClientJson.Msg == "\"coins\"" || ClientJson.Msg == "coins" {
+					CoinJson = append(CoinJson, '\x00')
 					_, err := client.conn.Write(CoinJson)
 
-					log.Println("Sent coins")
+					log.Println("Sent coins to %s", ClientJson.Destination, conn.RemoteAddr())
 					if err != nil {
 						log.Panic("Was not able to send coin data " + err.Error())
 					}
+					data.Clients[ClientJson.Destination] = client
+					data.NumConnections++
 					break
 				}
 			}
@@ -125,7 +128,7 @@ func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
 
 func InitConsume() {
 	binance.WebsocketKeepalive = true
-	binance.WebsocketTimeout = time.Second * 1
 
+	binance.WebsocketTimeout = time.Second * 30
 	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true})
 }

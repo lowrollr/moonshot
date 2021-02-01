@@ -22,14 +22,19 @@ var (
 	shortCandleStickData map[string]*OHCLData
 
 	allClients map[*Client]int
-	Dumbo *dumbo
+	Dumbo      *dumbo
 )
 
 type Client struct {
 	// incoming chan string
-	outgoing   chan string
-	reader     *bufio.Reader
-	writer     *bufio.Writer
-	conn       net.Conn
-	start      bool
+	outgoing chan string
+	reader   *bufio.Reader
+	writer   *bufio.Writer
+	conn     net.Conn
+	start    bool
+}
+
+type CoinMessage struct {
+	Msg         string `json:"msg"`
+	Destination string `json:"destination"`
 }

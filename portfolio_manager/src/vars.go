@@ -18,7 +18,7 @@ var (
 
 	domainToUrl = map[string]string {
 		"main_data_consumer" : "main_data_consumer:" + os.Getenv("DATAPORT"),
-		// "beverly_hills" : "beverly_hills:" + os.Getenv("BEVPORT"),
+		"beverly_hills" : "beverly_hills:" + os.Getenv("BEVPORT"),
 	}
 	
 	binanceClient = binance.Client{}
@@ -50,4 +50,9 @@ type webError struct {
 
 type CryptoPayload struct {
 	//this is data we get from Kraken. Dunno what to put here
+}
+
+type CoinMessage struct {
+	Msg         string `json:"msg"`
+	Destination string `json:"destination"`
 }

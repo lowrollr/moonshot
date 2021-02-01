@@ -30,9 +30,9 @@ func main() {
 
 	dataConsumer.SyncSetUp()
 
-	dataConsumer.ServerListen()
+	// dataConsumer.ServerListen()
 
-	// dataConsumer.StartConsume()
+	dataConsumer.StartConsume()
 
 	// coins := Dumbo.SelectCoins(-1)
 

@@ -79,7 +79,7 @@ func ErrorTradeHandler(err error) {
 */
 func waitFunc() {
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Second)
 		printNumSockets()
 	}
 }
