@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (client *Client) Read() {
@@ -45,13 +47,13 @@ func (client *Client) WaitStart(wg *sync.WaitGroup) {
 	for {
 		message := make([]byte, 1024)
 		_, err := client.conn.Read(message)
-		if err == nil && string(message) == "start" {
+		if err == nil && (string(message) == "start" || string(message) == "'start'" || string(message) == "\"start\"") {
 			break
 		} else if err != nil {
 			// client.conn.Close()
-			// //try to reconnect
-			// break
-			fmt.Println("figure out how to handle this error")
+			// //try to reconnectF
+			log.Println(err)
+			// fmt.Println("figure out how to handle this error")
 		}
 	}
 }

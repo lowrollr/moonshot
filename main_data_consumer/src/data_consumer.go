@@ -43,39 +43,40 @@ func (data *DataConsumer) SyncSetUp() {
 
 func (data *DataConsumer) ServerListen() {
 	data.Clients = make(map[string]*Client)
-	for {
+	
+	for data.NumConnections < 3{
 		//change this so that it's more multithreaded. Have goroutine for each service
 		// when each have been hit with start, then you can start running
-		if data.NumConnections < 3 {
-			log.Println("Accepting for a connection")
-			conn, err := (*data.SocketServer).Accept()
-			if err != nil {
-				log.Panic("Could not make connection " + err.Error())
-			}
-			data.NumConnections++
-			client := NewClient(conn)
+		log.Println("Accepting for a connection")
+		conn, err := (*data.SocketServer).Accept()
+		if err != nil {
+			log.Panic("Could not make connection " + err.Error())
+		}
+		client := NewClient(conn)
 
-			CoinJson, err := json.Marshal(data.Coins)
-			if err != nil {
-				log.Panic("Could not send coins. Stop. Error: " + err.Error())
-			}
+		CoinJson, err := json.Marshal(data.Coins)
+		if err != nil {
+			log.Panic("Could not send coins. Stop. Error: " + err.Error())
+		}
 
-			data.Clients[conn.RemoteAddr().Network()] = client
-			for {
-				PMString := bytes.Trim(*client.Receive(), "\x00")
-				
-				if string(PMString) == "'coins'" || string(PMString) == "\"coins\"" {
-					_, err := client.conn.Write(CoinJson)
+		for {
+			var ClientJson CoinMessage
+			ClientBytes := bytes.Trim(*client.Receive(), "\x00")
+			err = json.Unmarshal(ClientBytes, &ClientJson)
 
-					log.Println("Sent coins")
-					if err != nil {
-						log.Panic("Was not able to send coin data " + err.Error())
-					}
-					break
+			if ClientJson.Msg == "'coins'" || ClientJson.Msg == "\"coins\"" || ClientJson.Msg == "coins" {
+				CoinJson = append(CoinJson, '\x00')
+				_, err := client.conn.Write(CoinJson)
+
+				if err != nil {
+					log.Panic("Was not able to send coin data " + err.Error())
 				}
+				log.Println("Sent coins to ", ClientJson.Destination, conn.RemoteAddr())
+
+				data.Clients[ClientJson.Destination] = client
+				data.NumConnections++
+				break
 			}
-		} else {
-			break
 		}
 	}
 	//listen for start messages from all three
@@ -125,7 +126,7 @@ func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
 
 func InitConsume() {
 	binance.WebsocketKeepalive = true
-	binance.WebsocketTimeout = time.Second * 1
 
+	binance.WebsocketTimeout = time.Second * 30
 	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true})
 }

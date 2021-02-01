@@ -10,8 +10,8 @@ COPY src .
 RUN go get -d -v
 # RUN go get github.com/derekparker/delve/cmd/dlv
 
-# RUN apt update
-# RUN apt install net-tools
+RUN apt update
+RUN apt install net-tools
 
 
 # RUN pwd

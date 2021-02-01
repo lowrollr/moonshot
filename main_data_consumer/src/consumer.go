@@ -79,7 +79,7 @@ func ErrorTradeHandler(err error) {
 */
 func waitFunc() {
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Second)
 		printNumSockets()
 	}
 }
@@ -324,6 +324,7 @@ func InitializeShortCandleStick(coins *[]string) {
 		shortCandleStickData[strings.ToLower(coin)].High = 0
 		shortCandleStickData[strings.ToLower(coin)].Low = math.MaxFloat32
 		shortCandleStickData[strings.ToLower(coin)].Close = 0
+		
 		shortCandleStickData[strings.ToLower(coin)].Volume = 0
 	}
 }

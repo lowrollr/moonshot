@@ -1,8 +1,0 @@
-plotly==4.10.0
-matplotlib==3.1.2
-scipy==1.4.1
-numpy==1.18.2
-pyti==0.2.2
-pandas==1.0.0
-tqdm==4.49.0
-scikit_learn==0.23.2

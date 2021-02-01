@@ -63,6 +63,8 @@ func initPM(starting_cash float32) *PortfolioManager {
 		free_cash:       starting_cash,
 		portfolio_value: starting_cash,
 	}
+
+	connectBeverlyHills(mapDomainConnection[domainToUrl["beverly_hills"]])
 	return pm
 }
 

@@ -32,7 +32,7 @@ func main() {
 
 	dataConsumer.ServerListen()
 
-	// dataConsumer.StartConsume()
+	dataConsumer.StartConsume()
 
 	// coins := Dumbo.SelectCoins(-1)
 

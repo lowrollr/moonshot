@@ -10,9 +10,7 @@ def startClient():
 
 def readData(conn):
     data = ''
-    print("starting buffer")
     while True:
-        print("entering true block")
         buffer = conn.recv(1024)
         if buffer:
             data += buffer.decode('utf-8')
