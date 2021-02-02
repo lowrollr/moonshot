@@ -42,16 +42,16 @@ services:
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
-  
+
   frontend:
     build: ./frontend
-    depends_on: 
-      - main_data_consumer
-      - beverly_hills
-      - portfolio_manager
-    command: "sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 dashboard/start.py "
+    # depends_on: 
+    #   - main_data_consumer
+    #   - beverly_hills
+    #   - portfolio_manager
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 dashboard/start.py "]
     restart: "on-failure"
     env_file: frontend/.env
     ports:
-      - "1337:1337"
+      - "5678:5678"
     

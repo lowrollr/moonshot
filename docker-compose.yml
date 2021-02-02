@@ -1,4 +1,4 @@
-version: "2"
+version: "3.4"
 
 services:
   crypto_db:
@@ -45,10 +45,10 @@ services:
   
   frontend:
     build: ./frontend
-    depends_on: 
-      - main_data_consumer
-      - beverly_hills
-      - portfolio_manager
+    # depends_on: 
+      # - main_data_consumer
+      # - beverly_hills
+      # - portfolio_manager
     restart: "on-failure"
     env_file: frontend/.env
     ports:
