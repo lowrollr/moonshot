@@ -69,10 +69,10 @@ psm_socket_thread.start()
 app = dash.Dash(__name__)
 
 app.layout = createPage(
-    getTopText(porfolio_datastream, 'day', 'FSC'), 
-    getFig(porfolio_datastream, 'day'), 
-    getPositionElems(cur_positions), 
-    getStatusElems(container_statuses)
+        toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
+        status_elems = getStatusElems(container_statuses), 
+        position_elems = getPortfolioPositions(cur_positions.positions),
+        plot = getFig(porfolio_datastream.day_data)
     )
 
 
@@ -81,15 +81,19 @@ app.layout = createPage(
 def displayPage(pathname):
     if pathname == '/portfolio':
         return createPage(
-            
-            toptext = getTopText('portfolio'),
-            status_elems = getStatusElems(container_statuses), 
-            position_elems = getPositionElems('portfolio'),
-            plot = getFig('portfolio'))
-
-
+                toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
+                status_elems = getStatusElems(container_statuses), 
+                position_elems = getPortfolioPositions(cur_positions.positions),
+                plot = getFig(porfolio_datastream.day_data)
+            )
     else:
         coin = pathname[1:].upper()
+        return createPage(
+                toptext = getTopText(coin_datastreams[coin].day_data, coin),
+                status_elems = getStatusElems(container_statuses), 
+                position_elems = getCoinPositions(coin, cur_positions.positions),
+                plot = getFig(coin_datastreams[coin].day_data)
+            )
 
 
 

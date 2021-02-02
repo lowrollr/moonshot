@@ -34,13 +34,14 @@ def createPage(toptext, plot, position_elems, status_elems):
     ])
 
 
-def getTopText(datastream, timespan, asset):
+def getTopText(data, asset):
+    
     cur_value = '$0.00'
     delta = '+$0.00'
     perc_change = '+0.00%'
-    if len(datastream):
-        cur_value = datastream[-1]
-        first_value = datastream[0]
+    if data:
+        cur_value = data[-1]
+        first_value = data[0]
         delta = cur_value - first_value
         perc_change = (cur_value - first_value) / first_value
         cur_value = round(cur_value, 2)
@@ -81,13 +82,13 @@ def getTopText(datastream, timespan, asset):
 
 #TODO: plot volume on secondary axis
 #TODO: add timestamps to x axis & data points
-def getFig(datastream, timespan):
+def getFig(datastream):
     fig = make_subplots()
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)')
-    
-    indices, values = enumerate(list(datastream))
-    fig.add_trace(go.Scatter(x=indices, y=values))
+    if datastream:
+        indices, values = enumerate(list(datastream))
+        fig.add_trace(go.Scatter(x=indices, y=values))
 
     return fig
 
@@ -95,13 +96,22 @@ def getFig(datastream, timespan):
 
 
 def getStatusElems(container_statuses):
+    all_ok = True
+    for x in container_statuses:
+        if not container_statuses[x].isOk():
+            all_ok = False
+            break
+    if all_ok:
+        overall_status = html.Div(className='statusbubble_big', style={'color': 'rgba(114,228,125,1)'})
+    else:
+        overall_status = html.Div(className='status_bubble_big', style={'color': 'rgba(239,102,102,1)'})
     html.Ul(
         className='status_group',
         id='container_statuses',
         children=[
             html.Li([
-                html.Div('PSM', className='statustext'),
-                getStatusDiv(container_statuses['PSM'])
+                html.Div('status', className='statustext'),
+                overall_status
             ], className = 'statuspair'),
             html.Li([
                 html.Div('Data Consumer', className='statustext'),
@@ -122,10 +132,9 @@ def getStatusElems(container_statuses):
         ]
     )
 
-def getStatusDiv(status, is_big):
+def getStatusDiv(status):
     class_name = 'statusbubble'
-    if is_big:
-        class_name = 'statusbubble_big'
+    
     # make this thread safe pls
     if status.isOk():
         html.Div(className=class_name, style={'color': 'rgba(114,228,125,1)'})
@@ -134,22 +143,24 @@ def getStatusDiv(status, is_big):
 
 
 # TODO: make this display past positions
+# TODO: sort positions by amnt of time held?
 def getPortfolioPositions(positions):
     elements = []
-    for coin in positions[::-1]:
-        cur_amnt = positions[coin]['amnt']
-        cur_price = positions[coin]['price']
-        profit = positions[coin]['profit']
-        if profit > 0:
-            profit = '+' + str(profit) + '%'
-        else:
-            profit = str(profit) + '%'
-        alloc = positions[coin]['alloc']
-        element = html.Li(
-            className='position',
-            children= f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
-        )
-        elements.append(element)
+    for coin in positions:
+        if positions[coin]:
+            cur_amnt = positions[coin]['amnt']
+            cur_price = positions[coin]['price']
+            profit = positions[coin]['profit']
+            if profit > 0:
+                profit = '+' + str(profit) + '%'
+            else:
+                profit = str(profit) + '%'
+            alloc = positions[coin]['alloc']
+            element = html.Li(
+                className='position',
+                children= f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
+            )
+            elements.append(element)
     return html.Ul(
         className='position_list',
         children=elements
