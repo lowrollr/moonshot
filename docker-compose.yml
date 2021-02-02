@@ -9,7 +9,7 @@ services:
     restart: "unless-stopped"
     volumes:
       - ./data:/var/lib/postgres/data
-    
+
   portfolio_manager:
     build: ./portfolio_manager
     depends_on:
@@ -17,11 +17,6 @@ services:
       - main_data_consumer
     restart: "on-failure"
     env_file: portfolio_manager/.env
-    ports:
-      - 4000:4000
-    security_opt:
-      - apparmor:unconfined
-      - seccomp:unconfined
 
   beverly_hills:
     build: ./beverly_hills
@@ -37,20 +32,14 @@ services:
       - crypto_db
     restart: "on-failure"
     env_file: main_data_consumer/.env
-    ports:
-      - "4040:4040"
-    security_opt:
-      - apparmor:unconfined
-      - seccomp:unconfined
   
   frontend:
     build: ./frontend
-    # depends_on: 
-      # - main_data_consumer
-      # - beverly_hills
-      # - portfolio_manager
+    depends_on: 
+      - main_data_consumer
+      - beverly_hills
+      - portfolio_manager
     restart: "on-failure"
     env_file: frontend/.env
     ports:
       - "1337:1337"
-    

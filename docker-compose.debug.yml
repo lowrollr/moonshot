@@ -30,6 +30,9 @@ services:
       - main_data_consumer
     restart: "on-failure"
     env_file: beverly_hills/.env
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:8765 dashboard/start.py "]
+    ports:
+      - "8765:8765"
 
   main_data_consumer:
     build: ./main_data_consumer
@@ -45,10 +48,10 @@ services:
 
   frontend:
     build: ./frontend
-    # depends_on: 
-    #   - main_data_consumer
-    #   - beverly_hills
-    #   - portfolio_manager
+    depends_on: 
+      - main_data_consumer
+      - beverly_hills
+      - portfolio_manager
     command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 dashboard/start.py "]
     restart: "on-failure"
     env_file: frontend/.env

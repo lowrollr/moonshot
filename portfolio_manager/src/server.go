@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
 )
 
 func (client *ServerClient) Read() {
@@ -64,7 +65,7 @@ func NewServerClient(connection net.Conn) *ServerClient {
 }
 
 func startServer() {
-	listener, _ := net.Listen("tcp", ":8000")
+	listener, _ := net.Listen("tcp", ":"+string(os.Getenv("PM_PORT")))
 	for {
 		conn, err := listener.Accept()
 		if err != nil {

@@ -5,7 +5,7 @@ import json
 
 def startClient(name, port):
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn.connect((name, port))
+    conn.connect((name, int(port)))
     return conn
 
 def readData(conn):
