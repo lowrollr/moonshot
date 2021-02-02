@@ -18,8 +18,6 @@ class DataEngine():
 
         max_period = max([queueNames[x] for x in queueNames])
 
-        
-
         for coin in coins:
             self.data_queue[coin] = dict()
             for name in queueNames:

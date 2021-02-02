@@ -34,7 +34,8 @@ type Client struct {
 	start    bool
 }
 
-type CoinMessage struct {
+type SocketMessage struct {
 	Msg         string `json:"msg"`
+	Source      string `json:"source"`
 	Destination string `json:"destination"`
 }

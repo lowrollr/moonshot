@@ -64,8 +64,17 @@ func initPM(starting_cash float32) *PortfolioManager {
 		portfolio_value: starting_cash,
 	}
 
-	connectBeverlyHills(mapDomainConnection[domainToUrl["beverly_hills"]])
+	StartRemoteServer(mapDomainConnection[domainToUrl["beverly_hills"]], "beverly_hills")
+	pm.clientConnections = mapDomainConnection
 	return pm
+}
+
+func (pm *PortfolioManager) StartTrading() {
+	//do any more init things that have to happen here
+
+	//send start to the data consumer
+	StartRemoteServer(pm.clientConnections[domainToUrl["main_data_consumer"]], "main_data_consumer")
+
 }
 
 func (pm *PortfolioManager) SetStrategy(strat interface{}) {
