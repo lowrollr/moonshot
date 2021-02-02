@@ -14,12 +14,14 @@ func main() {
 	atlas := initAtlas(pm.coins)
 	pm.SetStrategy(atlas)
 
+	pm.StartTrading()
+
 	// _ = initAtlas(&coins)
 
 	// go userDataStream()
 	//connect to data consumer
 	// startServer()
-	startClient()
+
 	// startPM()
 
 }

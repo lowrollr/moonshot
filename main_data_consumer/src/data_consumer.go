@@ -60,7 +60,7 @@ func (data *DataConsumer) ServerListen() {
 		}
 
 		for {
-			var ClientJson CoinMessage
+			var ClientJson SocketMessage
 			ClientBytes := bytes.Trim(*client.Receive(), "\x00")
 			err = json.Unmarshal(ClientBytes, &ClientJson)
 
@@ -71,9 +71,9 @@ func (data *DataConsumer) ServerListen() {
 				if err != nil {
 					log.Panic("Was not able to send coin data " + err.Error())
 				}
-				log.Println("Sent coins to ", ClientJson.Destination, conn.RemoteAddr())
+				log.Println("Sent coins to ", ClientJson.Source, conn.RemoteAddr())
 
-				data.Clients[ClientJson.Destination] = client
+				data.Clients[ClientJson.Source] = client
 				data.NumConnections++
 				break
 			}
