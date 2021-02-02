@@ -27,24 +27,71 @@ def createPage(toptext, plot, position_elems, status_elems):
                 dcc.Graph(
                     id='main_plot', 
                     className='plot',
-                    
+                    figure=plot
                     )
             ]
         )
     ])
 
 
+def getTopText(datastream, timespan, asset):
+    cur_value = '$0.00'
+    delta = '+$0.00'
+    perc_change = '+0.00%'
+    if len(datastream):
+        cur_value = datastream[-1]
+        first_value = datastream[0]
+        delta = cur_value - first_value
+        perc_change = (cur_value - first_value) / first_value
+        cur_value = round(cur_value, 2)
+        delta = round(delta, 2)
+        perc_change = round(perc_change, 2)
+        if delta >= 0:
+            delta = f'+${delta}'
+        else:
+            delta = f'-${str(delta)[1:]}'
+        
+        if perc_change >= 0:
+            perc_change = f'+{perc_change}%'
+        else:
+            perc_change = f'{perc_change}%'
+
+        cur_value = f'${cur_value}'
+
+
+
+    return html.Div(
+        className='toptext',
+        children=[
+            html.Span(
+                className='assettitle',
+                children=asset
+            ),
+            html.Span(
+                className='assetvalue',
+                children=cur_value
+            ),
+            html.Span(
+                className='assetstats',
+                children=f'{perc_change} {delta}'
+            )
+        ]
+    )
+
+
 #TODO: plot volume on secondary axis
 #TODO: add timestamps to x axis & data points
-def getPortfolioFig(portfolio_datastream, timespan):
+def getFig(datastream, timespan):
     fig = make_subplots()
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)')
     
-    indices, values = enumerate(list(portfolio_datastream))
+    indices, values = enumerate(list(datastream))
     fig.add_trace(go.Scatter(x=indices, y=values))
 
     return fig
+
+
 
 
 def getStatusElems(container_statuses):
@@ -84,6 +131,7 @@ def getStatusDiv(status, is_big):
         html.Div(className=class_name, style={'color': 'rgba(114,228,125,1)'})
     else:
         return html.Div(className=class_name, style={'color': 'rgba(239,102,102,1)'})
+
 
 # TODO: make this display past positions
 def getPortfolioPositions(positions):

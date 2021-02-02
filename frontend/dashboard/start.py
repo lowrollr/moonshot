@@ -1,17 +1,21 @@
-from . import (
-    DataStream, 
-    Status, 
-    Position, 
-    PositionStream, 
-    CurrentPositions, 
-    dashboard, 
-    coin_data, 
-    getStatusDiv, 
-    createPage, 
-    getStatusElems, 
-    getFig,
-    getPositionElems,
+from data import (
+    DataStream,
+    Positions,
+    PositionStream,
+    Status
+)
+from client import (
+    PMSocket,
+    BHSocket,
+    DCSocket
+)
+from page import (
+    createPage,
     getTopText,
+    getFig,
+    getStatusElems,
+    getPortfolioPositions,
+    getCoinPositions
 )
 import threading
 import json
@@ -25,7 +29,7 @@ from dash.dependencies import Input, Output
 # Finally, we'll initialize the Dash App.
 
 # Initialize Data Structures
-positions = dict()
+
 container_statuses = dict()
 for c in {'PSM', 'Beverly Hills', 'Data Consumer', 'Binance'}:
     container_statuses[c] = Status()
@@ -38,13 +42,38 @@ for coin in coins:
     coin_datastreams[coin] = DataStream(name=coin)
 
 porfolio_datastream = DataStream(name='portfolio')
+cur_positions = Positions(coins)
+position_history = PositionStream(coins)
 
 #Initialize Threads
+threads = []
+psm_socket_thread = threading.Thread(target=PMSocket, args=(
+    container_statuses['PSM'], 
+    porfolio_datastream,
+    position_history.all_positions,
+    position_history.coin_positions,
+    cur_positions.positions,
+    ))
 
+bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
 
+dc_socket_thread = threading.Thread(target=DCSocket, args=(
+    container_statuses['Data Consumer'], 
+    coin_datastreams,))
+
+dc_socket_thread.start()
+bh_socket_thread.start()
+psm_socket_thread.start()
 
 # Initialize Dash App
 app = dash.Dash(__name__)
+
+app.layout = createPage(
+    getTopText(porfolio_datastream, 'day', 'FSC'), 
+    getFig(porfolio_datastream, 'day'), 
+    getPositionElems(cur_positions), 
+    getStatusElems(container_statuses)
+    )
 
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
@@ -74,4 +103,5 @@ def updateStatus(n):
 def updateStatus(n):
     return getStatusElems(container_statuses)
 
-
+if __name__ == '__main__':
+    app.run_server(debug=True)

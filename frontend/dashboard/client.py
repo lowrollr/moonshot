@@ -27,7 +27,7 @@ def readData(conn):
         pass
     return data
 
-def PMSocket(connect_url, pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
+def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
     p_value = 0.0
     
@@ -50,7 +50,7 @@ def PMSocket(connect_url, pm_status, portfolio_datastream, all_positions, coin_p
                 portfolio_datastream.update(p_value)
 
 
-def BHSocket(connect_url, bh_status):
+def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
     while True:
         data = readData(bh_conn)
@@ -59,7 +59,7 @@ def BHSocket(connect_url, bh_status):
 
 
 
-def DCSocket(connect_url, dc_status, coin_datastreams):
+def DCSocket(dc_status, coin_datastreams):
     dc_conn = startClient('data_consumer', os.environ['DC_PORT'])
     while True:
         data = readData(dc_conn)
