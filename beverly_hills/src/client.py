@@ -4,9 +4,24 @@ import json
 import time
 
 def startClient():
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn.connect(("main_data_consumer", int(os.environ["DATAPORT"])))
-    return conn
+    name = "main_data_consumer"
+    port = os.environ["DATAPORT"]
+    tries = 0
+    while tries < 5:
+        try:
+            conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            conn.connect((name, int(port)))
+            if not conn is None:
+                print(f"Connected to {name}:{port}\n")
+                return conn
+            else:
+                print(f"Could not connect to {name}:{port}. Retrying...")
+        except Exception as e:
+            print(f"Could not connect to {name}:{port} because {e}. Retrying...")
+        finally:
+            time.sleep(1 << tries)
+            tries += 1
+    raise Exception(f"Was not able to connect to {name}:{port}")
 
 def readData(conn):
     data = ''
