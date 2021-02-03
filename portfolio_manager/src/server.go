@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"os"
 )
@@ -64,14 +65,17 @@ func NewServerClient(connection net.Conn) *ServerClient {
 	return client
 }
 
-func startServer() {
-	listener, _ := net.Listen("tcp", ":"+string(os.Getenv("PM_PORT")))
+func startServer() *net.Conn{
+	listener, err := net.Listen("tcp", ":"+string(os.Getenv("PM_PORT")))
+	if err != nil {
+		log.Panic("Was not able to start server on Portfolio Manager")
+	}
+	log.Println("Started Server on Portfolio Manager port %s", string(os.Getenv("PM_PORT")))
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		_ = NewClient(&conn)
-		fmt.Println("Connected")
+		return &conn
 	}
 }

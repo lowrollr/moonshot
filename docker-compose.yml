@@ -17,6 +17,8 @@ services:
       - main_data_consumer
     restart: "on-failure"
     env_file: portfolio_manager/.env
+    ports:
+      - 8000:8000
 
   beverly_hills:
     build: ./beverly_hills
