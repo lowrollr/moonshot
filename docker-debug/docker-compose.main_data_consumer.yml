@@ -1,0 +1,59 @@
+version: "2"
+
+services:
+  crypto_db:
+    image: postgres:12.2-alpine
+    env_file: database/.env
+    ports:
+      - 5432:5432
+    restart: "unless-stopped"
+    volumes:
+      - ./data:/var/lib/postgres/data
+    
+  portfolio_manager:
+    build: ./portfolio_manager
+    depends_on:
+      - beverly_hills
+      - main_data_consumer
+    restart: "on-failure"
+    env_file: portfolio_manager/.env
+    ports:
+      - 4000:4000
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+
+  beverly_hills:
+    build: ./beverly_hills
+    depends_on: 
+      - crypto_db
+      - main_data_consumer
+    restart: "on-failure"
+    env_file: beverly_hills/.env
+    ports:
+      - "8765:8765"
+
+  main_data_consumer:
+    build: ./main_data_consumer
+    depends_on:
+      - crypto_db
+    restart: "on-failure"
+    env_file: main_data_consumer/.env
+    ports:
+      - "4040:4040"
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    command: ["go get github.com/derekparker/delve/cmd/dlv", "dlv", "debug", "--listen=:4040", "--headless=true", "--api-version=2", "--log", "."]
+
+  frontend:
+    build: ./frontend
+    depends_on: 
+      - main_data_consumer
+      - beverly_hills
+      - portfolio_manager
+    restart: "on-failure"
+    env_file: frontend/.env
+    ports:
+      - "5678:5678"
+    
