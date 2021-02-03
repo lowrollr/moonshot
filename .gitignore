@@ -40,6 +40,8 @@ back_testing/logs/
 back_testing/slippage_logs/
 back_testing/reports/*
 
+saved_models/
+
 !back_testing/reports/script.js
 !back_testing/reports/style.css
 
