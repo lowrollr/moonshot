@@ -48,6 +48,7 @@ class BeverlyHills():
 
         self.consumerSocket = conn
         coins = ""
+        time.sleep(1)
         while True:
             conn.send(bytes(json.dumps({"msg":"coins", "source":"beverly_hills", "destination":"main_data_consumer"}),encoding='utf-8'))
             coins = readData(conn)

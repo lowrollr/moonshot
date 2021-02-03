@@ -24,7 +24,7 @@ import (
         -> General review of this code since it is pretty critical
 */
 func main() {
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	Dumbo = &dumbo{}
 	dataConsumer := DataConsumer{}
 

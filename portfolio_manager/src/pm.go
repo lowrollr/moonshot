@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"time"
 
 	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
 	// "sort"
@@ -71,6 +72,9 @@ func initPM(starting_cash float32) *PortfolioManager {
 }
 
 func (pm *PortfolioManager) StartTrading() {
+	for {
+		time.Sleep(time.Second)
+	}
 	//do any more init things that have to happen here
 
 	//send start to the data consumer
