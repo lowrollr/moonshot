@@ -4,9 +4,22 @@ import os
 import json
 
 def startClient(name, port):
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn.connect((name, int(port)))
-    return conn
+    tries = 0
+    while tries < 5:
+        try:
+            conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            conn.connect((name, int(port)))
+            if not conn is None:
+                print(f"Connected to {name}:{port}\n")
+                return conn
+            else:
+                print(f"Could not connect to {name}:{port}. Retrying...")
+        except Exception as e:
+            print(f"Could not connect to {name}:{port} because {e}. Retrying...")
+        finally:
+            time.sleep(1 << tries)
+            tries += 1
+    raise Exception(f"Was not able to connect to {name}:{port}")
 
 def readData(conn):
     data = ''
@@ -57,10 +70,8 @@ def BHSocket(bh_status):
         if data:
             bh_status.ping()
 
-
-
 def DCSocket(dc_status, coin_datastreams):
-    dc_conn = startClient('data_consumer', os.environ['DC_PORT'])
+    dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
     while True:
         data = readData(dc_conn)
         if data:
