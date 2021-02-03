@@ -58,13 +58,13 @@ func ConnectServer(destination string) *net.Conn {
 	const timeout = 1 * time.Minute
 	//Iterating through the amount of tries to connect to database
 	var err error
-	for tries := 0; tries < 5; tries++ {
+	for tries := 0; tries < 100; tries++ {
 		conn, err := net.Dial("tcp", destination)
 		if err == nil {
 			return &conn
 		}
 		log.Printf("Could not connect to the %s with error: %s Retrying...", destination, err.Error())
-		time.Sleep(time.Second << uint(tries))
+		time.Sleep(time.Second * 3)
 	}
 	log.Panic("Could not connect to the %s with final error %s.", destination, err.Error())
 	return nil
@@ -79,7 +79,7 @@ func startClient() map[string]*net.Conn {
 }
 
 func StartRemoteServer(serverConn *net.Conn, destination_str string) {
-	startMessage := SocketMessage{Msg:"start", Source: "portfolio_manager", Destination: destination_str}
+	startMessage := SocketMessage{Msg: "start", Source: "portfolio_manager", Destination: destination_str}
 	for tries := 0; tries < 5; tries++ {
 		writer := bufio.NewWriter(*serverConn)
 		startBytes, err := json.Marshal(startMessage)
@@ -105,7 +105,7 @@ func StartRemoteServer(serverConn *net.Conn, destination_str string) {
 
 func getCoins(dataConsConn *net.Conn) *[]string {
 	tries := 0
-	coinKeyWord := SocketMessage{Msg:"coins", Source: "portfolio_manager", Destination: "main_data_consumer"}
+	coinKeyWord := SocketMessage{Msg: "coins", Source: "portfolio_manager", Destination: "main_data_consumer"}
 	for i := 0; i < 5; i++ {
 		tries = i
 		writer := bufio.NewWriter(*dataConsConn)
@@ -132,7 +132,7 @@ func getCoins(dataConsConn *net.Conn) *[]string {
 		response, err := bufio.NewReader(*dataConsConn).ReadBytes('\x00')
 		if err == nil {
 			var coinJson []string
-			response = response[:len(response) - 1]
+			response = response[:len(response)-1]
 			err = json.Unmarshal([]byte(response), &coinJson)
 			return &coinJson
 		}
