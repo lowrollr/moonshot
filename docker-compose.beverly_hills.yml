@@ -11,6 +11,8 @@ services:
       - ./data:/var/lib/postgres/data
     
   portfolio_manager:
+    environment: 
+      - DEBUG=1
     build: ./portfolio_manager
     depends_on:
       - beverly_hills
@@ -24,6 +26,8 @@ services:
       - seccomp:unconfined
 
   beverly_hills:
+    environment: 
+      - DEBUG=1
     build: ./beverly_hills
     depends_on: 
       - crypto_db
@@ -35,6 +39,8 @@ services:
       - "8765:8765"
 
   main_data_consumer:
+    environment: 
+      - DEBUG=1
     build: ./main_data_consumer
     depends_on:
       - crypto_db
@@ -47,6 +53,8 @@ services:
       - seccomp:unconfined
 
   frontend:
+    environment: 
+      - DEBUG=1
     build: ./frontend
     depends_on: 
       - main_data_consumer
