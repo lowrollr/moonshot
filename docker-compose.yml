@@ -42,4 +42,4 @@ services:
     restart: "on-failure"
     env_file: frontend/.env
     ports:
-      - "1337:1337"
+      - "8050:8050"

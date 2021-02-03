@@ -30,6 +30,9 @@ func initStrategy(_coins *[]string) *Strategy {
 
 func initAtlas(_coins *[]string) *Atlas {
 	var atlas Atlas
+	atlas.looking_to_enter = make(map[string]bool)
+	atlas.limit_up = make(map[string]float32)
+	atlas.stop_loss = make(map[string]float32)
 	atlas.Strategy = initStrategy(_coins)
 	for _, coin := range atlas.Strategy.coins {
 		atlas.looking_to_enter[coin] = false

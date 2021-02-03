@@ -4,8 +4,8 @@ import os
 import json
 
 def startClient(name, port):
-    tries = 0
-    while tries < 5:
+    
+    while True:
         try:
             conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             conn.connect((name, int(port)))
@@ -17,8 +17,8 @@ def startClient(name, port):
         except Exception as e:
             print(f"Could not connect to {name}:{port} because {e}. Retrying...")
         finally:
-            time.sleep(1 << tries)
-            tries += 1
+            time.sleep(3)
+            
     raise Exception(f"Was not able to connect to {name}:{port}")
 
 def readData(conn):

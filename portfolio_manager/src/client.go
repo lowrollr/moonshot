@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
-	"math"
 	"net"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (client *Client) Write() {
@@ -58,7 +58,8 @@ func ConnectServer(destination string) *net.Conn {
 	const timeout = 1 * time.Minute
 	//Iterating through the amount of tries to connect to database
 	var err error
-	for tries := 0; tries < 100; tries++ {
+
+	for {
 		conn, err := net.Dial("tcp", destination)
 		if err == nil {
 			return &conn
@@ -68,6 +69,7 @@ func ConnectServer(destination string) *net.Conn {
 	}
 	log.Panic("Could not connect to the %s with final error %s.", destination, err.Error())
 	return nil
+
 }
 
 func startClient() map[string]*net.Conn {
@@ -86,17 +88,21 @@ func StartRemoteServer(serverConn *net.Conn, destination_str string) {
 		if err != nil {
 			log.Panic("could not turn SocketMessage into byte array")
 		}
-		writeLen, err := writer.Write(startBytes)
+		writeLen, err1 := writer.Write(startBytes)
 		_ = writer.Flush()
-		if err != nil {
-			log.Panic("Was not able to connect/write to", destination_str)
+		if err1 != nil {
+			log.Warn("Was not able to connect/write to", destination_str)
 		}
 		for writeLen < len(startBytes) {
 			newLength, err := writer.Write(startBytes[writeLen:])
 			if err != nil {
-				log.Panic("Was only able to send partial coin keyword to main data consumer")
+				log.Warn("Was only able to send partial coin keyword to main data consumer")
 			}
 			writeLen += newLength
+
+		}
+		if err1 == nil && err == nil {
+			return
 		}
 		time.Sleep(time.Second << uint(tries))
 	}
@@ -104,10 +110,10 @@ func StartRemoteServer(serverConn *net.Conn, destination_str string) {
 }
 
 func getCoins(dataConsConn *net.Conn) *[]string {
-	tries := 0
+
 	coinKeyWord := SocketMessage{Msg: "coins", Source: "portfolio_manager", Destination: "main_data_consumer"}
-	for i := 0; i < 5; i++ {
-		tries = i
+	for {
+
 		writer := bufio.NewWriter(*dataConsConn)
 		coinBytes, err := json.Marshal(coinKeyWord)
 		if err != nil {
@@ -136,8 +142,8 @@ func getCoins(dataConsConn *net.Conn) *[]string {
 			err = json.Unmarshal([]byte(response), &coinJson)
 			return &coinJson
 		}
-		log.Println("Could not get coins from main dat aconsumer. Trying again. On try %u", tries)
-		time.Sleep(time.Duration(math.Pow(float64(tries), 2)) * time.Second)
+		log.Println("Could not get coins from main dat aconsumer. Trying again. ")
+		time.Sleep(3 * time.Second)
 	}
 	log.Panic("Could not get the coins from main data consumer")
 	return nil
