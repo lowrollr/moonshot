@@ -25,6 +25,7 @@ type CoinInfo struct {
 type PortfolioManager struct {
 	strat             *interface{}
 	clientConnections map[string]*net.Conn
+	FrontendSocket    *net.Conn
 	coinDict          map[string]*CoinInfo
 	coins             *[]string
 	free_cash         float32

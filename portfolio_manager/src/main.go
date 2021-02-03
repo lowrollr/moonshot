@@ -7,14 +7,14 @@ import (
 )
 
 func main() {
-	time.Sleep(8 * time.Second)
+	time.Sleep(5 * time.Second)
 	// binanceClinet := *binance.NewClient(apiKey, secretKey)
 
 	pm := initPM(100.0)
 	atlas := initAtlas(pm.coins)
 	pm.SetStrategy(atlas)
 
-	startServer()
+	pm.FrontendSocket = startServer()
 	pm.StartTrading()
 
 	// _ = initAtlas(&coins)
