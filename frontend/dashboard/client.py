@@ -4,7 +4,6 @@ import os
 import json
 
 def startClient(name, port):
-    
     while True:
         try:
             conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,8 +39,20 @@ def readData(conn):
         pass
     return data
 
+def retrieveCoinData(pm_socket):
+    coins = ""
+    # time.sleep(1)
+    while True:
+        pm_socket.send(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
+        coins = readData(pm_socket)
+        if len(coins) > 0:
+            break
+    print("Received coins from data coinsumer")
+    return coins
+
 def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
+    coins = retrieveCoinData(pm_conn)
     p_value = 0.0
     
     while True:

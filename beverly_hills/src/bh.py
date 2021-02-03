@@ -84,7 +84,7 @@ class BeverlyHills():
         s.listen(2)
 
         while True:
-            if self.numClients < 1:
+            if self.numClients < 2:
                 client, address = s.accept()
                 
                 mesg = client.recv(1024)
