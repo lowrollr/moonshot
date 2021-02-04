@@ -2,7 +2,7 @@ FROM golang
 
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
-
+RUN go get github.com/derekparker/delve/cmd/dlv
 # RUN apk update && apk add --no-cache git
 WORKDIR /go/src
 COPY src .

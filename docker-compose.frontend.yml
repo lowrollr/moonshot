@@ -59,7 +59,7 @@ services:
       - main_data_consumer
       - beverly_hills
       - portfolio_manager
-    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 dashboard/start.py "]
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 dashboard/app.py "]
     restart: "on-failure"
     env_file: frontend/.env
     ports:

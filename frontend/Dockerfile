@@ -8,4 +8,4 @@ COPY requirements.txt /
 RUN pip install  -r  /requirements.txt
 COPY .  .
 
-CMD ["python", "./dashboard/start.py"]
+CMD ["python", "./dashboard/app.py"]
