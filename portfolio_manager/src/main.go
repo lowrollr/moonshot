@@ -1,13 +1,8 @@
 package main
 
-import (
-	//"alert"
-
-	"time"
-)
+//"alert"
 
 func main() {
-	time.Sleep(10 * time.Second)
 	// binanceClinet := *binance.NewClient(apiKey, secretKey)
 
 	pm := initPM(100.0)

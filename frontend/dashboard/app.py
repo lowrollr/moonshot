@@ -30,7 +30,6 @@ from dash.dependencies import Input, Output
 # Finally, we'll initialize the Dash App.
 
 # Initialize Data Structures
-time.sleep(15)
 container_statuses = dict()
 for c in {'PSM', 'Beverly Hills', 'Data Consumer', 'Binance'}:
     container_statuses[c] = Status()
@@ -110,4 +109,4 @@ def updateStatus(n):
 
 if __name__ == '__main__':
     
-    app.run_server(debug=True)
+    app.run_server()

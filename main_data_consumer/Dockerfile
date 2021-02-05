@@ -12,7 +12,7 @@ RUN go get -d -v
 
 RUN apt update
 RUN apt install net-tools
-
+RUN chmod +x wait-for-it.sh
 
 # RUN pwd
 # RUN ls
@@ -33,5 +33,5 @@ RUN apt install net-tools
 # CMD ["/dlv", "--listen=:1234", "--headless=true", "--api-version=2", "exec", "./app"]
 
 RUN CGO_ENABLED=0 go build -gcflags "all=-N -l" -o ./main_data_consumer .
-CMD ./main_data_consumer
+CMD ./wait-for-it.sh crypto_db:5432 -t 0 -- ./main_data_consumer
 # CMD ["dlv", "debug", "--listen=:4040", "--headless=true", "--api-version=2", "--log", "."]

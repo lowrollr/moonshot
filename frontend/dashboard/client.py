@@ -14,7 +14,7 @@ def startClient(name, port):
             else:
                 print(f"Could not connect to {name}:{port}. Retrying...")
         except Exception as e:
-            print(f"Could not connect to {name}:{port} because {e}. Retrying...")
+            print(f"Could not connect to {name}:{port} because {e}. Retrying...", flush=True)
         finally:
             time.sleep(3)
             
@@ -39,12 +39,12 @@ def readData(conn):
         pass
     return data
 
-def retrieveCoinData(pm_socket):
+def retrieveCoinData(dc_socket):
     coins = ""
     # time.sleep(1)
     while True:
-        pm_socket.send(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
-        coins = readData(pm_socket)
+        dc_socket.send(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
+        coins = readData(dc_socket)
         if len(coins) > 0:
             break
     print("Received coins from data coinsumer")
@@ -52,7 +52,7 @@ def retrieveCoinData(pm_socket):
 
 def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
-    coins = retrieveCoinData(pm_conn)
+    
     p_value = 0.0
     
     while True:
@@ -83,6 +83,7 @@ def BHSocket(bh_status):
 
 def DCSocket(dc_status, coin_datastreams):
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
+    coins = retrieveCoinData(dc_conn)
     while True:
         data = readData(dc_conn)
         if data:

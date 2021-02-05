@@ -12,7 +12,7 @@
             "host": "localhost",
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/frontend",
+                    "localRoot": "${workspaceFolder}/frontend/",
                     "remoteRoot": "/code"
                 }
             ]
@@ -64,7 +64,7 @@
             "host": "172.21.0.4",
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/beverly_hills",
+                    "localRoot": "${workspaceFolder}/beverly_hills/",
                     "remoteRoot": "/code"
                 }
             ]
