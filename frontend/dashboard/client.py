@@ -52,7 +52,7 @@ def retrieveCoinData(dc_socket):
 
 def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
-    pm_conn.sendall()
+    # pm_conn.sendall()
     p_value = 0.0
     
     while True:
