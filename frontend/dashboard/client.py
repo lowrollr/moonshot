@@ -43,7 +43,7 @@ def retrieveCoinData(dc_socket):
     coins = ""
     # time.sleep(1)
     while True:
-        dc_socket.send(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
+        dc_socket.sendall(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
         coins = readData(dc_socket)
         if len(coins) > 0:
             break
@@ -52,7 +52,7 @@ def retrieveCoinData(dc_socket):
 
 def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
-    
+    pm_conn.sendall()
     p_value = 0.0
     
     while True:
