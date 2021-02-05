@@ -43,11 +43,11 @@ func (data *DataConsumer) SyncSetUp() {
 
 func (data *DataConsumer) ServerListen() {
 	data.Clients = make(map[string]*Client)
-	
-	for data.NumConnections < 3{
+
+	for data.NumConnections < 3 {
 		//change this so that it's more multithreaded. Have goroutine for each service
 		// when each have been hit with start, then you can start running
-		log.Println("Accepting for a connection")
+		log.Println("Waiting for a connection...")
 		conn, err := (*data.SocketServer).Accept()
 		if err != nil {
 			log.Panic("Could not make connection " + err.Error())
@@ -63,6 +63,8 @@ func (data *DataConsumer) ServerListen() {
 			var ClientJson SocketMessage
 			ClientBytes := bytes.Trim(*client.Receive(), "\x00")
 			err = json.Unmarshal(ClientBytes, &ClientJson)
+
+			log.Println("Connected to ", ClientJson.Source)
 
 			if ClientJson.Msg == "'coins'" || ClientJson.Msg == "\"coins\"" || ClientJson.Msg == "coins" {
 				CoinJson = append(CoinJson, '\x00')
@@ -113,7 +115,7 @@ func (data *DataConsumer) Consume() {
 func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
 	for {
 		log.Println("Starting goroutine for getting minute kline for data of coin: " + symbol)
-		stop_candle_chan, _, err := binance.WsKlineServe(symbol, klineInterval, tradeKlineDataConsumer, ErrorTradeHandler)
+		stop_candle_chan, _, err := binance.WsKlineServe(symbol, klineInterval, data.KlineDataConsumerStoreSend, ErrorTradeHandler)
 		if err != nil {
 			log.Warn("Was not able to open websoocket for the kline " + symbol + " with error: " + err.Error())
 			printNumSockets()
@@ -122,6 +124,32 @@ func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
 		log.Println("Restarting socket for obtaining minute kline data from coin: " + symbol)
 		printNumSockets()
 	}
+}
+
+func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsKlineEvent) {
+	now := time.Now()
+	times_per_min := 1
+	
+	//store in db
+	err := Dumbo.StoreCryptoKline(event)
+	if err != nil {
+		log.Warn("Was not able to store kline data with error: " + err.Error())
+		printNumSockets()
+	}
+	
+	wg := new(sync.WaitGroup)
+	wg.Add(len(data.Clients))
+	for destinationStr, client := range data.Clients {
+		klineMessage := SocketKlineMessage{
+			Source:      "main_data_consumer",
+			Destination: destinationStr,
+			Msg:         event.Kline,
+		}
+		klineByte, _ := json.Marshal(klineMessage)
+		client.WriteSocketMessage(klineByte, wg)
+	}
+	wg.Wait()
+	EfficientSleep(times_per_min, now, time.Minute)
 }
 
 func InitConsume() {
