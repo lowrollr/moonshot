@@ -81,12 +81,17 @@ def BHSocket(bh_status):
         if data:
             bh_status.ping()
 
-def DCSocket(dc_status, coin_datastreams):
-    dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
-    coins = retrieveCoinData(dc_conn)
+def DCSocket(dc_conn, dc_status, coin_datastreams):
+    
     while True:
         data = readData(dc_conn)
         if data:
             dc_status.ping()
             for coin in data:
                 coin_datastreams[coin].update(data[coin])
+
+def getCoins():
+    dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
+    coins = retrieveCoinData(dc_conn)
+
+    return dc_conn, coins
