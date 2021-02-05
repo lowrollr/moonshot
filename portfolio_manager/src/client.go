@@ -10,12 +10,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (client *Client) Write() {
-	for data := range client.outgoing {
-		client.writer.WriteString(data)
-		client.writer.Flush()
-	}
-}
+// func (client *Client) Write() {
+// 	for data := range client.outgoing {
+// 		client.writer.WriteString(data)
+// 		client.writer.Flush()
+// 	}
+// }
+
+
 
 func (client *Client) Read() {
 	for {
@@ -62,6 +64,7 @@ func ConnectServer(destination string) *net.Conn {
 	for {
 		conn, err := net.Dial("tcp", destination)
 		if err == nil {
+			log.Println("Connected to ", destination)
 			return &conn
 		}
 		log.Printf("Could not connect to the %s with error: %s Retrying...", destination, err.Error())

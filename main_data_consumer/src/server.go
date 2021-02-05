@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"os"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -30,11 +29,26 @@ func (client *Client) Read() {
 	client = nil
 }
 
-func (client *Client) Write() {
-	for data := range client.outgoing {
-		client.writer.WriteString(data)
-		client.writer.Flush()
+func (client *Client) Write(payload []byte) {
+	// client.writer.WriteString(data)
+	// client.writer.Flush()
+
+}
+
+func (client *Client) WriteSocketMessage(payload []byte, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var err error
+	writeLen, err := client.writer.Write(payload)
+	_ = client.writer.Flush()
+	if err != nil {
+		//Not able to send information
+		//Try to send again or reconnect depending on the error message
 	}
+	for writeLen < len(payload) {
+		newLength, _ := client.writer.Write(payload[writeLen:])
+		writeLen += newLength
+	}
+	return
 }
 
 func (client *Client) Listen() {
@@ -72,27 +86,6 @@ func (client *Client) Receive() *[]byte {
 		}
 	}
 	return &retByte
-}
-
-func startServer() {
-	allClients = make(map[*Client]int)
-	listener, _ := net.Listen("tcp", ":"+string(os.Getenv("SERVERPORT")))
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		client := NewClient(conn)
-		// for clientList, _ := range allClients {
-		// 	if clientList.connection == nil {
-		// 		client.connection = clientList
-		// 		clientList.connection = client
-		// 		fmt.Println("Connected")
-		// 	}
-		// }
-		allClients[client] = 1
-		fmt.Println(len(allClients))
-	}
 }
 
 func NewClient(connection net.Conn) *Client {
