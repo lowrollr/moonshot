@@ -8,7 +8,8 @@ WORKDIR /go/src
 COPY src .
 RUN go get -d -v
 RUN go build -v -o portfolio_manager
-CMD ./portfolio_manager
+RUN chmod +x wait-for-it.sh
+CMD ./wait-for-it.sh beverly_hills:7979 -t 0 -- ./portfolio_manager
 
 # RUN go get -d -v
 # RUN go get github.com/derekparker/delve/cmd/dlv

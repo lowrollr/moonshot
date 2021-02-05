@@ -8,10 +8,6 @@ WHAT:
 */
 package main
 
-import (
-	"time"
-)
-
 /*
 	ARGS:
         -> N/A
@@ -24,7 +20,6 @@ import (
         -> General review of this code since it is pretty critical
 */
 func main() {
-	time.Sleep(3 * time.Second)
 	Dumbo = &dumbo{}
 	dataConsumer := DataConsumer{}
 
