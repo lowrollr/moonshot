@@ -56,6 +56,7 @@ func (data *DataConsumer) ServerListen() {
 		if err != nil {
 			log.Panic("Could not make connection " + err.Error())
 		}
+
 		client := NewClient(conn)
 
 		CoinJson, err := json.Marshal(data.Coins)
@@ -66,6 +67,7 @@ func (data *DataConsumer) ServerListen() {
 		for {
 			ClientBytes := bytes.Trim(*client.Receive(), "\x00")
 			if len(ClientBytes) == 0 {
+				conn.Close()
 				break
 			}
 

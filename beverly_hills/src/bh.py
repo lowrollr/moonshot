@@ -75,13 +75,16 @@ class BeverlyHills():
             raise Exception(f"Was not able to create socket server and bind to host and port. Error: {e}")
 
         print("Waiting for a connection")
-        s.listen(2)
+        s.listen(256)
 
         while True:
             if self.numClients < 2:
                 client, address = s.accept()
                 
                 mesg = client.recv(1024)
+                if not b'':
+                    client.close()
+                    continue
                 mesg_obj = json.loads(mesg)
                 if not "msg" in mesg_obj:
                     raise Exception(f"Did not provide start message in proper format. Need msg as key in dict. Object Received: {mesg_obj}")
