@@ -41,6 +41,10 @@ func (data *DataConsumer) SyncSetUp() {
 	wg.Wait()
 }
 
+func (data *DataConsumer) SendCoins() {
+
+}
+
 func (data *DataConsumer) ServerListen() {
 	data.Clients = make(map[string]*Client)
 
@@ -60,11 +64,13 @@ func (data *DataConsumer) ServerListen() {
 		}
 
 		for {
-			var ClientJson SocketMessage
 			ClientBytes := bytes.Trim(*client.Receive(), "\x00")
-			err = json.Unmarshal(ClientBytes, &ClientJson)
+			if len(ClientBytes) == 0 {
+				break
+			}
 
-			log.Println("Connected to ", ClientJson.Source)
+			var ClientJson SocketMessage
+			err = json.Unmarshal(ClientBytes, &ClientJson)
 
 			if ClientJson.Msg == "'coins'" || ClientJson.Msg == "\"coins\"" || ClientJson.Msg == "coins" {
 				CoinJson = append(CoinJson, '\x00')
@@ -129,14 +135,14 @@ func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
 func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsKlineEvent) {
 	now := time.Now()
 	times_per_min := 1
-	
+
 	//store in db
 	err := Dumbo.StoreCryptoKline(event)
 	if err != nil {
 		log.Warn("Was not able to store kline data with error: " + err.Error())
 		printNumSockets()
 	}
-	
+
 	wg := new(sync.WaitGroup)
 	wg.Add(len(data.Clients))
 	for destinationStr, client := range data.Clients {

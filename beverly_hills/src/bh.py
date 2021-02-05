@@ -40,15 +40,9 @@ class BeverlyHills():
                 tries += 1
                 print(e)
                 time.sleep(5)
-                
-        if conn is None:
-            raise Exception(f"Was not able to connect with the Data Consumer after {tries} tries. Stop everything")
-
-        print("Connected to Main Data Consumer", flush=True)
 
         self.consumerSocket = conn
         coins = ""
-        time.sleep(1)
         while True:
             conn.send(bytes(json.dumps({"msg":"coins", "source":"beverly_hills", "destination":"main_data_consumer"}),encoding='utf-8'))
             coins = readData(conn)

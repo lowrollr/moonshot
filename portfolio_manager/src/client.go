@@ -17,15 +17,13 @@ import (
 // 	}
 // }
 
-
-
 func (client *Client) Read() {
 	for {
 		line, err := client.reader.ReadString('\n')
 		if err == nil {
 			fmt.Println(line)
 			client.outgoing <- line
-			client.Write()
+			// client.Write()
 		} else {
 			break
 		}
