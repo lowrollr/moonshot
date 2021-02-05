@@ -76,6 +76,7 @@ func startServer() *net.Conn{
 		if err != nil {
 			fmt.Println(err.Error())
 		}
+		
 		return &conn
 	}
 }

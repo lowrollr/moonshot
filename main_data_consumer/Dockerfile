@@ -34,4 +34,5 @@ RUN chmod +x wait-for-it.sh
 
 RUN CGO_ENABLED=0 go build -gcflags "all=-N -l" -o ./main_data_consumer .
 CMD ./wait-for-it.sh crypto_db:5432 -t 0 -- ./main_data_consumer
+
 # CMD ["dlv", "debug", "--listen=:4040", "--headless=true", "--api-version=2", "--log", "."]
