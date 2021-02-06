@@ -20,16 +20,20 @@ def startClient(name, port):
             
     raise Exception(f"Was not able to connect to {name}:{port}")
 
-def readData(conn):
+def readData(conn, name, port):
     data = ''
     while True:
-        buffer = conn.recv(1024)
-        if buffer:
-            data += buffer.decode('utf-8')
-            if len(buffer) < 1024:
+        try:
+            buffer = conn.recv(1024)
+            if buffer:
+                data += buffer.decode('utf-8')
+                if len(buffer) < 1024:
+                    break
+            else:
                 break
-        else:
-            break
+        except ConnectionResetError as err:
+            conn = startClient(name, port)
+            continue
     try:
         if data:
             data = json.loads(data)
@@ -47,7 +51,7 @@ def retrieveCoinData(dc_socket):
         coins = readData(dc_socket)
         if len(coins) > 0:
             break
-    print("Received coins from data coinsumer")
+    print("Received coins from data consumer")
     return coins
 
 def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
@@ -56,7 +60,7 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
     p_value = 0.0
     
     while True:
-        data = readData(pm_conn)
+        data = readData(pm_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:
             pm_status.ping()
             if 'enter' in data:
@@ -77,14 +81,14 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
 def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
     while True:
-        data = readData(bh_conn)
+        data = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:
             bh_status.ping()
 
 def DCSocket(dc_conn, dc_status, coin_datastreams):
     
     while True:
-        data = readData(dc_conn)
+        data = readData(dc_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:
             dc_status.ping()
             for coin in data:
