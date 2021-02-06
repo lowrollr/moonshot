@@ -52,7 +52,7 @@ def retrieveCoinData(dc_socket):
 
 def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
-    pm_conn.sendall()
+    # pm_conn.sendall()
     p_value = 0.0
     
     while True:
@@ -81,12 +81,17 @@ def BHSocket(bh_status):
         if data:
             bh_status.ping()
 
-def DCSocket(dc_status, coin_datastreams):
-    dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
-    coins = retrieveCoinData(dc_conn)
+def DCSocket(dc_conn, dc_status, coin_datastreams):
+    
     while True:
         data = readData(dc_conn)
         if data:
             dc_status.ping()
             for coin in data:
                 coin_datastreams[coin].update(data[coin])
+
+def getCoins():
+    dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
+    coins = retrieveCoinData(dc_conn)
+
+    return dc_conn, coins

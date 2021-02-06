@@ -7,7 +7,8 @@ from data import (
 from client import (
     PMSocket,
     BHSocket,
-    DCSocket
+    DCSocket,
+    getCoins
 )
 from page import (
     createPage,
@@ -35,8 +36,8 @@ for c in {'PSM', 'Beverly Hills', 'Data Consumer', 'Binance'}:
     container_statuses[c] = Status()
 #PRETEND WE GET THE COINS HERE
 #TODO actually get the coins
-coins = ['BTC']
-
+dc_conn, coins = getCoins()
+print(coins)
 coin_datastreams = dict()
 for coin in coins:
     coin_datastreams[coin] = DataStream(name=coin)
@@ -45,8 +46,15 @@ porfolio_datastream = DataStream(name='portfolio')
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
 
-#Initialize Threads
-threads = []
+
+
+dc_socket_thread = threading.Thread(target=DCSocket, args=(
+        dc_conn,
+        container_statuses['Data Consumer'], 
+        coin_datastreams,))
+
+bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
+
 psm_socket_thread = threading.Thread(target=PMSocket, args=(
     container_statuses['PSM'], 
     porfolio_datastream,
@@ -55,15 +63,12 @@ psm_socket_thread = threading.Thread(target=PMSocket, args=(
     cur_positions.positions,
     ))
 
-bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
-
-dc_socket_thread = threading.Thread(target=DCSocket, args=(
-    container_statuses['Data Consumer'], 
-    coin_datastreams,))
-
-dc_socket_thread.start()
+dc_socket_thread.start() 
 bh_socket_thread.start()
 psm_socket_thread.start()
+
+
+
 
 # Initialize Dash App
 app = dash.Dash(__name__)
