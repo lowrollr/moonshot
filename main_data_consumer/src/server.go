@@ -63,7 +63,7 @@ func (client *Client) WaitStart(wg *sync.WaitGroup) {
 		_, err := client.conn.Read(message)
 		if err == nil && (string(message) == "start" || string(message) == "'start'" || string(message) == "\"start\"") {
 			break
-		} else if err != nil {
+		} else if err != nil && string(message) == "" {
 			// client.conn.Close()
 			// //try to reconnectF
 			log.Println(err)
