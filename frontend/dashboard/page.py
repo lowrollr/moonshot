@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 
 
 def createPage(toptext, plot, position_elems, status_elems):
-    return html.Div([
+    return html.Div(children=[
         dcc.Interval(
             id='auto_update',
             interval=500,

@@ -48,7 +48,7 @@ def retrieveCoinData(dc_socket):
     # time.sleep(1)
     while True:
         dc_socket.sendall(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
-        coins = readData(dc_socket)
+        coins = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
         if len(coins) > 0:
             break
     print("Received coins from data consumer")

@@ -24,13 +24,17 @@ def startClient():
 def readData(conn):
     data = ''
     while True:
-        buffer = conn.recv(1024)
-        if buffer:
-            data += buffer.decode('utf-8')
-            if len(buffer) < 1024:
+        try:
+            buffer = conn.recv(1024)
+            if buffer:
+                data += buffer.decode('utf-8')
+                if len(buffer) < 1024:
+                    break
+            else:
                 break
-        else:
-            break
+        except ConnectionResetError as err:
+            conn = startClient()
+            continue
     try:
         data = json.loads(data)
     except:

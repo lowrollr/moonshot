@@ -30,6 +30,8 @@ from dash.dependencies import Input, Output
 # Then, we'll initialize some socket-listening threads.
 # Finally, we'll initialize the Dash App.
 
+external_stylesheets = ["./assets/main.css"]
+
 # Initialize Data Structures
 container_statuses = dict()
 for c in {'PSM', 'Beverly Hills', 'Data Consumer', 'Binance'}:
@@ -114,4 +116,4 @@ def updateStatus(n):
 
 if __name__ == '__main__':
     
-    app.run_server()
+    app.run_server(debug=True)
