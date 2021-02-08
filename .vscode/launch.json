@@ -10,6 +10,7 @@
             "request": "attach",
             "port": 5678,
             "host": "localhost",
+            "justMyCode": false,
             "pathMappings": [
                 {
                     "localRoot": "${workspaceFolder}/frontend/",
@@ -61,13 +62,13 @@
             "type": "python",
             "request": "attach",
             "port": 8765,
-            "host": "172.21.0.4",
+            "host": "localhost",
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/beverly_hills/",
+                    "localRoot": "${workspaceFolder}/beverly_hills/src/",
                     "remoteRoot": "/code"
                 }
             ]
-        }
+        },
     ]
 }
