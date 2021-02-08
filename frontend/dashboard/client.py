@@ -98,11 +98,13 @@ def DCSocket(dc_conn, dc_status, coin_datastreams):
         data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
             dc_status.ping()
+            coin_name = data['msg']['s'][:-4]
+            close_price = float(data['msg']['c'])
             for coin in data:
-                coin_datastreams[coin].update(data[coin])
+                coin_datastreams[coin_name].update(close_price)
 
 def getCoins():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
     coins = retrieveCoinData(dc_conn)
-
+    coins = json.loads(coins.split('\x00')[0])
     return dc_conn, coins
