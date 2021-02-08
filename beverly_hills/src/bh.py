@@ -82,26 +82,30 @@ class BeverlyHills():
                 client, address = s.accept()
                 
                 mesg = client.recv(1024)
-                if not b'':
+                if mesg == b'':
                     client.close()
                     continue
                 mesg_obj = json.loads(mesg)
+                
                 if not "msg" in mesg_obj:
-                    raise Exception(f"Did not provide start message in proper format. Need msg as key in dict. Object Received: {mesg_obj}")
-                if mesg_obj["msg"] == "start":
+                    raise Exception(f"Did not provide init message in proper format. Need msg as key in dict. Object Received: {mesg_obj}")
+                if mesg_obj["msg"] == "init":
                     if not "source" in mesg_obj:
-                        raise Exception("Did not provide start message in proper format. Need source as key in dict")
+                        raise Exception("Did not provide init message in proper format. Need source as key in dict")
                     if not mesg_obj["source"] in clientFunctions:
                         raise Exception(f"The provided destination is not in the dictionary. Provided {mesg_obj['source']} from {mesg_obj}.")
                     print(f"Received connection from {address} or {mesg_obj['source']}")
                     self.numClients += 1
+
                     # Thread(target=clientFunctions[mesg_obj["source"]], args=(client)).start()
             else:
                 break
         s.close()
 
         #send start to data consumer
-        self.consumerSocket.sendall(json.dumps(bytes({"msg":"start", "destination":"main_data_consumer", "source":"beverly_hills"},encoding='utf-8')))
+        self.consumerSocket.sendall(bytes(json.dumps({"msg":"start", "destination":"main_data_consumer", "source":"beverly_hills"}),encoding='utf-8'))
+        while True:
+            time.sleep(2)
 
 def pingFrontend(conn):
     while True:

@@ -8,7 +8,8 @@ from client import (
     PMSocket,
     BHSocket,
     DCSocket,
-    getCoins
+    getCoins,
+    startInit
 )
 from page import (
     createPage,
@@ -49,7 +50,6 @@ cur_positions = Positions(coins)
 position_history = PositionStream(coins)
 
 
-
 dc_socket_thread = threading.Thread(target=DCSocket, args=(
         dc_conn,
         container_statuses['Data Consumer'], 
@@ -68,7 +68,6 @@ psm_socket_thread = threading.Thread(target=PMSocket, args=(
 dc_socket_thread.start() 
 bh_socket_thread.start()
 psm_socket_thread.start()
-
 
 
 
@@ -101,7 +100,6 @@ def displayPage(pathname):
                 position_elems = getCoinPositions(coin, cur_positions.positions),
                 plot = getFig(coin_datastreams[coin].day_data)
             )
-
 
 
 @app.callback(Output('container_statuses', 'children'),
