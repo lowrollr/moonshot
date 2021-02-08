@@ -20,6 +20,14 @@ def startClient(name, port):
             
     raise Exception(f"Was not able to connect to {name}:{port}")
 
+def startInit(conn, dest, port):
+    while True:
+        try:
+            conn.sendall(bytes(json.dumps({"msg":"init", "source":"frontend", "destination":dest}), encoding='utf-8'))
+            return
+        except ConnectionResetError:
+            conn = startClient(dest, port)
+
 def readData(conn, name, port):
     data = ''
     while True:
@@ -31,7 +39,7 @@ def readData(conn, name, port):
                     break
             else:
                 break
-        except ConnectionResetError as err:
+        except ConnectionResetError:
             conn = startClient(name, port)
             continue
     try:
@@ -45,7 +53,6 @@ def readData(conn, name, port):
 
 def retrieveCoinData(dc_socket):
     coins = ""
-    # time.sleep(1)
     while True:
         dc_socket.sendall(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
         coins = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
@@ -56,7 +63,7 @@ def retrieveCoinData(dc_socket):
 
 def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
-    # pm_conn.sendall()
+    startInit(pm_conn, "portfolio_manager", os.environ["PM_PORT"])
     p_value = 0.0
     
     while True:
@@ -80,6 +87,7 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
 
 def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
+    startInit(bh_conn, "beverly_hills", os.environ["BH_PORT"])
     while True:
         data = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:

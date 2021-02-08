@@ -8,7 +8,8 @@ from client import (
     PMSocket,
     BHSocket,
     DCSocket,
-    getCoins
+    getCoins,
+    startInit
 )
 from page import (
     createPage,
@@ -71,7 +72,6 @@ psm_socket_thread.start()
 
 
 
-
 # Initialize Dash App
 app = dash.Dash(__name__)
 
@@ -101,7 +101,6 @@ def displayPage(pathname):
                 position_elems = getCoinPositions(coin, cur_positions.positions),
                 plot = getFig(coin_datastreams[coin].day_data)
             )
-
 
 
 @app.callback(Output('container_statuses', 'children'),

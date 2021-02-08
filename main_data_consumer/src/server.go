@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net"
 	"sync"
@@ -55,13 +57,14 @@ func (client *Client) Listen() {
 
 }
 
-func (client *Client) WaitStart(wg *sync.WaitGroup) {
-	defer wg.Done()
+func (client *Client) WaitStart() {
 	//listen until start keyword
 	for {
+		var startMsg SocketMessage
 		message := make([]byte, 1024)
 		_, err := client.conn.Read(message)
-		if err == nil && (string(message) == "start" || string(message) == "'start'" || string(message) == "\"start\"") {
+		err = json.Unmarshal(bytes.Trim(message, "\x00"), &startMsg)
+		if err == nil && (startMsg.Msg == "start" || startMsg.Msg == "'start'" || startMsg.Msg == "\"start\"") {
 			break
 		} else if err != nil && string(message) == "" {
 			// client.conn.Close()

@@ -90,13 +90,12 @@ func (data *DataConsumer) ServerListen() {
 		}
 	}
 	//listen for start messages from all three
-	wg := new(sync.WaitGroup)
-	wg.Add(len(data.Clients))
 
-	for _, client := range data.Clients {
-		go client.WaitStart(wg)
+	for source, client := range data.Clients {
+		if source == "beverly_hills" {
+			client.WaitStart()
+		}
 	}
-	wg.Wait()
 }
 
 func (data *DataConsumer) StartConsume() {

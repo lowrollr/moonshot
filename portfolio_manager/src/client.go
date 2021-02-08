@@ -28,7 +28,6 @@ func (client *Client) Read() {
 			break
 		}
 	}
-
 	client.conn.Close()
 	client = nil
 }
@@ -75,8 +74,11 @@ func ConnectServer(destination string) *net.Conn {
 
 func startClient() map[string]*net.Conn {
 	mapDomainConnection := make(map[string]*net.Conn)
-	for _, hostname := range domainToUrl {
-		mapDomainConnection[hostname] = ConnectServer(hostname)
+	for hostname, fullUrl := range domainToUrl {
+		mapDomainConnection[fullUrl] = ConnectServer(fullUrl)
+		if hostname == "beverly_hills" {
+			startInit(mapDomainConnection[fullUrl])
+		}
 	}
 	return mapDomainConnection
 }
@@ -100,7 +102,6 @@ func StartRemoteServer(serverConn *net.Conn, destination_str string) {
 				log.Warn("Was only able to send partial coin keyword to main data consumer")
 			}
 			writeLen += newLength
-
 		}
 		if err1 == nil && err == nil {
 			return
@@ -108,6 +109,27 @@ func StartRemoteServer(serverConn *net.Conn, destination_str string) {
 		time.Sleep(time.Second << uint(tries))
 	}
 	log.Panic("Was not able to send start to ", destination_str)
+}
+
+func startInit(bevConn *net.Conn) {
+	initMsg := SocketMessage{Msg: "init", Source:"portfolio_manager", Destination: "beverly_hills"}
+	writer := bufio.NewWriter(*bevConn)
+	initBytes, err := json.Marshal(initMsg)
+	if err != nil {
+		log.Panic("Could not turn init message into json")
+	}
+	writeLen, err := writer.Write(initBytes)
+	if err != nil {
+		log.Panic("Was not able to send init message to beverly hills")
+	}
+	for writeLen < len(initBytes) {
+		newLength, err := writer.Write([]byte(initBytes[writeLen:]))
+		if err != nil {
+			log.Panic("Was only able to send partial init keyword to beverly hills")
+		}
+		writeLen += newLength
+	}
+	writer.Flush()
 }
 
 func getCoins(dataConsConn *net.Conn) *[]string {
@@ -124,7 +146,7 @@ func getCoins(dataConsConn *net.Conn) *[]string {
 		if err != nil {
 			log.Panic("Was not able to send coin keyword to main data consumer")
 		}
-		for writeLength < 5 {
+		for writeLength < len(coinBytes) {
 			newLength, err := writer.Write([]byte(coinBytes[writeLength:]))
 			if err != nil {
 				log.Panic("Was only able to send partial coin keyword to main data consumer")

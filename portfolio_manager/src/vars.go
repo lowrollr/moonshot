@@ -34,7 +34,7 @@ type ServerClient struct {
 	outgoing chan string
 	reader   *bufio.Reader
 	writer   *bufio.Writer
-	conn     net.Conn
+	conn     *net.Conn
 }
 
 type Client struct {
