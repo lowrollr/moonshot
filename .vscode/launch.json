@@ -65,10 +65,10 @@
             "host": "localhost",
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/beverly_hills/",
+                    "localRoot": "${workspaceFolder}/beverly_hills/src/",
                     "remoteRoot": "/code"
                 }
             ]
-        }
+        },
     ]
 }
