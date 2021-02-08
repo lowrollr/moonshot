@@ -95,7 +95,7 @@ def BHSocket(bh_status):
 
 def DCSocket(dc_conn, dc_status, coin_datastreams):
     while True:
-        data = readData(dc_conn, 'beverly_hills', os.environ['BH_PORT'])
+        data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
             dc_status.ping()
             for coin in data:

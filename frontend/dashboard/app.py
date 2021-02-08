@@ -115,4 +115,4 @@ def updateStatus(n):
 
 if __name__ == '__main__':
     
-    app.server.run(host='192.168.75.216', port=1337)
+    app.run_server(host='0.0.0.0', port=8050)
