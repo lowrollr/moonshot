@@ -50,7 +50,7 @@ position_history = PositionStream(coins)
 
 
 
-dc_socket_thread = threading.Thread(target=DCSocket, args=(
+dc_socket_thread = threading.Thread(conn=dc_conn, target=DCSocket, args=(
         dc_conn,
         container_statuses['Data Consumer'], 
         coin_datastreams,))
@@ -116,4 +116,4 @@ def updateStatus(n):
 
 if __name__ == '__main__':
     
-    app.run_server(debug=True)
+    app.server.run(host='192.168.75.216', port=1337)
