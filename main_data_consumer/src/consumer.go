@@ -9,14 +9,10 @@ WHAT:
 package main
 
 import (
-	"fmt"
-	"math"
-	"strconv"
+	"os/exec"
 	"strings"
 	"time"
-	"os/exec"
 
-	"github.com/ross-hugo/go-binance/v2"
 	log "github.com/sirupsen/logrus"
 )
 
