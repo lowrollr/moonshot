@@ -60,7 +60,7 @@ type Candlestick struct {
 	close     float32
 }
 
-type SocketKlineMessage struct {
+type SocketCandleMessage struct {
 	Msg         Candlestick `json:"msg"`
 	Source      string      `json:"source"`
 	Destination string      `json:"destination"`

@@ -125,14 +125,14 @@ func (data *DataConsumer) Consume() {
 
 func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval string) {
 	for {
-		log.Println("Starting goroutine for getting minute kline for data of coin: " + symbol)
+		log.Println("Starting candlestick go routine for coin: " + symbol)
 		stop_candle_chan, _, err := binance.WsPartialDepthServe100Ms(symbol, "5", data.BuildAndSendCandles, ErrorTradeHandler)
 		if err != nil {
-			log.Warn("Was not able to open websoocket for the kline " + symbol + " with error: " + err.Error())
+			log.Warn("Was not able to open websocket for " + symbol + " with error: " + err.Error())
 			printNumSockets()
 		}
 		<-stop_candle_chan
-		log.Println("Restarting socket for obtaining minute kline data from coin: " + symbol)
+		log.Println("Restarting candlestick socket for coin: " + symbol)
 		printNumSockets()
 	}
 }
@@ -157,15 +157,15 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 		wg := new(sync.WaitGroup)
 		wg.Add(len(data.Clients))
 		for destinationStr, client := range data.Clients {
-			klineMessage := SocketKlineMessage{
+			candleMessage := SocketCandleMessage{
 				Source:      "main_data_consumer",
 				Destination: destinationStr,
 				Msg:         *data.Candlesticks[trade_coin],
 			}
 			if destinationStr == "frontend" {
-				log.Println(klineMessage)
+				log.Println(candleMessage)
 			}
-			klineByte, _ := json.Marshal(klineMessage)
+			klineByte, _ := json.Marshal(candleMessage)
 			client.WriteSocketMessage(klineByte, wg)
 		}
 		wg.Wait()
