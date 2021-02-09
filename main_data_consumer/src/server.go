@@ -40,8 +40,9 @@ func (client *Client) Write(payload []byte) {
 func (client *Client) WriteSocketMessage(payload []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var err error
-	writeLen, err := client.writer.Write(payload)
 	client.writer.Reset(client.writer)
+	writeLen, err := client.writer.Write(payload)
+	
 	if err != nil {
 		//Not able to send information
 		//Try to send again or reconnect depending on the error message

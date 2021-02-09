@@ -122,7 +122,7 @@ func (data *DataConsumer) Consume() {
 func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
 	for {
 		log.Println("Starting goroutine for getting minute kline for data of coin: " + symbol)
-		stop_candle_chan, _, err := binance.WsKlineServe(symbol, klineInterval, data.KlineDataConsumerStoreSend, ErrorTradeHandler)
+		stop_candle_chan, _, err := binance.WsTradeServe(symbol, data.KlineDataConsumerStoreSend, ErrorTradeHandler)
 		if err != nil {
 			log.Warn("Was not able to open websoocket for the kline " + symbol + " with error: " + err.Error())
 			printNumSockets()
@@ -133,33 +133,34 @@ func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
 	}
 }
 
-func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsKlineEvent) {
+func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsTradeEvent) {
 	now := time.Now()
 	times_per_min := 1
 
 	//store in db
-	err := Dumbo.StoreCryptoKline(event)
-	if err != nil {
-		log.Warn("Was not able to store kline data with error: " + err.Error())
-		printNumSockets()
-	}
+	// err := Dumbo.StoreCryptoKline(event)
+	// if err != nil {
+	// 	log.Warn("Was not able to store kline data with error: " + err.Error())
+	// 	printNumSockets()
+	// }
 
-	wg := new(sync.WaitGroup)
-	wg.Add(len(data.Clients))
-	for destinationStr, client := range data.Clients {
-		klineMessage := SocketKlineMessage{
-			Source:      "main_data_consumer",
-			Destination: destinationStr,
-			Msg:         event.Kline,
-		}
-		if destinationStr == "frontend" {
-			log.Println(klineMessage)
-		}
-		klineByte, _ := json.Marshal(klineMessage)
-		client.WriteSocketMessage(klineByte, wg)
-	}
-	wg.Wait()
-	EfficientSleep(times_per_min, now, time.Minute)
+	// wg := new(sync.WaitGroup)
+	// wg.Add(len(data.Clients))
+	// for destinationStr, client := range data.Clients {
+	// 	klineMessage := SocketKlineMessage{
+	// 		Source:      "main_data_consumer",
+	// 		Destination: destinationStr,
+	// 		Msg:         event.Kline,
+	// 	}
+	// 	if destinationStr == "frontend" {
+	// 		log.Println(klineMessage)
+	// 	}
+	// 	klineByte, _ := json.Marshal(klineMessage)
+	// 	client.WriteSocketMessage(klineByte, wg)
+	// }
+	// wg.Wait()
+	log.Println(event)
+	EfficientSleep(times_per_min, now, time.Second)
 }
 
 func InitConsume() {
