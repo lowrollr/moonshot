@@ -152,6 +152,9 @@ func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsKlineEvent
 			Destination: destinationStr,
 			Msg:         event.Kline,
 		}
+		if destinationStr == "frontend" {
+			log.Println(klineMessage)
+		}
 		klineByte, _ := json.Marshal(klineMessage)
 		client.WriteSocketMessage(klineByte, wg)
 	}
