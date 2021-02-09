@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/ross-hugo/go-binance/v2"
 	log "github.com/sirupsen/logrus"
 )
@@ -102,65 +103,44 @@ func (data *DataConsumer) StartConsume() {
 	data.Consume()
 }
 
+func (data *DataConsumer) SendPriceContainers(*binance.WsTradeEvent) {
+	//Send out data to the rest of the containers
+}
+
 func (data *DataConsumer) Consume() {
+	//maybe data class var?
+	var SymbolSockets map[string]*websocket.Conn
+
 	InitConsume()
 
-	klineInterval := "1m"
 	log.Println("Start Consuming")
-
 	for _, symbol := range *data.Coins {
 		symbol = strings.ToLower(symbol) + "usdt"
-		go data.KlineGoRoutine(symbol, klineInterval)
-	}
-
-	log.Println("\n\nTotal Number of sockets at the beginning: ")
-	printNumSockets()
-	//perpetual wait
-	waitFunc()
-}
-
-func (data *DataConsumer) KlineGoRoutine(symbol string, klineInterval string) {
-	for {
-		log.Println("Starting goroutine for getting minute kline for data of coin: " + symbol)
-		stop_candle_chan, _, err := binance.WsTradeServe(symbol, data.KlineDataConsumerStoreSend, ErrorTradeHandler)
+		conn, err := binance.SocketTradeServe(symbol)
 		if err != nil {
-			log.Warn("Was not able to open websoocket for the kline " + symbol + " with error: " + err.Error())
-			printNumSockets()
+			//do something
 		}
-		<-stop_candle_chan
-		log.Println("Restarting socket for obtaining minute kline data from coin: " + symbol)
-		printNumSockets()
+		SymbolSockets[symbol] = conn
 	}
-}
 
-func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsTradeEvent) {
-	now := time.Now()
-	times_per_min := 1
+	for {
+		//One problem with this is how to recover if there is a shut down of the socket ex: broken pipe or something
+		startTime := time.Now()
+		for _, socket := range SymbolSockets {
+			tradeEvent := binance.ReadSocket(socket)
+			//construct kline here
+			data.SendPriceContainers(tradeEvent)
+			
+			//check if should send and reset the custum klines
+			//true is just placeholder actually check if it has been a minute
+			if true {
+				//Store in database
+				//Send to containers the kline instead of just price now
+			}
+		}
 
-	//store in db
-	// err := Dumbo.StoreCryptoKline(event)
-	// if err != nil {
-	// 	log.Warn("Was not able to store kline data with error: " + err.Error())
-	// 	printNumSockets()
-	// }
-
-	// wg := new(sync.WaitGroup)
-	// wg.Add(len(data.Clients))
-	// for destinationStr, client := range data.Clients {
-	// 	klineMessage := SocketKlineMessage{
-	// 		Source:      "main_data_consumer",
-	// 		Destination: destinationStr,
-	// 		Msg:         event.Kline,
-	// 	}
-	// 	if destinationStr == "frontend" {
-	// 		log.Println(klineMessage)
-	// 	}
-	// 	klineByte, _ := json.Marshal(klineMessage)
-	// 	client.WriteSocketMessage(klineByte, wg)
-	// }
-	// wg.Wait()
-	log.Println(event)
-	EfficientSleep(times_per_min, now, time.Second)
+		EfficientSleep(2, startTime, time.Second)
+	}
 }
 
 func InitConsume() {
