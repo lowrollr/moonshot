@@ -44,7 +44,8 @@ func EfficientSleep(partition int, prev_time time.Time, duration time.Duration) 
 	later_nano := int64(time.Now().UnixNano())
 	partition_nano := duration.Nanoseconds() / int64(partition)
 	if prev_time_nano-(later_nano-prev_time_nano) > 0 {
-		time.Sleep(time.Duration(partition_nano-(later_nano-prev_time_nano)) * time.Nanosecond)
+		duration := time.Duration(partition_nano-(later_nano-prev_time_nano)) * time.Nanosecond
+		time.Sleep(duration)
 	}
 }
 

@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/ross-hugo/go-binance/v2"
 	log "github.com/sirupsen/logrus"
 )
@@ -106,53 +105,46 @@ func (data *DataConsumer) StartConsume() {
 	data.Consume()
 }
 
-func (data *DataConsumer) SendPriceContainers(*binance.WsTradeEvent) {
-	//Send out data to the rest of the containers
-}
-
 func (data *DataConsumer) Consume() {
-	//maybe data class var?
-	var SymbolSockets map[string]*websocket.Conn
-	data.Candlesticks = make(map[string]*Candlestick)
-	SymbolSockets = make(map[string]*websocket.Conn)
 	InitConsume()
+	data.Candlesticks = make(map[string]*Candlestick)
+	klineInterval := "1m"
 	log.Println("Start Consuming")
+
 	for _, symbol := range *data.Coins {
-		data.Candlesticks[symbol] = nil
+		data.Candlesticks[strings.ToLower(symbol)] = nil
 		symbol = strings.ToLower(symbol) + "usdt"
-		conn, err := binance.SocketTradeServe(symbol)
-		if err != nil {
-			//do something
-		}
-		SymbolSockets[symbol] = conn
+		go data.CandlestickGoRoutine(symbol, klineInterval)
 	}
 
-	for {
-		//One problem with this is how to recover if there is a shut down of the socket ex: broken pipe or something
-		startTime := time.Now()
-		for _, socket := range SymbolSockets {
-			tradeEvent := binance.ReadSocket(socket)
-			//construct kline here
-			data.SendPriceContainers(tradeEvent)
-
-			//check if should send and reset the custum klines
-			//true is just placeholder actually check if it has been a minute
-			if true {
-				//Store in database
-				//Send to containers the kline instead of just price now
-			}
-		}
-		EfficientSleep(2, startTime, time.Second)
-	}
-
+	log.Println("\n\nTotal Number of sockets at the beginning: ")
+	printNumSockets()
+	//perpetual wait
+	waitFunc()
 }
 
-func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsTradeEvent) {
-	now := int32(math.Trunc(float64(time.Now().UnixNano()) / float64(time.Minute.Nanoseconds())))
-	trade_price_fl64, _ := strconv.ParseFloat(event.Price, 32)
+func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval string) {
+	for {
+		log.Println("Starting goroutine for getting minute kline for data of coin: " + symbol)
+		stop_candle_chan, _, err := binance.WsPartialDepthServe100Ms(symbol, "5", data.BuildAndSendCandles, ErrorTradeHandler)
+		if err != nil {
+			log.Warn("Was not able to open websoocket for the kline " + symbol + " with error: " + err.Error())
+			printNumSockets()
+		}
+		<-stop_candle_chan
+		log.Println("Restarting socket for obtaining minute kline data from coin: " + symbol)
+		printNumSockets()
+	}
+}
+
+func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent) {
+	time_now := time.Now()
+	now := int32(math.Trunc(float64(time_now.UnixNano()) / float64(time.Minute.Nanoseconds())))
+	trade_price_fl64, _ := strconv.ParseFloat(event.Bids[0].Price, 32)
 	trade_price := float32(trade_price_fl64)
 	trade_coin := event.Symbol[:len(event.Symbol)-4]
 	candle := data.Candlesticks[trade_coin]
+	log.Println(event)
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
 			coin:      trade_coin,
@@ -177,7 +169,7 @@ func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsTradeEvent
 			client.WriteSocketMessage(klineByte, wg)
 		}
 		wg.Wait()
-		log.Println(event)
+
 		data.Candlesticks[trade_coin] = &Candlestick{
 			coin:      trade_coin,
 			startTime: now,
@@ -194,14 +186,14 @@ func (data *DataConsumer) KlineDataConsumerStoreSend(event *binance.WsTradeEvent
 			candle.low = trade_price
 		}
 	}
-	//store in db
+	// store in db
 	// err := Dumbo.StoreCryptoKline(event)
 	// if err != nil {
 	// 	log.Warn("Was not able to store kline data with error: " + err.Error())
 	// 	printNumSockets()
 	// }
 
-	// EfficientSleep(times_per_min, now, time.Second)
+	EfficientSleep(1, time_now, time.Second)
 }
 
 func InitConsume() {
