@@ -52,12 +52,12 @@ type SocketMessage struct {
 }
 
 type Candlestick struct {
-	coin      string
-	startTime int32
-	open      float32
-	high      float32
-	low       float32
-	close     float32
+	Coin      string
+	StartTime int32
+	Open      float32
+	High      float32
+	Low       float32
+	Close     float32
 }
 
 type SocketCandleMessage struct {
@@ -67,8 +67,8 @@ type SocketCandleMessage struct {
 }
 
 type CoinPrice struct {
-	coin  string  `json:"coin"`
-	price float32 `json:"price"`
+	Coin  string  `json:"coin"`
+	Price float32 `json:"price"`
 }
 
 type CoinDataMessage struct {

@@ -145,11 +145,11 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 	trade_price := float32((bid_price + ask_price) / 2)
 	trade_coin := event.Symbol[:len(event.Symbol)-4]
 	candle := data.Candlesticks[trade_coin]
-	coinInfo := CoinPrice{
-		coin:  trade_coin,
-		price: trade_price}
+
 	messageToFrontend := CoinDataMessage{
-		Msg:         coinInfo,
+		Msg: CoinPrice{
+			Coin:  trade_coin,
+			Price: trade_price},
 		Source:      "main_data_consumer",
 		Destination: "frontend"}
 	wg := new(sync.WaitGroup)
@@ -159,14 +159,14 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 	frontendClient.WriteSocketMessage(coinPriceByte, wg)
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
-			coin:      trade_coin,
-			startTime: now,
-			open:      trade_price,
-			high:      trade_price,
-			low:       trade_price,
-			close:     trade_price}
+			Coin:      trade_coin,
+			StartTime: now,
+			Open:      trade_price,
+			High:      trade_price,
+			Low:       trade_price,
+			Close:     trade_price}
 
-	} else if candle.startTime != now {
+	} else if candle.StartTime != now {
 		wg.Add(2)
 		for destinationStr, client := range data.Clients {
 			candleMessage := SocketCandleMessage{
@@ -181,19 +181,19 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 		}
 
 		data.Candlesticks[trade_coin] = &Candlestick{
-			coin:      trade_coin,
-			startTime: now,
-			open:      trade_price,
-			high:      trade_price,
-			low:       trade_price,
-			close:     trade_price}
+			Coin:      trade_coin,
+			StartTime: now,
+			Open:      trade_price,
+			High:      trade_price,
+			Low:       trade_price,
+			Close:     trade_price}
 	} else {
-		candle.close = trade_price
-		if trade_price > candle.high {
-			candle.high = trade_price
+		candle.Close = trade_price
+		if trade_price > candle.High {
+			candle.High = trade_price
 		}
-		if trade_price < candle.low {
-			candle.low = trade_price
+		if trade_price < candle.Low {
+			candle.Low = trade_price
 		}
 	}
 	wg.Wait()
