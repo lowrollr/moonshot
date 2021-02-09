@@ -13,8 +13,6 @@ import (
 	"bufio"
 	"net"
 	"os"
-
-	"github.com/ross-hugo/go-binance/v2"
 )
 
 var (
@@ -53,8 +51,17 @@ type SocketMessage struct {
 	Destination string `json:"destination"`
 }
 
+type Candlestick struct {
+	coin      string
+	startTime int32
+	open      float32
+	high      float32
+	low       float32
+	close     float32
+}
+
 type SocketKlineMessage struct {
-	Msg         binance.WsKline `json:"msg"`
-	Source      string          `json:"source"`
-	Destination string          `json:"destination"`
+	Msg         Candlestick `json:"msg"`
+	Source      string      `json:"source"`
+	Destination string      `json:"destination"`
 }
