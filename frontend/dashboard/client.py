@@ -32,10 +32,10 @@ def readData(conn, name, port):
     data = ''
     while True:
         try:
-            buffer = conn.recv(1024)
+            buffer = conn.recv(2048)
             if buffer:
                 data += buffer.decode('utf-8')
-                if len(buffer) < 1024:
+                if len(buffer) < 2048:
                     break
             else:
                 break

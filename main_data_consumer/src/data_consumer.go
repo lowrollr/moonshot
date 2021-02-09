@@ -145,7 +145,6 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 	trade_price := float32((bid_price + ask_price) / 2)
 	trade_coin := event.Symbol[:len(event.Symbol)-4]
 	candle := data.Candlesticks[trade_coin]
-
 	messageToFrontend := CoinDataMessage{
 		Msg: CoinPrice{
 			Coin:  trade_coin,
