@@ -113,7 +113,8 @@ func (data *DataConsumer) SendPriceContainers(*binance.WsTradeEvent) {
 func (data *DataConsumer) Consume() {
 	//maybe data class var?
 	var SymbolSockets map[string]*websocket.Conn
-
+	data.Candlesticks = make(map[string]*Candlestick)
+	SymbolSockets = make(map[string]*websocket.Conn)
 	InitConsume()
 	log.Println("Start Consuming")
 	for _, symbol := range *data.Coins {
@@ -133,7 +134,7 @@ func (data *DataConsumer) Consume() {
 			tradeEvent := binance.ReadSocket(socket)
 			//construct kline here
 			data.SendPriceContainers(tradeEvent)
-			
+
 			//check if should send and reset the custum klines
 			//true is just placeholder actually check if it has been a minute
 			if true {
