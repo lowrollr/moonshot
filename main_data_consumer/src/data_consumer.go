@@ -140,11 +140,23 @@ func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval stri
 func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent) {
 	time_now := time.Now()
 	now := int32(math.Trunc(float64(time_now.UnixNano()) / float64(time.Minute.Nanoseconds())))
-	trade_price_fl64, _ := strconv.ParseFloat(event.Bids[0].Price, 32)
-	trade_price := float32(trade_price_fl64)
+	bid_price, _ := strconv.ParseFloat(event.Bids[0].Price, 32)
+	ask_price, _ := strconv.ParseFloat(event.Asks[0].Price, 32)
+	trade_price := float32((bid_price + ask_price) / 2)
 	trade_coin := event.Symbol[:len(event.Symbol)-4]
 	candle := data.Candlesticks[trade_coin]
-	log.Println(event)
+	coinInfo := CoinPrice{
+		coin:  trade_coin,
+		price: trade_price}
+	messageToFrontend := CoinDataMessage{
+		Msg:         coinInfo,
+		Source:      "main_data_consumer",
+		Destination: "frontend"}
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	frontendClient := data.Clients["frontend"]
+	coinPriceByte, _ := json.Marshal(messageToFrontend)
+	frontendClient.WriteSocketMessage(coinPriceByte, wg)
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
 			coin:      trade_coin,
@@ -153,22 +165,20 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 			high:      trade_price,
 			low:       trade_price,
 			close:     trade_price}
+
 	} else if candle.startTime != now {
-		wg := new(sync.WaitGroup)
-		wg.Add(len(data.Clients))
+		wg.Add(2)
 		for destinationStr, client := range data.Clients {
 			candleMessage := SocketCandleMessage{
 				Source:      "main_data_consumer",
 				Destination: destinationStr,
 				Msg:         *data.Candlesticks[trade_coin],
 			}
-			if destinationStr == "frontend" {
-				log.Println(candleMessage)
+			if destinationStr != "frontend" {
+				candleByte, _ := json.Marshal(candleMessage)
+				client.WriteSocketMessage(candleByte, wg)
 			}
-			klineByte, _ := json.Marshal(candleMessage)
-			client.WriteSocketMessage(klineByte, wg)
 		}
-		wg.Wait()
 
 		data.Candlesticks[trade_coin] = &Candlestick{
 			coin:      trade_coin,
@@ -186,6 +196,7 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 			candle.low = trade_price
 		}
 	}
+	wg.Wait()
 	// store in db
 	// err := Dumbo.StoreCryptoKline(event)
 	// if err != nil {

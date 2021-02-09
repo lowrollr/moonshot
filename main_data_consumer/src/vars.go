@@ -65,3 +65,14 @@ type SocketCandleMessage struct {
 	Source      string      `json:"source"`
 	Destination string      `json:"destination"`
 }
+
+type CoinPrice struct {
+	coin  string  `json:"coin"`
+	price float32 `json:"price"`
+}
+
+type CoinDataMessage struct {
+	Msg         CoinPrice `json:"msg"`
+	Source      string    `json:"source"`
+	Destination string    `json:"destination"`
+}
