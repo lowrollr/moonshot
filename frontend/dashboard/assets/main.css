@@ -52,12 +52,14 @@
   align-items: center;
 }
 .asset_plot {
-  width: 70vw;
-  height: 70vh;
+  width: 70%;
+  height: 80%;
   background: rgba(240,240,240,0.3);
   opacity: 1;
-  transform: rotate(-180deg);
   overflow: hidden;
+  position: absolute;
+  bottom:5%;
+  left:2.5%
 }
 .status_group {
   width:75%

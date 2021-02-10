@@ -37,7 +37,7 @@ def createPageContent(toptext, plot, position_elems, status_elems):
                 toptext,
                 dcc.Graph(
                     id='main_plot', 
-                    className='plot',
+                    className='asset_plot',
                     figure=plot
                     )
             ]
