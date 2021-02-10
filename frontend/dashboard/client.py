@@ -29,7 +29,7 @@ def startInit(conn, dest, port):
             conn = startClient(dest, port)
 
 def readData(conn, name, port):
-    bufferSize = 16
+    bufferSize = 1024
     data = ''
     while True:
         try:
