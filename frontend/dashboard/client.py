@@ -29,15 +29,16 @@ def startInit(conn, dest, port):
             conn = startClient(dest, port)
 
 def readData(conn, name, port):
+    bufferSize = 16
     data = ''
     while True:
         try:
-            buffer = conn.recv(2048)
-            if buffer:
+            buffer = conn.recv(bufferSize)
+            if len(buffer) <= bufferSize and len(buffer) > 0:
                 data += buffer.decode('utf-8')
-                if len(buffer) < 2048:
+                if len(buffer) < bufferSize or (len(buffer) == bufferSize and buffer[-1] == 0):
                     break
-            else:
+            elif len(buffer) == 0:
                 break
         except ConnectionResetError:
             conn = startClient(name, port)
