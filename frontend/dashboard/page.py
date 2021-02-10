@@ -7,7 +7,13 @@ from plotly.subplots import make_subplots
 
 def createPage(toptext, plot, position_elems, status_elems):
     return html.Div(children=[
+        dcc.Interval(
+            id='auto_update',
+            interval=1000,
+            n_intervals=0
+        ),
         dcc.Location(id='url', refresh=False),
+        dcc.Store(id='session_data', storage_type='session'),
         html.Div(
             id='page-content', 
             children=createPageContent(toptext, plot, position_elems, status_elems))
@@ -16,11 +22,7 @@ def createPage(toptext, plot, position_elems, status_elems):
 
 def createPageContent(toptext, plot, position_elems, status_elems):
     return [
-        dcc.Interval(
-            id='auto_update',
-            interval=500,
-            n_intervals=0
-        ),
+        
         html.Div(className='background'),
         html.Div(
             className='sidebar',
