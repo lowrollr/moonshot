@@ -17,7 +17,8 @@ from page import (
     getFig,
     getStatusElems,
     getPortfolioPositions,
-    getCoinPositions
+    getCoinPositions,
+    createPageContent
 )
 import threading
 import json
@@ -86,32 +87,34 @@ app.layout = createPage(
 @app.callback(dash.dependencies.Output('page-content', 'children'),
               [dash.dependencies.Input('url', 'pathname')])
 def displayPage(pathname):
-    if pathname == '/portfolio':
-        return createPage(
+    print('serving content... ' + pathname)
+    if pathname == '/portfolio' or pathname == '/':
+        return createPageContent(
                 toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getPortfolioPositions(cur_positions.positions),
                 plot = getFig(porfolio_datastream.day_data)
             )
     else:
+        print('serving coin content')
         coin = pathname[1:].upper()
-        return createPage(
+        return createPageContent(
                 toptext = getTopText(coin_datastreams[coin].day_data, coin),
                 status_elems = getStatusElems(container_statuses), 
-                position_elems = getCoinPositions(coin, cur_positions.positions),
+                position_elems = getCoinPositions(coin, cur_positions.positions[coin]),
                 plot = getFig(coin_datastreams[coin].day_data)
             )
 
 
-@app.callback(Output('container_statuses', 'children'),
-              Input('auto_update', 'n_intervals'))
-def updateStatus(n):
-    return getStatusElems(container_statuses)
+# @app.callback(Output('container_statuses', 'children'),
+#               Input('auto_update', 'n_intervals'))
+# def updateStatus(n):
+#     return getStatusElems(container_statuses)
 
-@app.callback(Output('container_statuses', 'children'),
-              Input('auto_update', 'n_intervals'))
-def updateStatus(n):
-    return getStatusElems(container_statuses)
+# @app.callback(Output('container_statuses', 'children'),
+#               Input('auto_update', 'n_intervals'))
+# def updateStatus(n):
+#     return getStatusElems(container_statuses)
 
 if __name__ == '__main__':
     

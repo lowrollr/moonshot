@@ -6,7 +6,16 @@ from plotly.subplots import make_subplots
 
 
 def createPage(toptext, plot, position_elems, status_elems):
-    return html.Div(className='page-content', children=[
+    return html.Div(children=[
+        dcc.Location(id='url', refresh=False),
+        html.Div(
+            id='page-content', 
+            children=createPageContent(toptext, plot, position_elems, status_elems))
+    ])
+        
+
+def createPageContent(toptext, plot, position_elems, status_elems):
+    return [
         dcc.Interval(
             id='auto_update',
             interval=500,
@@ -31,8 +40,7 @@ def createPage(toptext, plot, position_elems, status_elems):
                     )
             ]
         )
-    ])
-
+    ]
 
 def getTopText(data, asset):
     
@@ -87,7 +95,7 @@ def getFig(datastream):
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)')
     if datastream:
-        indices, values = enumerate(list(datastream))
+        indices, values = zip(*enumerate(list(datastream)))
         fig.add_trace(go.Scatter(x=indices, y=values))
 
     return fig
@@ -170,19 +178,20 @@ def getPortfolioPositions(positions):
 # TODO: make this display past positions
 def getCoinPositions(coin, cur_position):
     elements = []
-    cur_amnt = cur_position['amnt']
-    cur_price = cur_position['price']
-    profit = str(cur_position['profit'])
-    if profit > 0:
-        profit = '+' + str(profit) + '%'
-    else:
-        profit = str(profit) + '%'
-    alloc = cur_position['alloc']
+    if cur_position:
+        cur_amnt = cur_position['amnt']
+        cur_price = cur_position['price']
+        profit = str(cur_position['profit'])
+        if profit > 0:
+            profit = '+' + str(profit) + '%'
+        else:
+            profit = str(profit) + '%'
+        alloc = cur_position['alloc']
 
-    elements.append(html.Li(
-        className = 'position',
-        children = f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
-    ))
+        elements.append(html.Li(
+            className = 'position',
+            children = f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
+        ))
 
     return html.Ul(
         className='position_list',
