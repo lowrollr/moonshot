@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 
 
 def createPage(toptext, plot, position_elems, status_elems):
-    return html.Div(children=[
+    return html.Div(className='page-content', children=[
         dcc.Interval(
             id='auto_update',
             interval=500,
@@ -105,7 +105,7 @@ def getStatusElems(container_statuses):
         overall_status = html.Div(className='statusbubble_big', style={'color': 'rgba(114,228,125,1)'})
     else:
         overall_status = html.Div(className='status_bubble_big', style={'color': 'rgba(239,102,102,1)'})
-    html.Ul(
+    return html.Ul(
         className='status_group',
         id='container_statuses',
         children=[
