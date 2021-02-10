@@ -15,29 +15,29 @@
   left: 0px;
   overflow: hidden;
 }
-.portfolio_value {
+.asset_info {
   width: 23.4vw;
-  color: rgba(0,0,0,1);
-  position: absolute;
   top: 1.527vh;
   left: 10px;
-  font-family: Space Mono;
-  font-weight: Regular;
-  font-size: 5.55vh;
+  position: absolute;
   opacity: 1;
+  font-family: Space Mono;
   text-align: right;
 }
-.portfolio_delta {
-  width: 23.4vw;
+.asset_value {
+  
+  color: rgba(0,0,0,1);
+  font-size: 5.55vh;
+  
+}
+.asset_delta {
+  position: relative;
+  right: 4px;
+  top: -2vh;
   color: rgba(96,96,96,1);
-  position: absolute;
-  top: 8.194vh;
-  left: 10px;
-  font-family: Space Mono;
-  font-weight: Regular;
   font-size: 2.775vh;
-  opacity: 1;
-  text-align: right;
+  
+  
 }
 .sidebar {
   width: 500px;

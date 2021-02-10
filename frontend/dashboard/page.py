@@ -72,18 +72,15 @@ def getTopText(data, asset):
 
 
     return html.Div(
-        className='portfolio_value',
+        className='asset_info',
         children=[
             html.Span(
-                className='assettitle',
-                children=asset
+                className='asset_value',
+                children=f'{asset} {cur_value}'
             ),
+            html.Br(),
             html.Span(
-                className='assetvalue',
-                children=cur_value
-            ),
-            html.Span(
-                className='portfolio_delta',
+                className='asset_delta',
                 children=f'{perc_change} {delta}'
             )
         ]
