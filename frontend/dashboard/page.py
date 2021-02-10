@@ -111,13 +111,13 @@ def getStatusElems(container_statuses):
     if all_ok:
         overall_status = html.Div(className='statusbubble_big', style={'color': 'rgba(114,228,125,1)'})
     else:
-        overall_status = html.Div(className='status_bubble_big', style={'color': 'rgba(239,102,102,1)'})
+        overall_status = html.Div(className='statusbubble_big', style={'color': 'rgba(239,102,102,1)'})
     return html.Ul(
         className='status_group',
         id='container_statuses',
         children=[
             html.Li([
-                html.Div('status', className='statustext'),
+                html.Div('status', className='overall_statustext'),
                 overall_status
             ], className = 'statuspair'),
             html.Li([
@@ -141,8 +141,6 @@ def getStatusElems(container_statuses):
 
 def getStatusDiv(status):
     class_name = 'statusbubble'
-    
-    # make this thread safe pls
     if status.isOk():
         html.Div(className=class_name, style={'color': 'rgba(114,228,125,1)'})
     else:
