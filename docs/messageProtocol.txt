@@ -1,0 +1,7 @@
+• The message protocol will just be a simple header and message
+
+• Everything in the header will be zero padded
+
+• First 5 bytes are the type of message
+
+• The other 10 bytes are the size of the message
