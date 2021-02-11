@@ -88,14 +88,25 @@ app.layout = createPage(
               Input('auto_update', 'n_intervals'),
               Input('dropdown', 'value'),
               State('session_data', 'data'))
-def intervalUpdate(n, data):
+def intervalUpdate(n, value, data):
+    
     ctx = dash.callback_context
+    print(data, ctx.triggered, ctx.inputs, ctx.states)
+    
+            
     if not data:
         data = dict()
         data['asset'] = 'portfolio'
         data['timespan'] = 'd'
+    
+
+    for trig in ctx.triggered:
+        if trig['prop_id'] == 'dropdown.value':
+            data['asset'] = trig['value']
+
     asset = data['asset'].upper()
-    timespan = data['timespan'] 
+    timespan = data['timespan']
+            
     if asset == 'PORTFOLIO':
         return createPageContent(
             toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
@@ -114,19 +125,7 @@ def intervalUpdate(n, data):
             ), data
 
 
-@app.callback(
-    Output('page-content', 'children'),
-    Input('dropdown', 'value'),
-    State('session_data', 'data')
-)  
-def handleDropdown(value, data):
-    if not data:
-        data = dict()
-        data['asset'] = value
-        data['timespan'] = 'd'
-    else:
-        data['asset'] = value
-    return updatePage(value, data['timespan'])
+
 
 # @app.callback(Output('container_statuses', 'children'),
 #               Input('auto_update', 'n_intervals'))
