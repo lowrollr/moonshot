@@ -45,6 +45,10 @@ func (data *DataConsumer) SyncSetUp() {
 
 func (data *DataConsumer) ServerListen() {
 	data.Clients = make(map[string]*Client)
+	CoinByte, err := json.Marshal(data.Coins)
+	if err != nil {
+		log.Panic("Could not convert coins to Json. Stop. Error: " + err.Error())
+	}
 
 	for data.NumConnections < 3 {
 		//change this so that it's more multithreaded. Have goroutine for each service
@@ -55,18 +59,13 @@ func (data *DataConsumer) ServerListen() {
 			log.Panic("Could not make connection " + err.Error())
 		}
 		client := NewClient(conn)
-
-		CoinByte, err := json.Marshal(data.Coins)
-		if err != nil {
-			log.Panic("Could not convert coins to Json. Stop. Error: " + err.Error())
-		}
+		
 		for {
-			ClientBytes := *client.Receive()
-			if len(ClientBytes) == 0 {
+			msgContent, messageType := client.Receive()
+			if len(*msgContent) == 0 {
 				conn.Close()
 				break
 			}
-			msgContent, messageType := ParseMessage(&ClientBytes)
 			if messageType == "coinRequest" {
 				var ClientJson SocketMessage
 				err = json.Unmarshal(*msgContent, &ClientJson)

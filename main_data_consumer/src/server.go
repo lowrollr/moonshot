@@ -51,7 +51,11 @@ func msgType(typeBytes *[]byte) (string, error) {
 	if err != nil {
 		log.Warn("Was not able to convert header to an int " + err.Error())
 	}
-	switch numType {
+	return intToMsgType(numType)
+}
+
+func intToMsgType(intType int) (string, error) {
+	switch intType {
 	case 1:
 		return "ping", nil
 	case 2:
@@ -67,7 +71,7 @@ func msgType(typeBytes *[]byte) (string, error) {
 	case 7:
 		return "candleStick", nil
 	}
-	return "", errors.New("Given the wrong number of bytes. Given: " + typeString)
+	return "", errors.New("Given the wrong number of bytes. Given: " + string(intType))
 }
 
 //add if there are more things in the buffer
@@ -108,13 +112,34 @@ func (client *Client) WaitStart() {
 	}
 }
 
-func (client *Client) Receive() *[]byte {
-	message, err := ioutil.ReadAll(client.conn)
+func (client *Client) Receive() (*[]byte, string) {
+	mTypeBuff := make([]byte, 3)
+	mType, err := client.conn.Read(mTypeBuff)
 	if err != nil {
-		log.Warn(err)
-		client.conn.Close()
+		log.Warn("Not able to read data " + err.Error())
 	}
-	return &message
+	mLenBuff := make([]byte, 10)
+	mLen, err := client.conn.Read(mLenBuff)
+
+	lenString := string(mLen)
+	numLen, err := strconv.Atoi(lenString)
+	
+	for {
+		message := make([]byte, numLen)
+		length, err := client.conn.Read(message)
+		if err != nil {
+			log.Warn("Was not able to read msg " + err.Error())
+			break
+		}
+		if length > 0 {
+			messageType, err := intToMsgType(mType)
+			if err != nil {
+				log.Warn("Probably sent the wrong message type " + err.Error())
+			}
+			return &message, messageType
+		}
+	}
+	return nil, ""
 }
 
 func (client *Client) WriteAll(msg *[]byte) {

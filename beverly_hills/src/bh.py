@@ -26,21 +26,14 @@ class BeverlyHills():
         print("Finished set up", flush=True)
 
     def consumerConnect(self):
-        now = time.time()
-        timeout = 120 #seconds
-        tries = 0
         conn = None
-
-        deadline = now + timeout
         print("Starting Connect")
         while True:
-            print("trying to connect", flush=True)
-            if time.time() > deadline or conn is not None:
-                break
+            print("Trying to connect", flush=True)
             try:
                 conn = client_file.startClient()
+                break
             except Exception as e:
-                tries += 1
                 print(e)
                 time.sleep(5)
 
@@ -50,7 +43,7 @@ class BeverlyHills():
             #change this to something else 
             rawMsg = {'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             bytesMsg = client_file.constructMsg(json.dumps(rawMsg), "coinRequest")
-            conn.sendall(bytes(bytesMsg))
+            conn.sendall(bytesMsg)
             coins = client_file.readData(conn)
             if len(coins) > 0:
                 break

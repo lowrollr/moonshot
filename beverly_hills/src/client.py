@@ -23,6 +23,7 @@ def startClient():
 
 def constructMsg(rawMsg, msgType):
     tMsg = 0
+    bytesRawMsg = bytes(rawMsg, encoding='utf-8')
     if msgType == "ping":
         tMsg = 1
     elif msgType == "coinRequest":
@@ -41,8 +42,8 @@ def constructMsg(rawMsg, msgType):
         raise ValueError(f"The message type is not defined: {msgType}")
         
     startBytes = bytes(str(tMsg).rjust(3, '0'), encoding='utf-8')
-    midBytes = bytes(str(tMsg).rjust(10, '0'), encoding='utf-8')
-    return startBytes + midBytes + bytes(rawMsg, encoding="utf-8")
+    midBytes = bytes(str(len(bytesRawMsg)).rjust(10, '0'), encoding='utf-8')
+    return startBytes + midBytes + bytesRawMsg
 
 def parseMsgType(byteType):
     numType = int(byteType)
@@ -66,10 +67,12 @@ def parseMsgType(byteType):
 def readData(conn):
     while True:
         try:
+            print("enter while loop")
             msgType = conn.recv(3)
+            print(f"message type: {msgType}")
             #do stuff with message type
             msgLen = int(conn.recv(10))
-
+            print(f"msgLen: {msgLen}")
             #should change this because this could be ridiculous number
             # making it really slow
             data = conn.recv(msgLen)
