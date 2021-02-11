@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"strconv"
 	"sync"
@@ -95,21 +94,16 @@ func (client *Client) WriteSocketMessage(payload *[]byte, wg *sync.WaitGroup) {
 func (client *Client) WaitStart() {
 	for {
 		var startMsg SocketMessage
-		message, err := ioutil.ReadAll(client.conn)
-		if err != nil {
-			log.Panic("Not able to read the start message. Error: " + err.Error())
-		}
-		err = json.Unmarshal(message, &startMsg)
-		if err != nil {
-			log.Panic("Not able to parse start msg correctly. Error: " + err.Error())
-		}
-		_, messageType := ParseMessage(&message)
+		message, messageType := client.Receive()
 		if messageType == "start" {
+			err := json.Unmarshal(*message, &startMsg)
+			if err != nil {
+				log.Panic("Not able to parse start msg correctly. Error: " + err.Error())
+			}
 			break
-		} else if err != nil && string(message) == "" {
-			log.Println(err)
 		}
 	}
+	return
 }
 
 func (client *Client) Receive() (*[]byte, string) {
