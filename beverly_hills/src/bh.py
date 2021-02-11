@@ -48,7 +48,7 @@ class BeverlyHills():
         coins = ""
         while True:
             #change this to something else 
-            rawMsg = {'msg':'', 'src':vars.containersToId['beverly_hills'], 'dest':vars.containersToId['main_data_consumer']}
+            rawMsg = {'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             bytesMsg = client_file.constructMsg(json.dumps(rawMsg), "coinRequest")
             conn.sendall(bytes(bytesMsg, encoding='utf-8'))
             coins = client_file.readData(conn)
@@ -105,7 +105,7 @@ class BeverlyHills():
         s.close()
 
         #send start to data consumer
-        rawMessage = {'msg':'', 'src':vars.containersToId['beverly_hiills'], 'dest':vars.containersToId['main_data_consumer']}
+        rawMessage = {'msg':'', 'src':containersToId['beverly_hiills'], 'dest':containersToId['main_data_consumer']}
         bytesMessage = client_file.constructMsg(json.dumps(rawMessage), "start")
         self.consumerSocket.sendall(bytes(bytesMessage,encoding='utf-8'))
         while True:
