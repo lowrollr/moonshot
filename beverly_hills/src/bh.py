@@ -46,8 +46,10 @@ class BeverlyHills():
         coins = ""
         while True:
             #change this to something else 
-            conn.send(bytes(json.dumps({"msg":"coins", "source":"beverly_hills", "destination":"main_data_consumer"}),encoding='utf-8'))
-            coins = client.readData(conn)
+            rawMsg = {'msg':'', 'src':vars.containerToId['beverly_hills'], 'dest':vars.containerToId['main_data_consumer']}
+            bytesMsg = client_file.constructMsg(json.dumps(rawMsg), "coinRequest")
+            conn.sendall(bytes(bytesMsg, encoding='utf-8'))
+            coins = client_file.readData(conn)
             if len(coins) > 0:
                 break
         print("Received coins from data coinsumer")
@@ -82,21 +84,17 @@ class BeverlyHills():
         while True:
             if self.numClients < 2:
                 client, address = s.accept()
-                
-                mesg = client.recv(1024)
-                if mesg == b'':
-                    client.close()
-                    continue
-                mesg_obj = json.loads(mesg)
+                data, msgType = client_file.readData(client)
+                mesg_obj = json.loads(data)
                 
                 if not "msg" in mesg_obj:
                     raise Exception(f"Did not provide init message in proper format. Need msg as key in dict. Object Received: {mesg_obj}")
-                if mesg_obj["msg"] == "init":
-                    if not "source" in mesg_obj:
-                        raise Exception("Did not provide init message in proper format. Need source as key in dict")
-                    if not mesg_obj["source"] in clientFunctions:
-                        raise Exception(f"The provided destination is not in the dictionary. Provided {mesg_obj['source']} from {mesg_obj}.")
-                    print(f"Received connection from {address} or {mesg_obj['source']}")
+                if msgType == "init":
+                    if not "src" in mesg_obj:
+                        raise Exception("Did not provide init message in proper format. Need src as key in dict")
+                    if not mesg_obj["src"] in clientFunctions:
+                        raise Exception(f"The provided destination is not in the dictionary. Provided {mesg_obj['src']} from {mesg_obj}.")
+                    print(f"Received connection from {address} or {mesg_obj['src']}")
                     self.numClients += 1
 
                     # Thread(target=clientFunctions[mesg_obj["source"]], args=(client)).start()
@@ -113,5 +111,5 @@ class BeverlyHills():
 
 def pingFrontend(conn):
     while True:
-        conn.sendall(json.dumps(bytes(1,encoding='utf-8')))
+        conn.sendall(bytes(1,encoding='utf-8'))
         time.sleep(2)

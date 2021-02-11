@@ -44,22 +44,38 @@ def constructMsg(rawMsg, msgType):
     midBytes = bytes(str(tMsg).rjust(10, 0))
     return startBytes + midBytes + bytes(rawMsg, encoding="utf-8")
 
+def parseMsgType(byteType):
+    numType = int(byteType)
+    if numType == 1:
+        return "ping"
+    elif numType == 2:
+        return "coinRequest"
+    elif numType == 3:
+        return "coinServe"
+    elif numType == 4:
+        return "init"
+    elif numType == 5:
+        return "start"
+    elif numType == 6:
+        return "curPrice"
+    elif numType == 7:
+        return "candleStick"
+    else:
+        raise ValueError("Num type is not defined: " + str(numType))
+
 def readData(conn):
-    data = ''
     while True:
         try:
-            buffer = conn.recv(2048)
-            if buffer:
-                data += buffer.decode('utf-8')
-                if len(buffer) < 2048:
-                    break
-            else:
-                break
-        except ConnectionResetError as err:
+            msgType = conn.recv(3)
+            #do stuff with message type
+            msgLen = int(conn.recv(10))
+
+            #should change this because this could be ridiculous number
+            # making it really slow
+            data = conn.recv(msgLen)
+
+            return data, parseMsgType(msgType)
+            
+        except ConnectionResetError:
             conn = startClient()
             continue
-    try:
-        data = json.loads(data)
-    except:
-        pass
-    return data
