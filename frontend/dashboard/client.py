@@ -57,31 +57,42 @@ def startInit(conn, dest, port):
         except ConnectionResetError:
             conn = startClient(dest, port)
 
+def parseMsgType(byteType):
+    numType = int(byteType)
+    if numType == 1:
+        return "ping"
+    elif numType == 2:
+        return "coinRequest"
+    elif numType == 3:
+        return "coinServe"
+    elif numType == 4:
+        return "init"
+    elif numType == 5:
+        return "start"
+    elif numType == 6:
+        return "curPrice"
+    elif numType == 7:
+        return "candleStick"
+    else:
+        raise ValueError("Num type is not defined: " + str(numType))
+
 def readData(conn, name, port):
-    bufferSize = 1024
-    data = ''
-    startPacket = True
     while True:
         try:
-            buffer = conn.recv(bufferSize)
-            if len(buffer) <= bufferSize and len(buffer) > 0:
-                data += buffer.decode('utf-8')
-                if len(buffer) < bufferSize:
-                    break
-                startPacket = True
-            elif len(buffer) == 0:
-                break
+            msgType = conn.recv(3)
+            if len(msgType) == 0:
+                return b'', ""
+            #do stuff with message type
+            msgLen = int(conn.recv(10))
+            #should change this because this could be ridiculous number
+            # making it really slow
+            data = conn.recv(msgLen)
+
+            return data, parseMsgType(msgType)
+            
         except ConnectionResetError:
             conn = startClient(name, port)
             continue
-    try:
-        if data:
-            data = json.loads(data)
-        else:
-            data = dict()
-    except:
-        pass
-    return data
 
 def retrieveCoinData(dc_socket):
     coins = ""
@@ -103,7 +114,7 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
     p_value = 0.0
     
     while True:
-        data = readData(pm_conn, 'beverly_hills', os.environ['BH_PORT'])
+        data, data_msg_type = readData(pm_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:
             pm_status.ping()
             if 'enter' in data:
@@ -124,13 +135,13 @@ def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
     startInit(bh_conn, "beverly_hills", os.environ["BH_PORT"])
     while True:
-        data = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'])
+        data, data_msg_type = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:
             bh_status.ping()
 
 def DCSocket(dc_conn, dc_status, coin_datastreams):
     while True:
-        data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
+        data, data_msg_type = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
             dc_status.ping()
             
