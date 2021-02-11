@@ -2,6 +2,7 @@ import socket
 import time
 import os
 import json
+import vars
 
 def startClient(name, port):
     while True:
@@ -17,13 +18,37 @@ def startClient(name, port):
             print(f"Could not connect to {name}:{port} because {e}. Retrying...", flush=True)
         finally:
             time.sleep(3)
-            
     raise Exception(f"Was not able to connect to {name}:{port}")
+
+def constructMsg(rawMsg, msgType):
+    tMsg = 0
+    if msgType == "ping":
+        tMsg = 1
+    elif msgType == "coinRequest":
+        tMsg = 2
+    elif msgType == "coinServe":
+        tMsg = 3
+    elif msgType == "init":
+        tMsg = 4
+    elif msgType == "start":
+        tMsg = 5
+    elif msgType == "curPrice":
+        tMsg = 6
+    elif msgType == "candleStick":
+        tMsg = 7
+    else:
+        raise ValueError(f"The message type is not defined: {msgType}")
+        
+    startBytes = bytes(str(tMsg).rjust(3, 0))
+    midBytes = bytes(str(tMsg).rjust(10, 0))
+    return startBytes + midBytes + bytes(rawMsg, encoding="utf-8")
 
 def startInit(conn, dest, port):
     while True:
         try:
-            conn.sendall(bytes(json.dumps({"msg":"init", "source":"frontend", "destination":dest}), encoding='utf-8'))
+            rawMessage = {"msg": "", "src":vars.containersToId["frontend"], "dest": vars.containierToId[dest]}
+            bytesMsg = constructMsg(json.dumps(rawMessage), "init")
+            conn.sendall(bytes(bytesMsg, encoding='utf-8'))
             return
         except ConnectionResetError:
             conn = startClient(dest, port)
@@ -31,13 +56,15 @@ def startInit(conn, dest, port):
 def readData(conn, name, port):
     bufferSize = 1024
     data = ''
+    startPacket = True
     while True:
         try:
             buffer = conn.recv(bufferSize)
             if len(buffer) <= bufferSize and len(buffer) > 0:
                 data += buffer.decode('utf-8')
-                if len(buffer) < bufferSize or (len(buffer) == bufferSize and buffer[-1] == 0):
+                if len(buffer) < bufferSize:
                     break
+                startPacket = True
             elif len(buffer) == 0:
                 break
         except ConnectionResetError:
@@ -55,7 +82,9 @@ def readData(conn, name, port):
 def retrieveCoinData(dc_socket):
     coins = ""
     while True:
-        dc_socket.sendall(bytes(json.dumps({"msg":"coins", "source":"frontend", "destination":"main_data_consumer"}),encoding='utf-8'))
+        rawMessage = {'msg':'', 'src':vars.containersToId["frontend"], 'dest':vars.containersToId['main_data_consumer']}
+        bytesMsg = constructMsg(json.dumps(rawMessage), 'coinRequest')
+        dc_socket.sendall(bytes(bytesMsg,encoding='utf-8'))
         coins = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
         if len(coins) > 0:
             break

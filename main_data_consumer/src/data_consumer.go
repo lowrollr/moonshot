@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"math"
 	"net"
@@ -26,10 +25,10 @@ type DataConsumer struct {
 func (data *DataConsumer) InitializeServer(wg *sync.WaitGroup) {
 	defer wg.Done()
 	listener, err := net.Listen("tcp", ":"+string(os.Getenv("SERVERPORT")))
-	data.SocketServer = &listener
 	if err != nil {
 		log.Panic(err)
 	}
+	data.SocketServer = &listener
 	data.NumConnections = 0
 }
 
@@ -44,10 +43,6 @@ func (data *DataConsumer) SyncSetUp() {
 	wg.Wait()
 }
 
-func (data *DataConsumer) SendCoins() {
-
-}
-
 func (data *DataConsumer) ServerListen() {
 	data.Clients = make(map[string]*Client)
 
@@ -59,34 +54,33 @@ func (data *DataConsumer) ServerListen() {
 		if err != nil {
 			log.Panic("Could not make connection " + err.Error())
 		}
-
 		client := NewClient(conn)
 
-		CoinJson, err := json.Marshal(data.Coins)
+		CoinByte, err := json.Marshal(data.Coins)
 		if err != nil {
-			log.Panic("Could not send coins. Stop. Error: " + err.Error())
+			log.Panic("Could not convert coins to Json. Stop. Error: " + err.Error())
 		}
-
 		for {
-			ClientBytes := bytes.Trim(*client.Receive(), "\x00")
+			ClientBytes := *client.Receive()
 			if len(ClientBytes) == 0 {
 				conn.Close()
 				break
 			}
-
-			var ClientJson SocketMessage
-			err = json.Unmarshal(ClientBytes, &ClientJson)
-
-			if ClientJson.Msg == "'coins'" || ClientJson.Msg == "\"coins\"" || ClientJson.Msg == "coins" {
-				CoinJson = append(CoinJson, '\x00')
-				_, err := client.conn.Write(CoinJson)
-
+			msgContent, messageType := ParseMessage(&ClientBytes)
+			if messageType == "coinRequest" {
+				var ClientJson SocketMessage
+				err = json.Unmarshal(*msgContent, &ClientJson)
 				if err != nil {
-					log.Panic("Was not able to send coin data " + err.Error())
+					log.Warn("Was not able to unmarshall the client coin request " + err.Error())
 				}
+				writeMsg, err := ConstructMessage(&CoinByte, "coinServe")
+				if err != nil {
+					log.Panic("There is no message type defined provided")
+				}
+				client.WriteAll(writeMsg)
 				log.Println("Sent coins to ", ClientJson.Source, conn.RemoteAddr())
 
-				data.Clients[ClientJson.Source] = client
+				data.Clients[idToContainer[ClientJson.Source]] = client
 				data.NumConnections++
 				break
 			}
@@ -102,11 +96,11 @@ func (data *DataConsumer) ServerListen() {
 }
 
 func (data *DataConsumer) StartConsume() {
+	InitConsume()
 	data.Consume()
 }
 
 func (data *DataConsumer) Consume() {
-	InitConsume()
 	data.Candlesticks = make(map[string]*Candlestick)
 	klineInterval := "1m"
 	log.Println("Start Consuming")
@@ -149,13 +143,14 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 		Msg: CoinPrice{
 			Coin:  trade_coin,
 			Price: trade_price},
-		Source:      "main_data_consumer",
-		Destination: "frontend"}
+		Source:      containerToId["main_data_consumer"],
+		Destination: containerToId["frontend"]}
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	frontendClient := data.Clients["frontend"]
 	coinPriceByte, _ := json.Marshal(messageToFrontend)
-	frontendClient.WriteSocketMessage(coinPriceByte, wg)
+	writeBytes, _ := ConstructMessage(&coinPriceByte, "curPrice")
+	go frontendClient.WriteSocketMessage(writeBytes, wg)
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
 			Coin:      trade_coin,
@@ -164,21 +159,20 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 			High:      trade_price,
 			Low:       trade_price,
 			Close:     trade_price}
-
 	} else if candle.StartTime != now {
 		wg.Add(2)
 		for destinationStr, client := range data.Clients {
 			candleMessage := SocketCandleMessage{
-				Source:      "main_data_consumer",
-				Destination: destinationStr,
+				Source:      containerToId["main_data_consumer"],
+				Destination: containerToId[destinationStr],
 				Msg:         *data.Candlesticks[trade_coin],
 			}
 			if destinationStr != "frontend" {
 				candleByte, _ := json.Marshal(candleMessage)
-				client.WriteSocketMessage(candleByte, wg)
+				writeBytes, _ = ConstructMessage(&candleByte, "candleStick")
+				go client.WriteSocketMessage(writeBytes, wg)
 			}
 		}
-
 		data.Candlesticks[trade_coin] = &Candlestick{
 			Coin:      trade_coin,
 			StartTime: now,

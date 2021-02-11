@@ -4,8 +4,9 @@ import socket
 import os
 from threading import Thread
 
-from client import startClient, readData
+import client as client_file
 from data_engine import DataEngine
+import vars
 
 class BeverlyHills():
     def __init__(self):
@@ -35,7 +36,7 @@ class BeverlyHills():
             if time.time() > deadline or conn is not None:
                 break
             try:
-                conn = startClient()
+                conn = client_file.startClient()
             except Exception as e:
                 tries += 1
                 print(e)
@@ -44,8 +45,9 @@ class BeverlyHills():
         self.consumerSocket = conn
         coins = ""
         while True:
+            #change this to something else 
             conn.send(bytes(json.dumps({"msg":"coins", "source":"beverly_hills", "destination":"main_data_consumer"}),encoding='utf-8'))
-            coins = readData(conn)
+            coins = client.readData(conn)
             if len(coins) > 0:
                 break
         print("Received coins from data coinsumer")
@@ -103,7 +105,9 @@ class BeverlyHills():
         s.close()
 
         #send start to data consumer
-        self.consumerSocket.sendall(bytes(json.dumps({"msg":"start", "destination":"main_data_consumer", "source":"beverly_hills"}),encoding='utf-8'))
+        rawMessage = {'msg':'', 'src':vars.containerToId['beverly_hiills'], 'dest':vars.containerToId['main_data_consumer']}
+        bytesMessage = client_file.constructMsg(json.dumps(rawMessage), "start")
+        self.consumerSocket.sendall(bytes(bytesMessage,encoding='utf-8'))
         while True:
             time.sleep(2)
 

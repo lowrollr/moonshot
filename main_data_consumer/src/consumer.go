@@ -62,8 +62,7 @@ func EfficientSleep(partition int, prev_time time.Time, duration time.Duration) 
 			diagnostic, restart service, etc
 */
 func ErrorTradeHandler(err error) {
-	log.Warn("There error encountered " + err.Error())
-	log.Warn(err)
+	log.Warn("The error encountered " + err.Error())
 }
 
 /*

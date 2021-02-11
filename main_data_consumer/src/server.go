@@ -2,94 +2,134 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"strconv"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func (client *Client) Read() {
-	for {
-		line, err := client.reader.ReadString('\n')
-		if err == nil {
-			// if client.connection != nil {
-			// 	client.connection.outgoing <- line
-			// }
-			fmt.Println(line)
-		} else {
-			break
-		}
+func ConstructMessage(startMessage *[]byte, msgType string) (*[]byte, error) {
+	numericMsgType := 0
+
+	switch msgType {
+	case "ping":
+		numericMsgType = 1
+	case "coinRequest":
+		numericMsgType = 2
+	case "coinServe":
+		numericMsgType = 3
+	case "init":
+		numericMsgType = 4
+	case "start":
+		numericMsgType = 5
+	case "curPrice":
+		numericMsgType = 6
+	case "candleStick":
+		numericMsgType = 7
+	default:
+		return nil, errors.New("Message type " + msgType + " not supported")
 	}
 
-	client.conn.Close()
-	// if client.connection != nil {
-	// 	client.connection.connection = nil
-	// }
-	client = nil
+	startBytes := []byte(fmt.Sprintf("%03d", numericMsgType))
+
+	midBytes := []byte(fmt.Sprintf("%010d", len(*startMessage)))
+
+	allBytes := append(startBytes, midBytes...)
+	allBytes = append(allBytes, *startMessage...)
+
+	return &allBytes, nil
 }
 
-func (client *Client) Write(payload []byte) {
-	// client.writer.WriteString(data)
-	// client.writer.Flush()
-
-}
-
-func (client *Client) WriteSocketMessage(payload []byte, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var err error
-	client.writer.Flush()
-	writeLen, err := client.writer.Write(payload)
-
+func msgType(typeBytes *[]byte) (string, error) {
+	typeString := string((*typeBytes)[:3])
+	numType, err := strconv.Atoi(typeString)
 	if err != nil {
-		//Not able to send information
-		//Try to send again or reconnect depending on the error message
+		log.Warn("Was not able to convert header to an int " + err.Error())
 	}
-	for writeLen < len(payload) {
-		newLength, _ := client.writer.Write(payload[writeLen:])
-		writeLen += newLength
+	switch numType {
+	case 1:
+		return "ping", nil
+	case 2:
+		return "coinRequest", nil
+	case 3:
+		return "coinServe", nil
+	case 4:
+		return "init", nil
+	case 5:
+		return "start", nil
+	case 6:
+		return "curPrice", nil
+	case 7:
+		return "candleStick", nil
 	}
+	return "", errors.New("Given the wrong number of bytes. Given: " + typeString)
+}
+
+//add if there are more things in the buffer
+func ParseMessage(receiveMsg *[]byte) (*[]byte, string) {
+	messageType, err := msgType(receiveMsg)
+	if err != nil {
+		log.Warn("Was not able to parse the message type " + err.Error())
+	}
+	msgNoHeader := (*receiveMsg)[13:]
+	return &msgNoHeader, messageType
+}
+
+func (client *Client) WriteSocketMessage(payload *[]byte, wg *sync.WaitGroup) {
+	defer wg.Done()
+	client.writer.Flush()
+	client.WriteAll(payload)
 	return
 }
 
-func (client *Client) Listen() {
-
-}
-
+//do some error handling for if messages are sent to the right place
 func (client *Client) WaitStart() {
-	//listen until start keyword
 	for {
 		var startMsg SocketMessage
-		message := make([]byte, 1024)
-		_, err := client.conn.Read(message)
-		err = json.Unmarshal(bytes.Trim(message, "\x00"), &startMsg)
-		if err == nil && (startMsg.Msg == "start" || startMsg.Msg == "'start'" || startMsg.Msg == "\"start\"") {
+		message, err := ioutil.ReadAll(client.conn)
+		if err != nil {
+			log.Panic("Not able to read the start message. Error: " + err.Error())
+		}
+		err = json.Unmarshal(message, &startMsg)
+		if err != nil {
+			log.Panic("Not able to parse start msg correctly. Error: " + err.Error())
+		}
+		_, messageType := ParseMessage(&message)
+		if messageType == "start" {
 			break
 		} else if err != nil && string(message) == "" {
-			// client.conn.Close()
-			// //try to reconnectF
 			log.Println(err)
-			// fmt.Println("figure out how to handle this error")
 		}
 	}
 }
 
 func (client *Client) Receive() *[]byte {
-	retByte := make([]byte, 0)
-	for {
-		message := make([]byte, 4096)
-		length, err := client.conn.Read(message)
-		if err != nil {
-			client.conn.Close()
-			break
-		}
-		if length > 0 {
-			return &message
-		}
+	message, err := ioutil.ReadAll(client.conn)
+	if err != nil {
+		log.Warn(err)
+		client.conn.Close()
 	}
-	return &retByte
+	return &message
+}
+
+func (client *Client) WriteAll(msg *[]byte) {
+	writeLen, err := client.conn.Write(*msg)
+	if err != nil {
+		log.Warn("An error ocurred while trying to send message: " + err.Error())
+	}
+	for writeLen < len(*msg) {
+		newLen, err := client.conn.Write((*msg)[writeLen:])
+		if err != nil {
+			log.Warn("Some error happened while sending another part of message: " + err.Error())
+		}
+		writeLen += newLen
+	}
+	return
 }
 
 func NewClient(connection net.Conn) *Client {

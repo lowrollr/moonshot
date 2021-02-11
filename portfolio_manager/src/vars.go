@@ -21,6 +21,20 @@ var (
 		"beverly_hills":      "beverly_hills:" + os.Getenv("BEVPORT"),
 	}
 
+	containerToId = map[string]int{
+		"main_data_consumer": 0,
+		"beverly_hills":      1,
+		"portfolio_manager":  2,
+		"frontend":           3,
+	}
+
+	idToContainer = map[int]string{
+		0: "main_data_consumer",
+		1: "beverly_hills",
+		2: "portfolio_manager",
+		3: "frontend",
+	}
+
 	binanceClient = binance.Client{}
 	listenKey     = ""
 
@@ -44,16 +58,12 @@ type Client struct {
 	conn     net.Conn
 }
 
-type webError struct {
-	Msg string `json:"msg"`
-}
-
 type CryptoPayload struct {
 	//this is data we get from Kraken. Dunno what to put here
 }
 
 type SocketMessage struct {
 	Msg         string `json:"msg"`
-	Source      string `json:"source"`
-	Destination string `json:"destination"`
+	Source      int    `json:"src"`
+	Destination int    `json:"dest"`
 }

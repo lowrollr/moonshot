@@ -3,39 +3,81 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-// func (client *Client) Write() {
-// 	for data := range client.outgoing {
-// 		client.writer.WriteString(data)
-// 		client.writer.Flush()
-// 	}
-// }
+func ConstructMessage(startMessage *[]byte, msgType string) (*[]byte, error) {
+	numericMsgType := 0
 
-func (client *Client) Read() {
-	for {
-		line, err := client.reader.ReadString('\n')
-		if err == nil {
-			fmt.Println(line)
-			client.outgoing <- line
-			// client.Write()
-		} else {
-			break
-		}
+	switch msgType {
+	case "ping":
+		numericMsgType = 1
+	case "coinRequest":
+		numericMsgType = 2
+	case "coinServe":
+		numericMsgType = 3
+	case "init":
+		numericMsgType = 4
+	case "start":
+		numericMsgType = 5
+	case "curPrice":
+		numericMsgType = 6
+	case "candleStick":
+		numericMsgType = 7
+	default:
+		return nil, errors.New("Message type " + msgType + " not supported")
 	}
-	client.conn.Close()
-	client = nil
+
+	startBytes := []byte(fmt.Sprintf("%03d", numericMsgType))
+
+	midBytes := []byte(fmt.Sprintf("%010d", len(*startMessage)))
+
+	allBytes := append(startBytes, midBytes...)
+	allBytes = append(allBytes, *startMessage...)
+
+	return &allBytes, nil
 }
 
-//subject to change
-func (client *Client) Listen() {
-	go client.Read()
-	// go client.Write()
+func msgType(typeBytes *[]byte) (string, error) {
+	typeString := string((*typeBytes)[:3])
+	numType, err := strconv.Atoi(typeString)
+	if err != nil {
+		log.Warn("Was not able to convert header to an int " + err.Error())
+	}
+	switch numType {
+	case 1:
+		return "ping", nil
+	case 2:
+		return "coinRequest", nil
+	case 3:
+		return "coinServe", nil
+	case 4:
+		return "init", nil
+	case 5:
+		return "start", nil
+	case 6:
+		return "curPrice", nil
+	case 7:
+		return "candleStick", nil
+	}
+	return "", errors.New("Given the wrong number of bytes. Given: " + typeString)
+}
+
+//add if there are more things in the buffer
+func ParseMessage(receiveMsg *[]byte) (*[]byte, string) {
+	messageType, err := msgType(receiveMsg)
+	if err != nil {
+		log.Warn("Was not able to parse the message type " + err.Error())
+	}
+	msgNoHeader := (*receiveMsg)[13:]
+	return &msgNoHeader, messageType
 }
 
 func NewClient(connection *net.Conn) *Client {
@@ -48,8 +90,6 @@ func NewClient(connection *net.Conn) *Client {
 		reader:   reader,
 		writer:   writer,
 	}
-	// client.Listen()
-
 	return client
 }
 
@@ -77,27 +117,32 @@ func startClient() map[string]*net.Conn {
 	for hostname, fullUrl := range domainToUrl {
 		mapDomainConnection[fullUrl] = ConnectServer(fullUrl)
 		if hostname == "beverly_hills" {
-			startInit(mapDomainConnection[fullUrl])
+			StartInit(mapDomainConnection[fullUrl])
 		}
 	}
 	return mapDomainConnection
 }
 
 func StartRemoteServer(serverConn *net.Conn, destination_str string) {
-	startMessage := SocketMessage{Msg: "start", Source: "portfolio_manager", Destination: destination_str}
+	startMessage := SocketMessage{Msg: "",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId[destination_str]}
+
 	for tries := 0; tries < 5; tries++ {
 		writer := bufio.NewWriter(*serverConn)
 		startBytes, err := json.Marshal(startMessage)
 		if err != nil {
 			log.Panic("could not turn SocketMessage into byte array")
 		}
-		writeLen, err1 := writer.Write(startBytes)
+		writeMsg, _ := ConstructMessage(&startBytes, "start")
+
+		writeLen, err1 := writer.Write(*writeMsg)
 		_ = writer.Flush()
 		if err1 != nil {
 			log.Warn("Was not able to connect/write to", destination_str)
 		}
 		for writeLen < len(startBytes) {
-			newLength, err := writer.Write(startBytes[writeLen:])
+			newLength, err := writer.Write((*writeMsg)[writeLen:])
 			if err != nil {
 				log.Warn("Was only able to send partial coin keyword to main data consumer")
 			}
@@ -111,19 +156,22 @@ func StartRemoteServer(serverConn *net.Conn, destination_str string) {
 	log.Panic("Was not able to send start to ", destination_str)
 }
 
-func startInit(bevConn *net.Conn) {
-	initMsg := SocketMessage{Msg: "init", Source:"portfolio_manager", Destination: "beverly_hills"}
+func StartInit(bevConn *net.Conn) {
+	initMsg := SocketMessage{Msg: "",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["beverly_hills"]}
 	writer := bufio.NewWriter(*bevConn)
 	initBytes, err := json.Marshal(initMsg)
 	if err != nil {
 		log.Panic("Could not turn init message into json")
 	}
-	writeLen, err := writer.Write(initBytes)
+	writeBytes, _ := ConstructMessage(&initBytes, "init")
+	writeLen, err := writer.Write(*writeBytes)
 	if err != nil {
 		log.Panic("Was not able to send init message to beverly hills")
 	}
 	for writeLen < len(initBytes) {
-		newLength, err := writer.Write([]byte(initBytes[writeLen:]))
+		newLength, err := writer.Write([]byte((*writeBytes)[writeLen:]))
 		if err != nil {
 			log.Panic("Was only able to send partial init keyword to beverly hills")
 		}
@@ -132,38 +180,46 @@ func startInit(bevConn *net.Conn) {
 	writer.Flush()
 }
 
+func WriteAll(conn *net.Conn, msg *[]byte) {
+	// err = conn.Flush()
+	writeLen, err := (*conn).Write(*msg)
+	if err != nil {
+		log.Panic("Was not able to send coin keyword to main data consumer")
+	}
+	for writeLen < len(*msg) {
+		newLength, err := (*conn).Write((*msg)[writeLen:])
+		if err != nil {
+			log.Panic("Was only able to send partial coin keyword to main data consumer")
+		}
+		writeLen += newLength
+	}
+}
+
 func getCoins(dataConsConn *net.Conn) *[]string {
-
-	coinKeyWord := SocketMessage{Msg: "coins", Source: "portfolio_manager", Destination: "main_data_consumer"}
+	coinKeyWord := SocketMessage{Msg: "",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["main_data_consumer"]}
 	for {
-
-		writer := bufio.NewWriter(*dataConsConn)
 		coinBytes, err := json.Marshal(coinKeyWord)
 		if err != nil {
-			log.Panic("could not turn coins word into json")
+			log.Panic("could not turn coins bytes into json")
 		}
-		writeLength, err := writer.Write(coinBytes)
-		if err != nil {
-			log.Panic("Was not able to send coin keyword to main data consumer")
-		}
-		for writeLength < len(coinBytes) {
-			newLength, err := writer.Write([]byte(coinBytes[writeLength:]))
-			if err != nil {
-				log.Panic("Was only able to send partial coin keyword to main data consumer")
-			}
-			writeLength += newLength
-		}
-		err = writer.Flush()
-		if err != nil {
-			log.Panic("Was not able to flush the buffer to the main data consumer")
-		}
+		writeBytes, _ := ConstructMessage(&coinBytes, "coinRequest")
+		WriteAll(dataConsConn, writeBytes)
 
-		response, err := bufio.NewReader(*dataConsConn).ReadBytes('\x00')
+		response, err := ioutil.ReadAll(*dataConsConn)
 		if err == nil {
 			var coinJson []string
-			response = response[:len(response)-1]
-			err = json.Unmarshal([]byte(response), &coinJson)
-			return &coinJson
+			noHeaderMsg, messageType := ParseMessage(&response)
+			if messageType == "coinServe" {
+				err = json.Unmarshal(*noHeaderMsg, &coinJson)
+				if err != nil {
+					log.Panic("Was not able to Unmarshal byte array correctly into coins")
+				}
+				return &coinJson
+			} else {
+				log.Panic("Did not send the correct message type")
+			}
 		}
 		log.Println("Could not get coins from main dat aconsumer. Trying again. ")
 		time.Sleep(3 * time.Second)

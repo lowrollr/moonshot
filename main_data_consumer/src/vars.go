@@ -19,7 +19,19 @@ var (
 	dbType    = os.Getenv("DBTYPE")
 	db_string = os.Getenv("DBTYPEURL") + "://" + os.Getenv("DBUSER") + ":" + os.Getenv("DBPASS") + "@" + os.Getenv("DBNETLOC") + ":" + os.Getenv("DBPORT") + "/" + os.Getenv("DBNAME") + "?sslmode=disable"
 
-	shortCandleStickData map[string]*OHCLData
+	containerToId = map[string]int {
+		"main_data_consumer": 0,
+		"beverly_hills": 1,
+		"portfolio_manager": 2,
+		"frontend": 3,
+	}
+	
+	idToContainer = map[int]string{
+		0: "main_data_consumer",
+		1: "beverly_hills",
+		2: "portfolio_manager",
+		3: "frontend",
+	}
 
 	allClients map[*Client]int
 	Dumbo      *dumbo
@@ -36,7 +48,7 @@ type Client struct {
 
 type KlineData struct {
 	EndTime  int64  `json:"t"`
-	Symbol   string `json:"o"`
+	Symbol   string `json:"s"`
 	Open     string `json:"o"`
 	Close    string `json:"c"`
 	High     string `json:"h"`
@@ -47,8 +59,8 @@ type KlineData struct {
 
 type SocketMessage struct {
 	Msg         string `json:"msg"`
-	Source      string `json:"source"`
-	Destination string `json:"destination"`
+	Source      int `json:"src"`
+	Destination int `json:"dest"`
 }
 
 type Candlestick struct {
@@ -62,8 +74,8 @@ type Candlestick struct {
 
 type SocketCandleMessage struct {
 	Msg         Candlestick `json:"msg"`
-	Source      string      `json:"source"`
-	Destination string      `json:"destination"`
+	Source      int      `json:"src"`
+	Destination int      `json:"dest"`
 }
 
 type CoinPrice struct {
@@ -73,6 +85,6 @@ type CoinPrice struct {
 
 type CoinDataMessage struct {
 	Msg         CoinPrice `json:"msg"`
-	Source      string    `json:"source"`
-	Destination string    `json:"destination"`
+	Source      int    `json:"src"`
+	Destination int    `json:"dest"`
 }
