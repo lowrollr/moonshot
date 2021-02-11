@@ -91,15 +91,10 @@ app.layout = createPage(
 def intervalUpdate(n, value, data):
     
     ctx = dash.callback_context
-    print(data, ctx.triggered, ctx.inputs, ctx.states)
-    
-            
     if not data:
         data = dict()
         data['asset'] = 'portfolio'
         data['timespan'] = 'd'
-    
-
     for trig in ctx.triggered:
         if trig['prop_id'] == 'dropdown.value':
             data['asset'] = trig['value']
