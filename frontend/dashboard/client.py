@@ -25,6 +25,7 @@ def startClient(name, port):
 
 def constructMsg(rawMsg, msgType):
     tMsg = 0
+    rawBytesMsg = bytes(rawMsg, encoding="utf-8")
     if msgType == "ping":
         tMsg = 1
     elif msgType == "coinRequest":
@@ -42,14 +43,14 @@ def constructMsg(rawMsg, msgType):
     else:
         raise ValueError(f"The message type is not defined: {msgType}")
 
-    startBytes = bytes(str(tMsg).rjust(3, 0), encoding='utf-8')
-    midBytes = bytes(str(tMsg).rjust(10, 0), encoding='utf-8')
-    return startBytes + midBytes + bytes(rawMsg, encoding="utf-8")
+    startBytes = bytes(str(tMsg).rjust(3, '0'), encoding='utf-8')
+    midBytes = bytes(str(len(rawBytesMsg)).rjust(10, '0'), encoding='utf-8')
+    return startBytes + midBytes + rawBytesMsg
 
 def startInit(conn, dest, port):
     while True:
         try:
-            rawMessage = {"msg": "", "src":vars.containersToId["frontend"], "dest": vars.containierToId[dest]}
+            rawMessage = {"msg": "", "src":containersToId["frontend"], "dest": containersToId[dest]}
             bytesMsg = constructMsg(json.dumps(rawMessage), "init")
             conn.sendall(bytes(bytesMsg))
             return
@@ -85,12 +86,14 @@ def readData(conn, name, port):
 def retrieveCoinData(dc_socket):
     coins = ""
     while True:
-        rawMessage = {'msg':'', 'src':vars.containersToId["frontend"], 'dest':vars.containersToId['main_data_consumer']}
+        rawMessage = {'msg':'', 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
         bytesMsg = constructMsg(json.dumps(rawMessage), 'coinRequest')
-        dc_socket.sendall(bytes(bytesMsg,encoding='utf-8'))
-        coins = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
+        dc_socket.sendall(bytesMsg)
+        coins, messageType = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
         if len(coins) > 0:
             break
+        if messageType == "coinServe":
+            coins = json.loads(coins)
     print("Received coins from data consumer")
     return coins
 
@@ -139,5 +142,4 @@ def DCSocket(dc_conn, dc_status, coin_datastreams):
 def getCoins():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
     coins = retrieveCoinData(dc_conn)
-    coins = json.loads(coins)
     return dc_conn, coins

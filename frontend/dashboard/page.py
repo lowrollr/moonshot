@@ -27,7 +27,7 @@ def createPageContent(toptext, plot, position_elems, status_elems):
         html.Div(
             className='sidebar',
             children=[
-                getDropdown()
+                getDropdown(),
                 position_elems,
                 status_elems
             ]
