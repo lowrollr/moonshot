@@ -114,27 +114,26 @@ func (client *Client) WaitStart() {
 
 func (client *Client) Receive() (*[]byte, string) {
 	mTypeBuff := make([]byte, 3)
-	mType, err := client.conn.Read(mTypeBuff)
+	_, err := client.conn.Read(mTypeBuff)
 	if err != nil {
 		if err.Error() == "EOF" {
-			log.Println("Does this hit?")
 			t := []byte{}
 			return &t, ""
 		}
 		log.Warn("Not able to read data type: " + err.Error())
 	}
 	mLenBuff := make([]byte, 10)
-	mLen, err := client.conn.Read(mLenBuff)
+	_, err = client.conn.Read(mLenBuff)
 	if err != nil {
 		log.Warn("Was not able to read data len: " + err.Error())
 	}
 
-	lenString := string(mLen)
+	lenString := string(mLenBuff)
 	numLen, err := strconv.Atoi(lenString)
 	if err != nil {
 		log.Warn("Was not able to convert byte len to int: " + err.Error())
 	}
-	
+
 	for {
 		message := make([]byte, numLen)
 		length, err := client.conn.Read(message)
@@ -143,7 +142,7 @@ func (client *Client) Receive() (*[]byte, string) {
 			break
 		}
 		if length > 0 {
-			messageType, err := intToMsgType(mType)
+			messageType, err := msgType(&mTypeBuff)
 			if err != nil {
 				log.Warn("Probably sent the wrong message type " + err.Error())
 			}
