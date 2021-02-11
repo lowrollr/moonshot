@@ -59,7 +59,7 @@ func (data *DataConsumer) ServerListen() {
 			log.Panic("Could not make connection " + err.Error())
 		}
 		client := NewClient(conn)
-		
+
 		for {
 			msgContent, messageType := client.Receive()
 			if len(*msgContent) == 0 {
@@ -131,13 +131,13 @@ func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval stri
 }
 
 func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent) {
+	var mutex = &sync.Mutex{}
 	time_now := time.Now()
 	now := int32(math.Trunc(float64(time_now.UnixNano()) / float64(time.Minute.Nanoseconds())))
 	bid_price, _ := strconv.ParseFloat(event.Bids[0].Price, 32)
 	ask_price, _ := strconv.ParseFloat(event.Asks[0].Price, 32)
 	trade_price := float32((bid_price + ask_price) / 2)
 	trade_coin := event.Symbol[:len(event.Symbol)-4]
-	candle := data.Candlesticks[trade_coin]
 	messageToFrontend := CoinDataMessage{
 		Msg: CoinPrice{
 			Coin:  trade_coin,
@@ -150,6 +150,9 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 	coinPriceByte, _ := json.Marshal(messageToFrontend)
 	writeBytes, _ := ConstructMessage(&coinPriceByte, "curPrice")
 	go frontendClient.WriteSocketMessage(writeBytes, wg)
+	log.Println(event)
+	mutex.Lock()
+	candle := data.Candlesticks[trade_coin]
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
 			Coin:      trade_coin,
@@ -158,6 +161,7 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 			High:      trade_price,
 			Low:       trade_price,
 			Close:     trade_price}
+
 	} else if candle.StartTime != now {
 		wg.Add(2)
 		for destinationStr, client := range data.Clients {
@@ -187,7 +191,9 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 		if trade_price < candle.Low {
 			candle.Low = trade_price
 		}
+
 	}
+	mutex.Unlock()
 	wg.Wait()
 	// store in db
 	// err := Dumbo.StoreCryptoKline(event)
