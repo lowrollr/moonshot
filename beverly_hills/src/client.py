@@ -40,8 +40,8 @@ def constructMsg(rawMsg, msgType):
     else:
         raise ValueError(f"The message type is not defined: {msgType}")
         
-    startBytes = bytes(str(tMsg).rjust(3, 0))
-    midBytes = bytes(str(tMsg).rjust(10, 0))
+    startBytes = bytes(str(tMsg).rjust(3, '0'), encoding='utf-8')
+    midBytes = bytes(str(tMsg).rjust(10, '0'), encoding='utf-8')
     return startBytes + midBytes + bytes(rawMsg, encoding="utf-8")
 
 def parseMsgType(byteType):

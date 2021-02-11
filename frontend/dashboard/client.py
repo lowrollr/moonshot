@@ -41,9 +41,9 @@ def constructMsg(rawMsg, msgType):
         tMsg = 7
     else:
         raise ValueError(f"The message type is not defined: {msgType}")
-        
-    startBytes = bytes(str(tMsg).rjust(3, 0))
-    midBytes = bytes(str(tMsg).rjust(10, 0))
+
+    startBytes = bytes(str(tMsg).rjust(3, 0), encoding='utf-8')
+    midBytes = bytes(str(tMsg).rjust(10, 0), encoding='utf-8')
     return startBytes + midBytes + bytes(rawMsg, encoding="utf-8")
 
 def startInit(conn, dest, port):
@@ -51,7 +51,7 @@ def startInit(conn, dest, port):
         try:
             rawMessage = {"msg": "", "src":vars.containersToId["frontend"], "dest": vars.containierToId[dest]}
             bytesMsg = constructMsg(json.dumps(rawMessage), "init")
-            conn.sendall(bytes(bytesMsg, encoding='utf-8'))
+            conn.sendall(bytes(bytesMsg))
             return
         except ConnectionResetError:
             conn = startClient(dest, port)
@@ -117,7 +117,6 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
                 p_value = data['portfolio_value']
                 portfolio_datastream.update(p_value)
 
-
 def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
     startInit(bh_conn, "beverly_hills", os.environ["BH_PORT"])
@@ -140,5 +139,5 @@ def DCSocket(dc_conn, dc_status, coin_datastreams):
 def getCoins():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
     coins = retrieveCoinData(dc_conn)
-    coins = json.loads(coins.split('\x00')[0])
+    coins = json.loads(coins)
     return dc_conn, coins

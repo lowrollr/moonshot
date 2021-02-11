@@ -50,7 +50,7 @@ class BeverlyHills():
             #change this to something else 
             rawMsg = {'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             bytesMsg = client_file.constructMsg(json.dumps(rawMsg), "coinRequest")
-            conn.sendall(bytes(bytesMsg, encoding='utf-8'))
+            conn.sendall(bytes(bytesMsg))
             coins = client_file.readData(conn)
             if len(coins) > 0:
                 break
