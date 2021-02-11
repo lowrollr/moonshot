@@ -115,9 +115,9 @@ def getStatusElems(container_statuses):
             all_ok = False
             break
     if all_ok:
-        overall_status = html.Div(className='statusbubble_big', style={'color': 'rgba(114,228,125,1)'})
+        overall_status = html.Div(className='statusbubble_big', style={'background': 'rgba(114,228,125,1)'})
     else:
-        overall_status = html.Div(className='statusbubble_big', style={'color': 'rgba(239,102,102,1)'})
+        overall_status = html.Div(className='statusbubble_big', style={'background': 'rgba(239,102,102,1)'})
     return html.Ul(
         className='status_group',
         id='container_statuses',
@@ -148,9 +148,9 @@ def getStatusElems(container_statuses):
 def getStatusDiv(status):
     class_name = 'statusbubble'
     if status.isOk():
-        html.Div(className=class_name, style={'color': 'rgba(114,228,125,1)'})
+        html.Div(className=class_name, style={'background': 'rgba(114,228,125,1)'})
     else:
-        return html.Div(className=class_name, style={'color': 'rgba(239,102,102,1)'})
+        return html.Div(className=class_name, style={'background': 'rgba(239,102,102,1)'})
 
 
 # TODO: make this display past positions

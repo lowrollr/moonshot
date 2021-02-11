@@ -11,7 +11,8 @@ class Status:
         self.last_ping = time.time()
 
     def isOk(self):
-        return self.last_ping + 5 >= time.time()
+        print(self.last_ping, time.time())
+        return self.last_ping + 5 <= time.time()
 
 class Position:
     def __init__(self, coin, enter_time, enter_price, exit_price, amnt, alloc):
