@@ -63,6 +63,5 @@ services:
       - portfolio_manager
     restart: "on-failure"
     env_file: frontend/.env
-    ports:
-      - "5678:5678"
+    
     
