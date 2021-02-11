@@ -116,6 +116,10 @@ func (client *Client) Receive() (*[]byte, string) {
 	mTypeBuff := make([]byte, 3)
 	mType, err := client.conn.Read(mTypeBuff)
 	if err != nil {
+		if err.Error() == "EOF" {
+			t := []byte{}
+			return &t, ""
+		}
 		log.Warn("Not able to read data " + err.Error())
 	}
 	mLenBuff := make([]byte, 10)
