@@ -79,68 +79,54 @@ app.layout = createPage(
         toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
         status_elems = getStatusElems(container_statuses), 
         position_elems = getPortfolioPositions(cur_positions.positions),
-        plot = getFig(porfolio_datastream.day_data)
+        plot = getFig(porfolio_datastream.day_data),
+        coins = coins
     )
-
-
-# @app.callback(dash.dependencies.Output('page-content', 'children'),
-#               [dash.dependencies.Input('url', 'pathname')])
-# def displayPage(pathname):
-#     print('serving content... ' + pathname)
-#     if pathname == '/portfolio' or pathname == '/':
-#         return createPageContent(
-#                 toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
-#                 status_elems = getStatusElems(container_statuses), 
-#                 position_elems = getPortfolioPositions(cur_positions.positions),
-#                 plot = getFig(porfolio_datastream.day_data)
-#             )
-#     else:
-#         print('serving coin content')
-#         coin = pathname[1:].upper()
-#         return createPageContent(
-#                 toptext = getTopText(coin_datastreams[coin].day_data, coin),
-#                 status_elems = getStatusElems(container_statuses), 
-#                 position_elems = getCoinPositions(coin, cur_positions.positions[coin]),
-#                 plot = getFig(coin_datastreams[coin].day_data)
-#             )
-
 
 @app.callback(Output('page-content', 'children'),
               Output('session_data', 'data'),
               Input('auto_update', 'n_intervals'),
+              Input('dropdown', 'value'),
               State('session_data', 'data'))
-def updatePage(n, data):
-    print(data)
+def intervalUpdate(n, data):
+    ctx = dash.callback_context
     if not data:
         data = dict()
         data['asset'] = 'portfolio'
         data['timespan'] = 'd'
     asset = data['asset'].upper()
-    timespand = data['timespan']
+    timespan = data['timespan'] 
     if asset == 'PORTFOLIO':
         return createPageContent(
             toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
             status_elems = getStatusElems(container_statuses), 
             position_elems = getPortfolioPositions(cur_positions.positions),
-            plot = getFig(porfolio_datastream.day_data)
+            plot = getFig(porfolio_datastream.day_data,
+            coins=coins)
         ), data
     else:
         return createPageContent(
                 toptext = getTopText(coin_datastreams[asset].day_data, asset),
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getCoinPositions(asset, cur_positions.positions[asset]),
-                plot = getFig(coin_datastreams[asset].day_data)
+                plot = getFig(coin_datastreams[asset].day_data,
+                coins=coins)
             ), data
 
-    
 
-    
-
-
-@app.callback(Output('main_plot', 'children'),
-              Input('auto_update', 'n_intervals'))
-def updateStatus(n):
-    return getFig(porfolio_datastream.day_data)
+@app.callback(
+    Output('page-content', 'children'),
+    Input('dropdown', 'value'),
+    State('session_data', 'data')
+)  
+def handleDropdown(value, data):
+    if not data:
+        data = dict()
+        data['asset'] = value
+        data['timespan'] = 'd'
+    else:
+        data['asset'] = value
+    return updatePage(value, data['timespan'])
 
 # @app.callback(Output('container_statuses', 'children'),
 #               Input('auto_update', 'n_intervals'))

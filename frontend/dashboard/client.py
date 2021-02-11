@@ -2,7 +2,10 @@ import socket
 import time
 import os
 import json
-import vars
+from vars import (
+    containersToId,
+    idToContainer
+)
 
 def startClient(name, port):
     while True:

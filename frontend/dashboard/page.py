@@ -5,7 +5,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
-def createPage(toptext, plot, position_elems, status_elems):
+def createPage(toptext, plot, position_elems, status_elems, coins):
     return html.Div(children=[
         dcc.Interval(
             id='auto_update',
@@ -16,7 +16,7 @@ def createPage(toptext, plot, position_elems, status_elems):
         dcc.Store(id='session_data', storage_type='session'),
         html.Div(
             id='page-content', 
-            children=createPageContent(toptext, plot, position_elems, status_elems))
+            children=createPageContent(toptext, plot, position_elems, status_elems, coins))
     ])
         
 
@@ -27,6 +27,7 @@ def createPageContent(toptext, plot, position_elems, status_elems):
         html.Div(
             className='sidebar',
             children=[
+                getDropdown()
                 position_elems,
                 status_elems
             ]
@@ -86,6 +87,11 @@ def getTopText(data, asset):
         ]
     )
 
+def getDropdown(coins):
+    options = [{'label': 'PORTFOLIO', 'value': 'PORTFOLIO'}]
+    for x in coins:
+        options.append({'label': x, 'value': x})
+    return dcc.Dropdown(id='dropdown', options=options, value='PORTFOLIO')
 
 #TODO: plot volume on secondary axis
 #TODO: add timestamps to x axis & data points
