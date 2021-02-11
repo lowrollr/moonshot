@@ -67,12 +67,11 @@ def parseMsgType(byteType):
 def readData(conn):
     while True:
         try:
-            print("enter while loop")
             msgType = conn.recv(3)
-            print(f"message type: {msgType}")
+            if len(msgType) == 0:
+                return
             #do stuff with message type
             msgLen = int(conn.recv(10))
-            print(f"msgLen: {msgLen}")
             #should change this because this could be ridiculous number
             # making it really slow
             data = conn.recv(msgLen)

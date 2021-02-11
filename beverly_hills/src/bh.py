@@ -44,9 +44,13 @@ class BeverlyHills():
             rawMsg = {'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             bytesMsg = client_file.constructMsg(json.dumps(rawMsg), "coinRequest")
             conn.sendall(bytesMsg)
-            coins = client_file.readData(conn)
+            coins, msgType = client_file.readData(conn)
             if len(coins) > 0:
                 break
+            if msgType == "coinServe":
+                coins = json.loads(coins)
+            else:
+                raise Exception("Not sending coins back when it should")
         print("Received coins from data consumer")
         self.coins = coins
 
