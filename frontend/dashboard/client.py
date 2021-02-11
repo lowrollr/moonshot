@@ -101,10 +101,11 @@ def retrieveCoinData(dc_socket):
         bytesMsg = constructMsg(json.dumps(rawMessage), 'coinRequest')
         dc_socket.sendall(bytesMsg)
         coins, messageType = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
+        
+        if messageType == "coinServe":
+            coins = json.loads(coins.decode('utf-8'))
         if len(coins) > 0:
             break
-        if messageType == "coinServe":
-            coins = json.loads(coins)
     print("Received coins from data consumer")
     return coins
 
