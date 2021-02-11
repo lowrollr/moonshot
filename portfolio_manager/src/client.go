@@ -5,13 +5,52 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
+
+func Receive(conn *net.Conn) (*[]byte, string) {
+	mTypeBuff := make([]byte, 3)
+	_, err := (*conn).Read(mTypeBuff)
+	if err != nil {
+		if err.Error() == "EOF" {
+			t := []byte{}
+			return &t, ""
+		}
+		log.Warn("Not able to read data type: " + err.Error())
+	}
+	mLenBuff := make([]byte, 10)
+	_, err = (*conn).Read(mLenBuff)
+	if err != nil {
+		log.Warn("Was not able to read data len: " + err.Error())
+	}
+
+	lenString := string(mLenBuff)
+	numLen, err := strconv.Atoi(lenString)
+	if err != nil {
+		log.Warn("Was not able to convert byte len to int: " + err.Error())
+	}
+
+	for {
+		message := make([]byte, numLen)
+		length, err := (*conn).Read(message)
+		if err != nil {
+			log.Warn("Was not able to read msg " + err.Error())
+			break
+		}
+		if length > 0 {
+			messageType, err := msgType(&mTypeBuff)
+			if err != nil {
+				log.Warn("Probably sent the wrong message type " + err.Error())
+			}
+			return &message, messageType
+		}
+	}
+	return nil, ""
+}
 
 func ConstructMessage(startMessage *[]byte, msgType string) (*[]byte, error) {
 	numericMsgType := 0
@@ -207,10 +246,11 @@ func getCoins(dataConsConn *net.Conn) *[]string {
 		writeBytes, _ := ConstructMessage(&coinBytes, "coinRequest")
 		WriteAll(dataConsConn, writeBytes)
 
-		response, err := ioutil.ReadAll(*dataConsConn)
+		noHeaderMsg, messageType := Receive(dataConsConn)
+
 		if err == nil {
 			var coinJson []string
-			noHeaderMsg, messageType := ParseMessage(&response)
+			// noHeaderMsg, messageType := ParseMessage(&response)
 			if messageType == "coinServe" {
 				err = json.Unmarshal(*noHeaderMsg, &coinJson)
 				if err != nil {

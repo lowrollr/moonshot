@@ -87,7 +87,7 @@ class BeverlyHills():
                 if data == b'':
                     continue
                 mesg_obj = json.loads(data)
-                
+
                 if not "msg" in mesg_obj:
                     raise Exception(f"Did not provide init message in proper format. Need msg as key in dict. Object Received: {mesg_obj}")
                 if msgType == "init":
