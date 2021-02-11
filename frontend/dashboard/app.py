@@ -101,16 +101,16 @@ def intervalUpdate(n, data):
             toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
             status_elems = getStatusElems(container_statuses), 
             position_elems = getPortfolioPositions(cur_positions.positions),
-            plot = getFig(porfolio_datastream.day_data,
-            coins=coins)
+            plot = getFig(porfolio_datastream.day_data),
+            coins=coins
         ), data
     else:
         return createPageContent(
                 toptext = getTopText(coin_datastreams[asset].day_data, asset),
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getCoinPositions(asset, cur_positions.positions[asset]),
-                plot = getFig(coin_datastreams[asset].day_data,
-                coins=coins)
+                plot = getFig(coin_datastreams[asset].day_data),
+                coins=coins
             ), data
 
 

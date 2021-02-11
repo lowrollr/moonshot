@@ -77,7 +77,7 @@ func (data *DataConsumer) ServerListen() {
 					log.Panic("There is no message type defined provided")
 				}
 				client.WriteAll(writeMsg)
-				log.Println("Sent coins to ", ClientJson.Source, conn.RemoteAddr())
+				log.Println("Sent coins to", idToContainer[ClientJson.Source], conn.RemoteAddr())
 
 				data.Clients[idToContainer[ClientJson.Source]] = client
 				data.NumConnections++

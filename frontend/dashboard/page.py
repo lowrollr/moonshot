@@ -20,14 +20,14 @@ def createPage(toptext, plot, position_elems, status_elems, coins):
     ])
         
 
-def createPageContent(toptext, plot, position_elems, status_elems):
+def createPageContent(toptext, plot, position_elems, status_elems, coins):
     return [
         
         html.Div(className='background'),
         html.Div(
             className='sidebar',
             children=[
-                getDropdown(),
+                getDropdown(coins),
                 position_elems,
                 status_elems
             ]

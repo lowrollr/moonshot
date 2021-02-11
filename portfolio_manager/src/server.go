@@ -2,11 +2,11 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -38,22 +38,44 @@ func (client *ServerClient) Listen() {
 	// go client.Write()
 }
 
-func (client *ServerClient) Receive() *[]byte {
-	for {
-		message := make([]byte, 4096)
-		length, err := (*(*client).conn).Read(message)
-		if err != nil {
-			(*(*client).conn).Close()
-			break
-			//do something bettern here like a warn
+func (client *ServerClient) Receive() (*[]byte, string) {
+	mTypeBuff := make([]byte, 3)
+	_, err := (*client.conn).Read(mTypeBuff)
+	if err != nil {
+		if err.Error() == "EOF" {
+			t := []byte{}
+			return &t, ""
 		}
-		//also need to do some error handling if we don't get the full message
+		log.Warn("Not able to read data type: " + err.Error())
+	}
+	mLenBuff := make([]byte, 10)
+	_, err = (*client.conn).Read(mLenBuff)
+	if err != nil {
+		log.Warn("Was not able to read data len: " + err.Error())
+	}
+
+	lenString := string(mLenBuff)
+	numLen, err := strconv.Atoi(lenString)
+	if err != nil {
+		log.Warn("Was not able to convert byte len to int: " + err.Error())
+	}
+
+	for {
+		message := make([]byte, numLen)
+		length, err := (*client.conn).Read(message)
+		if err != nil {
+			log.Warn("Was not able to read msg " + err.Error())
+			break
+		}
 		if length > 0 {
-			trimmedMsg := bytes.Trim(message, "\x00")
-			return &trimmedMsg
+			messageType, err := msgType(&mTypeBuff)
+			if err != nil {
+				log.Warn("Probably sent the wrong message type " + err.Error())
+			}
+			return &message, messageType
 		}
 	}
-	return nil
+	return nil, ""
 }
 
 func NewServerClient(connection *net.Conn) *ServerClient {
@@ -73,18 +95,16 @@ func NewServerClient(connection *net.Conn) *ServerClient {
 
 func ReceiveInit(frontendClient *ServerClient) bool {
 	var initMsg SocketMessage
-	rawBytes := (*frontendClient).Receive()
-	
-	if rawBytes != nil {
+	rawBytes, msgType := (*frontendClient).Receive()
+
+	if rawBytes != nil && msgType == "init" {
 		err := json.Unmarshal(*rawBytes, &initMsg)
 		if err != nil {
 			log.Println(string(*rawBytes))
 			log.Panic("Was not able to unmarshall init msg with error:", err)
 		}
-		if initMsg.Msg == "init" || initMsg.Msg == "'init'" || initMsg.Msg == "\"init\"" {
-			log.Println("Received init message from frontend")
-			return true
-		}
+		log.Println("Received init message from frontend")
+		return true
 	}
 	return false
 }

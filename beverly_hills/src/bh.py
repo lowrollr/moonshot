@@ -104,9 +104,9 @@ class BeverlyHills():
         s.close()
 
         #send start to data consumer
-        rawMessage = {'msg':'', 'src':containersToId['beverly_hiills'], 'dest':containersToId['main_data_consumer']}
+        rawMessage = {'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
         bytesMessage = client_file.constructMsg(json.dumps(rawMessage), "start")
-        self.consumerSocket.sendall(bytes(bytesMessage,encoding='utf-8'))
+        self.consumerSocket.sendall(bytesMessage)
         while True:
             time.sleep(2)
 
