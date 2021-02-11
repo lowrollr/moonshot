@@ -69,7 +69,7 @@ def readData(conn):
         try:
             msgType = conn.recv(3)
             if len(msgType) == 0:
-                return
+                return b'', ""
             #do stuff with message type
             msgLen = int(conn.recv(10))
             #should change this because this could be ridiculous number

@@ -84,6 +84,8 @@ class BeverlyHills():
             if self.numClients < 2:
                 client, address = s.accept()
                 data, msgType = client_file.readData(client)
+                if data == b'':
+                    continue
                 mesg_obj = json.loads(data)
                 
                 if not "msg" in mesg_obj:
@@ -91,7 +93,7 @@ class BeverlyHills():
                 if msgType == "init":
                     if not "src" in mesg_obj:
                         raise Exception("Did not provide init message in proper format. Need src as key in dict")
-                    if not mesg_obj["src"] in clientFunctions:
+                    if not mesg_obj["src"] in idToContainer:
                         raise Exception(f"The provided destination is not in the dictionary. Provided {mesg_obj['src']} from {mesg_obj}.")
                     print(f"Received connection from {address} or {mesg_obj['src']}")
                     self.numClients += 1
