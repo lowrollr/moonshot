@@ -117,16 +117,23 @@ func (client *Client) Receive() (*[]byte, string) {
 	mType, err := client.conn.Read(mTypeBuff)
 	if err != nil {
 		if err.Error() == "EOF" {
+			log.Println("Does this hit?")
 			t := []byte{}
 			return &t, ""
 		}
-		log.Warn("Not able to read data " + err.Error())
+		log.Warn("Not able to read data type: " + err.Error())
 	}
 	mLenBuff := make([]byte, 10)
 	mLen, err := client.conn.Read(mLenBuff)
+	if err != nil {
+		log.Warn("Was not able to read data len: " + err.Error())
+	}
 
 	lenString := string(mLen)
 	numLen, err := strconv.Atoi(lenString)
+	if err != nil {
+		log.Warn("Was not able to convert byte len to int: " + err.Error())
+	}
 	
 	for {
 		message := make([]byte, numLen)
