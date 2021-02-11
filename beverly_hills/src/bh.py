@@ -107,6 +107,7 @@ class BeverlyHills():
         rawMessage = {'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
         bytesMessage = client_file.constructMsg(json.dumps(rawMessage), "start")
         self.consumerSocket.sendall(bytesMessage)
+        print("Sent start message to main_data_consumer")
         while True:
             time.sleep(2)
 

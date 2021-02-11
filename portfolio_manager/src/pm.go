@@ -4,6 +4,7 @@ import (
 	"net"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
 	// "sort"
 	// "math"
@@ -72,6 +73,7 @@ func initPM(starting_cash float32) *PortfolioManager {
 }
 
 func (pm *PortfolioManager) StartTrading() {
+	log.Println("hi")
 	for {
 		time.Sleep(time.Second)
 	}
