@@ -6,8 +6,10 @@ from threading import Thread
 
 import client as client_file
 from data_engine import DataEngine
-import vars
-
+from vars import (
+    containersToId,
+    idToContainer
+)
 class BeverlyHills():
     def __init__(self):
         #initialize all data structures
