@@ -50,7 +50,7 @@ func (data *DataConsumer) ServerListen() {
 		log.Panic("Could not convert coins to Json. Stop. Error: " + err.Error())
 	}
 
-	for data.NumConnections < 3 {
+	for len(data.Clients) < 3 {
 		//change this so that it's more multithreaded. Have goroutine for each service
 		// when each have been hit with start, then you can start running
 		log.Println("Waiting for a connection...")
@@ -101,14 +101,19 @@ func (data *DataConsumer) waitFunc() {
 		if err != nil {
 			log.Panic("Could not make connection " + err.Error())
 		}
-		//here we need to wait for init message from the reconnect
-		// the reason is because we need the client to say who he is so 
-		// we can fill the data.clients
+		client := NewClient(conn)
+		msgContent, _ := client.Receive()
+		if len(*msgContent) > 0 {
+			var ClientJson SocketMessage
+			err = json.Unmarshal(*msgContent, &ClientJson)
+			if err == nil {
+				data.Clients[idToContainer[ClientJson.Source]] = client
+				log.Println("Reconnected to ", idToContainer[ClientJson.Source], conn.RemoteAddr())
+			}
 
-		//waitInit
-
-		//replace the connection in the data.Clients with the new connection 
-		//created
+		} else {
+			conn.Close()
+		}
 	}
 }
 
