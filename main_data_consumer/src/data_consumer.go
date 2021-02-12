@@ -142,7 +142,7 @@ func (data *DataConsumer) Consume() {
 func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval string) {
 	for {
 		log.Println("Starting candlestick go routine for coin: " + symbol)
-		stop_candle_chan, _, err := binance.WsPartialDepthServe(symbol, "5", data.BuildAndSendCandles, ErrorTradeHandler)
+		_, stop_candle_chan, err := binance.WsPartialDepthServe(symbol, "5", data.BuildAndSendCandles, ErrorTradeHandler)
 		if err != nil {
 			log.Warn("Was not able to open websocket for " + symbol + " with error: " + err.Error())
 			printNumSockets()
