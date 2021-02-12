@@ -94,6 +94,24 @@ func (data *DataConsumer) ServerListen() {
 	}
 }
 
+func (data *DataConsumer) waitFunc() {
+	go ContinuouslyPrintSockets()
+	for {
+		conn, err := (*data.SocketServer).Accept()
+		if err != nil {
+			log.Panic("Could not make connection " + err.Error())
+		}
+		//here we need to wait for init message from the reconnect
+		// the reason is because we need the client to say who he is so 
+		// we can fill the data.clients
+
+		//waitInit
+
+		//replace the connection in the data.Clients with the new connection 
+		//created
+	}
+}
+
 func (data *DataConsumer) StartConsume() {
 	InitConsume()
 	data.Consume()
@@ -113,7 +131,7 @@ func (data *DataConsumer) Consume() {
 	log.Println("\n\nTotal Number of sockets at the beginning: ")
 	printNumSockets()
 	//perpetual wait
-	waitFunc()
+	data.waitFunc()
 }
 
 func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval string) {
