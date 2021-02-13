@@ -226,7 +226,7 @@ func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent
 	// 	printNumSockets()
 	// }
 
-	EfficientSleep(1, time_now, time.Second)
+	// EfficientSleep(1, time_now, time.Second)
 }
 
 func InitConsume() {
