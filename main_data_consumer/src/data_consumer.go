@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ross-hugo/go-binance/v2"
 	log "github.com/sirupsen/logrus"
+	ws "github.com/gorilla/websocket"
 )
 
 type DataConsumer struct {
@@ -86,7 +86,6 @@ func (data *DataConsumer) ServerListen() {
 		}
 	}
 	//listen for start messages from all three
-
 	for source, client := range data.Clients {
 		if source == "beverly_hills" {
 			client.WaitStart()
@@ -110,7 +109,6 @@ func (data *DataConsumer) waitFunc() {
 				data.Clients[idToContainer[ClientJson.Source]] = client
 				log.Println("Reconnected to ", idToContainer[ClientJson.Source], conn.RemoteAddr())
 			}
-
 		} else {
 			conn.Close()
 		}
@@ -124,13 +122,12 @@ func (data *DataConsumer) StartConsume() {
 
 func (data *DataConsumer) Consume() {
 	data.Candlesticks = make(map[string]*Candlestick)
-	klineInterval := "1m"
 	log.Println("Start Consuming")
 
 	for _, symbol := range *data.Coins {
 		data.Candlesticks[strings.ToLower(symbol)] = nil
-		symbol = strings.ToLower(symbol) + "usdt"
-		go data.CandlestickGoRoutine(symbol, klineInterval)
+		symbol = strings.ToUpper(symbol) + "-USD"
+		go data.SymbolWebSocket(symbol)
 	}
 
 	log.Println("\n\nTotal Number of sockets at the beginning: ")
@@ -139,10 +136,10 @@ func (data *DataConsumer) Consume() {
 	data.waitFunc()
 }
 
-func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval string) {
+func (data *DataConsumer) SymbolWebSocket(symbol string) {
 	for {
-		log.Println("Starting candlestick go routine for coin: " + symbol)
-		stop_candle_chan, _, err := binance.WsPartialDepthServe100Ms(symbol, "5", data.BuildAndSendCandles, ErrorTradeHandler)
+		log.Println("Starting initialization for coin: " + symbol)
+		stop_candle_chan, _, err := InitializeSymbolSocket(symbol)
 		if err != nil {
 			log.Warn("Was not able to open websocket for " + symbol + " with error: " + err.Error())
 			printNumSockets()
@@ -151,6 +148,10 @@ func (data *DataConsumer) CandlestickGoRoutine(symbol string, klineInterval stri
 		log.Println("Restarting candlestick socket for coin: " + symbol)
 		printNumSockets()
 	}
+}
+
+func InitializeSymbolSocket(symbol string) (){
+
 }
 
 func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent) {
