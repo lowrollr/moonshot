@@ -14,17 +14,28 @@ import (
 	// "math"
 )
 
+type ProfitQueue struct {
+	Results *deque.Deque
+	SumOvr  float64
+	SumPos  float64
+	SumNeg  float64
+	NumPos  int
+	NumNeg  int
+	NumOvr  int
+}
+
 type CoinInfo struct {
-	LastClosePrice     float64
-	InPosition         bool
-	EnterPrice         decimal.Decimal
-	AmntOwned          decimal.Decimal
-	CashInvested       float64
-	RecentTradeResults *deque.Deque
-	AvgProfit          float64
-	WinRate            float64
-	AvgWin             float64
-	AvgLoss            float64
+	LastClosePrice float64
+	InPosition     bool
+	EnterPrice     decimal.Decimal
+	AmntOwned      decimal.Decimal
+	CashInvested   float64
+	ProfitHistory  *ProfitQueue
+
+	AvgProfit float64
+	WinRate   float64
+	AvgWin    float64
+	AvgLoss   float64
 }
 
 type PortfolioManager struct {
@@ -36,6 +47,7 @@ type PortfolioManager struct {
 	FreeCash          float64
 	PortfolioValue    float64
 	CoinbaseClient    *coinbasepro.Client
+	TradesToCalibrate int
 }
 
 type EnterSignal struct {
@@ -56,23 +68,32 @@ func initPM() *PortfolioManager {
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
 		coinInfoDict[coin] = &CoinInfo{
-			LastClosePrice:     0.0,
-			InPosition:         false,
-			EnterPrice:         decimal.NewFromFloat(0.0),
-			AmntOwned:          decimal.NewFromFloat(0.0),
-			RecentTradeResults: deque.New(),
-			AvgProfit:          0.0,
-			WinRate:            0.0,
-			AvgWin:             0.0,
-			AvgLoss:            0.0,
+			LastClosePrice: 0.0,
+			InPosition:     false,
+			EnterPrice:     decimal.NewFromFloat(0.0),
+			AmntOwned:      decimal.NewFromFloat(0.0),
+			ProfitHistory: &ProfitQueue{
+				Results: deque.New(),
+				SumNeg:  0,
+				SumPos:  0,
+				SumOvr:  0,
+				NumOvr:  0,
+				NumPos:  0,
+				NumNeg:  0,
+			},
+			AvgProfit: 0.0,
+			WinRate:   0.0,
+			AvgWin:    0.0,
+			AvgLoss:   0.0,
 		}
 	}
 	pm := &PortfolioManager{ClientConnections: mapDomainConnection,
-		CoinDict:       coinInfoDict,
-		Coins:          coins,
-		FreeCash:       0.0,
-		PortfolioValue: 0.0,
-		CoinbaseClient: client,
+		CoinDict:          coinInfoDict,
+		Coins:             coins,
+		FreeCash:          0.0,
+		PortfolioValue:    0.0,
+		CoinbaseClient:    client,
+		TradesToCalibrate: 20,
 	}
 	for _, a := range accounts {
 		// is account USD
@@ -160,7 +181,7 @@ func (pm *PortfolioManager) SetStrategy(strat interface{}) {
 func CalcKellyPercent(info *CoinInfo, maxlen int) float64 {
 	low_amnt := 0.01
 	default_amnt := 0.05
-	if info.RecentTradeResults.Size() == maxlen {
+	if info.ProfitHistory.Results.Size() == maxlen {
 		if info.AvgWin != 0.0 && info.AvgLoss != 0.0 {
 			kelly := info.WinRate - ((1 - info.WinRate) / (info.AvgWin / math.Abs(info.AvgLoss)))
 			if kelly > 0 {
@@ -207,15 +228,45 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 		expValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fees, _ := decimal.NewFromString(filledOrder.FillFees)
 		newCash, _ := strconv.ParseFloat(expValue.Sub(fees).String(), 64)
-		profitPercentage := 1.0 - (newCash / info.CashInvested)
+		profitPercentage := (newCash / info.CashInvested) - 1.0
 		//calculate profit
-		info.RecentTradeResults.PushRight(profitPercentage)
-		if info.RecentTradeResults.Size() > 20 {
-			info.RecentTradeResults.PopLeft()
-		}
+		info.updateProfitInfo(profitPercentage)
 		// calculate profit and append trade to recentTradeResults
 		return newCash
 	} else {
 		return 0.0
 	}
+}
+
+func (info *CoinInfo) updateProfitInfo(profitPercentage float64) {
+
+	profitQueue := info.ProfitHistory
+
+	profitQueue.Results.PushRight(profitPercentage)
+	profitQueue.SumOvr += profitPercentage
+	profitQueue.NumOvr += 1
+	if profitPercentage > 0 {
+		profitQueue.SumPos += profitPercentage
+		profitQueue.NumPos += 1
+	} else if profitPercentage < 0 {
+		profitQueue.SumNeg += profitPercentage
+		profitQueue.NumNeg += 1
+	}
+	if profitQueue.Results.Size() > 20 {
+		oldVal := float64(profitQueue.Results.PopLeft().(float64))
+		profitQueue.SumOvr -= oldVal
+		profitQueue.NumOvr -= 1
+		if oldVal > 0 {
+			profitQueue.SumPos -= oldVal
+			profitQueue.NumPos -= 1
+		} else {
+			profitQueue.SumNeg -= oldVal
+			profitQueue.NumNeg -= 1
+		}
+	}
+
+	info.AvgLoss = profitQueue.SumNeg / float64(profitQueue.NumNeg)
+	info.AvgWin = profitQueue.SumPos / float64(profitQueue.NumPos)
+	info.AvgProfit = profitQueue.SumOvr / float64(profitQueue.NumOvr)
+	info.WinRate = float64(profitQueue.NumPos) / float64(profitQueue.NumOvr)
 }
