@@ -3,15 +3,15 @@ package main
 import "math"
 
 type Strategy struct {
-	data  map[int32]map[string]float32
-	coins []string
+	Data  map[int32]map[string]float32
+	Coins []string
 }
 
 type Atlas struct {
 	*Strategy
-	looking_to_enter map[string]bool
-	limit_up         map[string]float32
-	stop_loss        map[string]float32
+	LookingToEnter map[string]bool
+	LimitUp        map[string]float32
+	StopLoss       map[string]float32
 }
 
 type AtlasData struct {
@@ -23,39 +23,39 @@ type AtlasData struct {
 
 func initStrategy(_coins *[]string) *Strategy {
 	var strat Strategy
-	strat.data = make(map[int32]map[string]float32)
-	strat.coins = *_coins
+	strat.Data = make(map[int32]map[string]float32)
+	strat.Coins = *_coins
 	return &strat
 }
 
 func initAtlas(_coins *[]string) *Atlas {
 	var atlas Atlas
-	atlas.looking_to_enter = make(map[string]bool)
-	atlas.limit_up = make(map[string]float32)
-	atlas.stop_loss = make(map[string]float32)
+	atlas.LookingToEnter = make(map[string]bool)
+	atlas.LimitUp = make(map[string]float32)
+	atlas.StopLoss = make(map[string]float32)
 	atlas.Strategy = initStrategy(_coins)
-	for _, coin := range atlas.Strategy.coins {
-		atlas.looking_to_enter[coin] = false
-		atlas.limit_up[coin] = 0.0
-		atlas.stop_loss[coin] = 0.0
+	for _, coin := range atlas.Strategy.Coins {
+		atlas.LookingToEnter[coin] = false
+		atlas.LimitUp[coin] = 0.0
+		atlas.StopLoss[coin] = 0.0
 	}
 	return &atlas
 }
 
-//I know it's not a float but dunno how to do the data rn
+//I know it's not a float but dunno how to do the Data rn
 func (atlas *Atlas) Process(data *AtlasData, coinName string) {
-	if atlas.stop_loss[coinName] > 0 {
-		atlas.stop_loss[coinName] = maxFloat32(atlas.stop_loss[coinName], data.Close*0.995)
+	if atlas.StopLoss[coinName] > 0 {
+		atlas.StopLoss[coinName] = maxFloat32(atlas.StopLoss[coinName], data.Close*0.995)
 	}
 	return
 }
 
 func (atlas *Atlas) CalcEnter(data *AtlasData, coinName string) bool {
-	if atlas.looking_to_enter[coinName] && data.Close > atlas.limit_up[coinName] {
-		atlas.looking_to_enter[coinName] = false
+	if atlas.LookingToEnter[coinName] && data.Close > atlas.LimitUp[coinName] {
+		atlas.LookingToEnter[coinName] = false
 		return true
 	}
-	atlas.looking_to_enter[coinName] = false
+	atlas.LookingToEnter[coinName] = false
 
 	//Make prediction call to the beverly hills here
 	//so have to make prediction with all data inside here... features also have to be here?
@@ -63,8 +63,8 @@ func (atlas *Atlas) CalcEnter(data *AtlasData, coinName string) bool {
 	prediction := true
 
 	if prediction && data.Close < data.SMA*0.97 {
-		atlas.limit_up[coinName] = data.Close * 1.005
-		atlas.looking_to_enter[coinName] = true
+		atlas.LimitUp[coinName] = data.Close * 1.005
+		atlas.LookingToEnter[coinName] = true
 	}
 	return false
 }
@@ -72,10 +72,10 @@ func (atlas *Atlas) CalcEnter(data *AtlasData, coinName string) bool {
 func (atlas *Atlas) CalcExit(data *AtlasData, coinName string) bool {
 	amntAbove := maxFloat32(-0.015, data.RateOfChange/2)
 	if data.Close > data.SMA*(1+amntAbove) {
-		atlas.stop_loss[coinName] = maxFloat32(atlas.stop_loss[coinName], data.Close*0.995)
+		atlas.StopLoss[coinName] = maxFloat32(atlas.StopLoss[coinName], data.Close*0.995)
 	}
-	if data.Close < atlas.stop_loss[coinName] {
-		atlas.stop_loss[coinName] = 0.0
+	if data.Close < atlas.StopLoss[coinName] {
+		atlas.StopLoss[coinName] = 0.0
 		return true
 	}
 	return false
