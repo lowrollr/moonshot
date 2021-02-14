@@ -2,8 +2,10 @@ package main
 
 import (
 	"net"
+	"strconv"
 	"time"
 
+	coinbasepro "github.com/preichenberger/go-coinbasepro"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
 	// "sort"
@@ -11,64 +13,92 @@ import (
 )
 
 type CoinInfo struct {
-	last_close_price     float32
-	in_position          bool
-	enter_value          float32
-	cash_invested        float32
-	last_start_time      int32
-	recent_trade_results *deque.Deque
-	allocation           float32
-	avg_profit           float32
-	win_rate             float32
-	avg_win              float32
-	avg_loss             float32
+	LastClosePrice     float32
+	InPosition         bool
+	EnterValue         float32
+	CashInvested       float32
+	LastStartTime      int32
+	RecentTradeResults *deque.Deque
+	Allocation         float32
+	AvgProfit          float32
+	WinRate            float32
+	AvgWin             float32
+	AvgLoss            float32
 }
 
 type PortfolioManager struct {
-	strat             *interface{}
-	clientConnections map[string]*net.Conn
+	Strat             *interface{}
+	ClientConnections map[string]*net.Conn
 	FrontendSocket    *ServerClient
-	coinDict          map[string]*CoinInfo
-	coins             *[]string
-	free_cash         float32
-	portfolio_value   float32
+	CoinDict          map[string]*CoinInfo
+	Coins             *[]string
+	FreeCash          float32
+	PortfolioValue    float32
+	CoinbaseClient    *coinbasepro.Client
 }
 
 type EnterSignal struct {
-	coin   string
-	profit float32
+	Coin   string
+	Profit float32
 }
 
-func initPM(starting_cash float32) *PortfolioManager {
+func initPM() *PortfolioManager {
 	//starting cash commes from binance init
 	mapDomainConnection := startClient()
 	coins := getCoins(mapDomainConnection[domainToUrl["main_data_consumer"]])
+	client := coinbasepro.NewClient()
+	accounts, err := client.GetAccounts()
+	if err != nil {
+		println(err.Error())
+	}
+
+	log.Println(marketOrder(client, "BTC", 20000.00, true))
+	log.Println(marketOrder(client, "BTC", 15000.00, false))
 
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
 		coinInfoDict[coin] = &CoinInfo{
-			last_close_price:     0.0,
-			in_position:          false,
-			enter_value:          0.0,
-			cash_invested:        0.0,
-			last_start_time:      0,
-			recent_trade_results: deque.New(),
-			allocation:           0.0,
-			avg_profit:           0.0,
-			win_rate:             0.0,
-			avg_win:              0.0,
-			avg_loss:             0.0,
+			LastClosePrice:     0.0,
+			InPosition:         false,
+			EnterValue:         0.0,
+			CashInvested:       0.0,
+			LastStartTime:      0,
+			RecentTradeResults: deque.New(),
+			Allocation:         0.0,
+			AvgProfit:          0.0,
+			WinRate:            0.0,
+			AvgWin:             0.0,
+			AvgLoss:            0.0,
 		}
 	}
-	pm := &PortfolioManager{clientConnections: mapDomainConnection,
-		coinDict:        coinInfoDict,
-		coins:           coins,
-		free_cash:       starting_cash,
-		portfolio_value: starting_cash,
+	pm := &PortfolioManager{ClientConnections: mapDomainConnection,
+		CoinDict:       coinInfoDict,
+		Coins:          coins,
+		FreeCash:       0.0,
+		PortfolioValue: 0.0,
+		CoinbaseClient: client,
+	}
+	for _, a := range accounts {
+		// is account USD
+		currency := a.Currency
+		if currency == "USD" {
+			cashAvailable, err := strconv.ParseFloat(a.Available, 32)
+			if err == nil {
+				pm.FreeCash = float32(cashAvailable)
+			}
+			portfolioValue, err := strconv.ParseFloat(a.Balance, 32)
+			if err == nil {
+				pm.PortfolioValue = float32(portfolioValue)
+			}
+
+			break
+		}
 	}
 
+	// }
+
 	StartRemoteServer(mapDomainConnection[domainToUrl["beverly_hills"]], "beverly_hills")
-	pm.clientConnections = mapDomainConnection
+	pm.ClientConnections = mapDomainConnection
 	return pm
 }
 
@@ -80,7 +110,7 @@ func (pm *PortfolioManager) StartTrading() {
 	//do any more init things that have to happen here
 
 	//send start to the data consumer
-	StartRemoteServer(pm.clientConnections[domainToUrl["main_data_consumer"]], "main_data_consumer")
+	StartRemoteServer(pm.ClientConnections[domainToUrl["main_data_consumer"]], "main_data_consumer")
 
 }
 
@@ -127,7 +157,7 @@ func (pm *PortfolioManager) SetStrategy(strat interface{}) {
 func CalcKellyPercent(info *CoinInfo, maxlen int) float32 {
 	// low_amnt := 0.01
 	default_amnt := 0.05
-	if info.recent_trade_results.Size() == maxlen {
+	if info.RecentTradeResults.Size() == maxlen {
 		// if info.avg_win && info.avg_loss {
 		// 	kelly := info.win_rate - ((1 - info.win_rate) /(info.avg_win/math.Abs(info.avg_loss)))
 		// 	if kelly > 0 {
