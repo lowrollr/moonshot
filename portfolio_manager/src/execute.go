@@ -10,18 +10,25 @@ import (
 	// "math"
 )
 
-func marketOrder(client *coinbasepro.Client, coin string, amnt float32, buy bool) *coinbasepro.Order {
-	side := "sell"
-	if buy {
-		side = "buy"
-	}
+func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, buy bool) *coinbasepro.Order {
 	product := coin + "-USD"
-	myOrder := coinbasepro.Order{
-		Funds:     decimal.NewFromFloat(float64(amnt)).String(),
-		ProductID: product,
-		Side:      side,
-		Type:      "market",
+	var myOrder coinbasepro.Order
+	if buy {
+		myOrder = coinbasepro.Order{
+			Funds:     amnt.String(),
+			ProductID: product,
+			Side:      "buy",
+			Type:      "market",
+		}
+	} else {
+		myOrder = coinbasepro.Order{
+			Size:      amnt.String(),
+			ProductID: product,
+			Side:      "sell",
+			Type:      "market",
+		}
 	}
+
 	placedOrder, err := client.CreateOrder(&myOrder)
 	orderID := placedOrder.ID
 	if err != nil {
