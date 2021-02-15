@@ -58,12 +58,18 @@ type Client struct {
 	conn     net.Conn
 }
 
-type CryptoPayload struct {
-	//this is data we get from Kraken. Dunno what to put here
-}
-
 type SocketMessage struct {
 	Msg         string `json:"msg"`
 	Source      int    `json:"src"`
 	Destination int    `json:"dest"`
+}
+
+type CandlestickData struct {
+	time   int32
+	close  float32
+	open   float32
+	high   float32
+	low    float32
+	volume float32
+	trades int32
 }
