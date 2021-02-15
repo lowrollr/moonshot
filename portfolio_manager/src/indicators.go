@@ -6,7 +6,7 @@ import (
 
 type RateOfChange struct {
 	Values   *deque.Deque
-	MaxLen   float64
+	MaxLen   int
 	LeftVal  float64
 	RightVal float64
 }
@@ -26,7 +26,7 @@ func (roc *RateOfChange) GetVal() float64 {
 
 type SMA struct {
 	Values *deque.Deque
-	MaxLen float64
+	MaxLen int
 	CurSum float64
 }
 
@@ -40,5 +40,5 @@ func (sma *SMA) Update(newVal float64) {
 }
 
 func (sma *SMA) GetVal() float64 {
-	return sma.CurSum / sma.MaxLen
+	return sma.CurSum / float64(sma.MaxLen)
 }
