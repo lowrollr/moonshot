@@ -7,7 +7,6 @@ import (
 )
 
 type Strategy struct {
-	Data  map[int32]map[string]float64
 	Coins []string
 }
 
@@ -21,7 +20,6 @@ type Atlas struct {
 
 func initStrategy(_coins *[]string) *Strategy {
 	var strat Strategy
-	strat.Data = make(map[int32]map[string]float64)
 	strat.Coins = *_coins
 	return &strat
 }
