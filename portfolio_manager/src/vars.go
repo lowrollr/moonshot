@@ -65,11 +65,11 @@ type SocketMessage struct {
 }
 
 type CandlestickData struct {
-	time   int32
-	close  float32
-	open   float32
-	high   float32
-	low    float32
-	volume float32
-	trades int32
+	Time   int32
+	Close  float32
+	Open   float32
+	High   float32
+	Low    float32
+	Volume float32
+	Trades int32
 }
