@@ -42,7 +42,6 @@ func initAtlas(_coins *[]string) *Atlas {
 	return &atlas
 }
 
-//I know it's not a float but dunno how to do the Data rn
 func (atlas *Atlas) Process(data *AtlasData, coinName string) {
 	if atlas.StopLoss[coinName] > 0 {
 		atlas.StopLoss[coinName] = maxFloat32(atlas.StopLoss[coinName], data.Close*0.995)
