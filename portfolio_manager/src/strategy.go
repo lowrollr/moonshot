@@ -34,19 +34,18 @@ func initAtlas(_coins *[]string) *Atlas {
 	atlas.SMAShort = make(map[string]*SMA)
 	atlas.Strategy = initStrategy(_coins)
 	for _, coin := range atlas.Strategy.Coins {
-		atlas.LookingToEnter[coin] = false
 		atlas.StopLoss[coin] = 0.0
 		atlas.SMAGoal[coin] = &SMA{
 			Values: deque.New(),
 			MaxLen: 150,
 			CurSum: 0,
 		}
-		atlas.SMAShort = &SMA{
+		atlas.SMAShort[coin] = &SMA{
 			Values: deque.New(),
 			MaxLen: 30,
 			CurSum: 0,
 		}
-		atlas.RateOfChangeShort = &RateOfChange{
+		atlas.RateOfChangeShort[coin] = &RateOfChange{
 			Values:   deque.New(),
 			MaxLen:   45,
 			LeftVal:  1,
@@ -60,7 +59,7 @@ func (atlas *Atlas) Process(data *CandlestickData, coinName string) {
 
 	atlas.SMAShort[coinName].Update(data.Close)
 	atlas.SMAGoal[coinName].Update(data.Close)
-	atlas.RateOfChangeShort[coinName].Update(atlas.SMAShort[coinName].getVal())
+	atlas.RateOfChangeShort[coinName].Update(atlas.SMAShort[coinName].GetVal())
 	if atlas.StopLoss[coinName] > 0 {
 		atlas.StopLoss[coinName] = math.Max(atlas.StopLoss[coinName], data.Close*0.995)
 	}
@@ -78,7 +77,7 @@ func (atlas *Atlas) CalcEnter(data *CandlestickData, coinName string) bool {
 }
 
 func (atlas *Atlas) CalcExit(data *CandlestickData, coinName string) bool {
-	amntAbove := math.Max(-0.01, atlas.RateOfChangeShort[coinName].getVal())
+	amntAbove := math.Max(-0.01, atlas.RateOfChangeShort[coinName].GetVal())
 	if data.Close > atlas.SMAGoal[coinName].GetVal()*(1+amntAbove) {
 		atlas.StopLoss[coinName] = math.Max(atlas.StopLoss[coinName], data.Close*0.995)
 	}

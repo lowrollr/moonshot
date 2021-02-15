@@ -35,7 +35,7 @@ func (sma *SMA) Update(newVal float64) {
 	sma.CurSum += newVal
 	if sma.Values.Size() > sma.MaxLen {
 		removedVal := float64(sma.Values.PopLeft().(float64))
-		sma.CurSum -= newVal
+		sma.CurSum -= removedVal
 	}
 }
 
