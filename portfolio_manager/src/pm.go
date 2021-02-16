@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net"
 	"strconv"
 	"time"
 
@@ -28,7 +27,7 @@ type CoinInfo struct {
 
 type PortfolioManager struct {
 	Strat             *interface{}
-	ClientConnections map[string]*net.Conn
+	ClientConnections map[string]*Client
 	FrontendSocket    *ServerClient
 	CoinDict          map[string]*CoinInfo
 	Coins             *[]string
@@ -44,8 +43,9 @@ type EnterSignal struct {
 
 func initPM() *PortfolioManager {
 	//starting cash commes from binance init
-	mapDomainConnection := startClient()
-	coins := getCoins(mapDomainConnection[domainToUrl["main_data_consumer"]])
+	time.Sleep(2)
+	mapDomainConnection := StartClient()
+	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	client := coinbasepro.NewClient()
 	accounts, err := client.GetAccounts()
 	if err != nil {
@@ -95,23 +95,17 @@ func initPM() *PortfolioManager {
 		}
 	}
 
-	// }
-
-	StartRemoteServer(mapDomainConnection[domainToUrl["beverly_hills"]], "beverly_hills")
+	mapDomainConnection[domainToUrl["beverly_hills"]].StartRemoteServer("beverly_hills")
 	pm.ClientConnections = mapDomainConnection
 	return pm
 }
 
 func (pm *PortfolioManager) StartTrading() {
-	log.Println("hi")
 	for {
 		time.Sleep(time.Second)
 	}
 	//do any more init things that have to happen here
-
 	//send start to the data consumer
-	StartRemoteServer(pm.ClientConnections[domainToUrl["main_data_consumer"]], "main_data_consumer")
-
 }
 
 func (pm *PortfolioManager) SetStrategy(strat interface{}) {

@@ -3,13 +3,11 @@ package main
 //"alert"
 
 func main() {
-	// binanceClinet := *binance.NewClient(apiKey, secretKey)
-
 	pm := initPM()
 	atlas := initAtlas(pm.Coins)
 	pm.SetStrategy(atlas)
 
-	pm.FrontendSocket = startServer()
+	go pm.StartServer()
 	pm.StartTrading()
 
 	// _ = initAtlas(&coins)

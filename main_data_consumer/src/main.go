@@ -21,20 +21,11 @@ package main
 */
 func main() {
 	Dumbo = &dumbo{}
-	dataConsumer := DataConsumer{}
-
-	dataConsumer.SyncSetUp()
+	dataConsumer := initDC()
+	dataConsumer.DBSetUp()
+	go dataConsumer.WsHTTPListen()
 
 	dataConsumer.ServerListen()
 
 	dataConsumer.StartConsume()
-
-	// coins := Dumbo.SelectCoins(-1)
-
-	// fmt.Println("Coins collected: " + strings.Join(*coins, " "))
-
-	// InitializeShortCandleStick(coins)
-
-	// fmt.Println("Consuming Data...")
-	// ConsumeData(coins)
 }
