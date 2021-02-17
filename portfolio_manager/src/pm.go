@@ -3,8 +3,8 @@ package main
 import (
 	"math"
 	"net"
+	"sort"
 	"strconv"
-	"time"
 
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
 	decimal "github.com/shopspring/decimal"
@@ -25,21 +25,22 @@ type ProfitQueue struct {
 }
 
 type CoinInfo struct {
-	LastClosePrice float64
-	InPosition     bool
-	EnterPrice     decimal.Decimal
-	AmntOwned      decimal.Decimal
-	CashInvested   float64
-	ProfitHistory  *ProfitQueue
-
-	AvgProfit float64
-	WinRate   float64
-	AvgWin    float64
-	AvgLoss   float64
+	InPosition    bool
+	EnterPrice    decimal.Decimal
+	EnterPriceFl  float64
+	AmntOwned     decimal.Decimal
+	CashInvested  float64
+	ProfitHistory *ProfitQueue
+	AvgProfit     float64
+	WinRate       float64
+	AvgWin        float64
+	AvgLoss       float64
 }
 
 type PortfolioManager struct {
-	Strat             *interface{}
+	MakerFee          float64
+	TakerFee          float64
+	Strat             *Atlas
 	ClientConnections map[string]*net.Conn
 	FrontendSocket    *ServerClient
 	CoinDict          map[string]*CoinInfo
@@ -56,9 +57,11 @@ type EnterSignal struct {
 }
 
 func initPM() *PortfolioManager {
+
 	//starting cash commes from binance init
 	mapDomainConnection := startClient()
 	coins := getCoins(mapDomainConnection[domainToUrl["main_data_consumer"]])
+	strategy := initAtlas(coins)
 	client := coinbasepro.NewClient()
 	accounts, err := client.GetAccounts()
 	if err != nil {
@@ -68,10 +71,10 @@ func initPM() *PortfolioManager {
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
 		coinInfoDict[coin] = &CoinInfo{
-			LastClosePrice: 0.0,
-			InPosition:     false,
-			EnterPrice:     decimal.NewFromFloat(0.0),
-			AmntOwned:      decimal.NewFromFloat(0.0),
+			InPosition:   false,
+			EnterPrice:   decimal.NewFromFloat(0.0),
+			EnterPriceFl: -1.0,
+			AmntOwned:    decimal.NewFromFloat(0.0),
 			ProfitHistory: &ProfitQueue{
 				Results: deque.New(),
 				SumNeg:  0,
@@ -94,6 +97,9 @@ func initPM() *PortfolioManager {
 		PortfolioValue:    0.0,
 		CoinbaseClient:    client,
 		TradesToCalibrate: 20,
+		Strat:             strategy,
+		MakerFee:          0.5,
+		TakerFee:          0.5,
 	}
 	for _, a := range accounts {
 		// is account USD
@@ -111,13 +117,20 @@ func initPM() *PortfolioManager {
 			break
 		}
 	}
-	log.Println(pm.CoinDict["BTC"])
-	pm.enterPosition("BTC", 20000)
-	log.Println(pm.CoinDict["BTC"])
-	log.Println(pm.CoinDict["BTC"].AmntOwned)
+	fees, err := client.GetFees()
+	if err != nil {
+		log.Println("Error fetching account fees!")
+	} else {
+		pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
+		pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
+	}
+	// log.Println(pm.CoinDict["BTC"])
+	// pm.enterPosition("BTC", 20000)
+	// log.Println(pm.CoinDict["BTC"])
+	// log.Println(pm.CoinDict["BTC"].AmntOwned)
 
-	pm.exitPosition("BTC", pm.CoinDict["BTC"].AmntOwned)
-	log.Println(pm.CoinDict["BTC"])
+	// pm.exitPosition("BTC", pm.CoinDict["BTC"].AmntOwned)
+	// log.Println(pm.CoinDict["BTC"])
 
 	// }
 
@@ -127,56 +140,130 @@ func initPM() *PortfolioManager {
 }
 
 func (pm *PortfolioManager) StartTrading() {
-	log.Println("hi")
-	for {
-		time.Sleep(time.Second)
-	}
-	//do any more init things that have to happen here
-
-	//send start to the data consumer
 	StartRemoteServer(pm.ClientConnections[domainToUrl["main_data_consumer"]], "main_data_consumer")
+	for {
+		// wait for coins from main data consumer
+		// return as dict mapping coin -> Candlestick
+		// pass dict to PMProcess func to process the data
+		// pm.PMProcess()
+	}
 
 }
 
-func (pm *PortfolioManager) SetStrategy(strat interface{}) {
-	//test if strat has the methods we need.
-	// -> calcentry etc.
+func (pm *PortfolioManager) PMProcess(data map[string]*CandlestickData) {
+	// calculate current (unrealized) portfolio value
+	pm.PortfolioValue = pm.CalcPortfolioValue(data)
+	// check for buy/sell signals from strategy
+	enter_coins := []string{}
+	for _, coin := range *pm.Coins {
+		candle := data[coin]
+		pm.Strat.Process(candle, coin)
+		if pm.CoinDict[coin].InPosition {
+			if pm.Strat.CalcExit(candle, coin) {
+				pm.PortfolioValue += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+			}
+		} else {
+			if pm.Strat.CalcEnter(candle, coin) {
+				enter_coins = append(enter_coins, coin)
+			}
+		}
+	}
+	if len(enter_coins) > 0 {
+		pm.SortByProfit(&enter_coins)
+	}
+	for _, coin := range enter_coins {
+		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
+		cashToAllocate := pm.PortfolioValue * allocation
+		if cashToAllocate < pm.FreeCash {
+			cashUsed := pm.enterPosition(coin, cashToAllocate)
+			pm.FreeCash -= cashUsed
+		} else {
+			// all coins in positions sorted by EV
+			pmCoins := pm.Coins
+			evMap := pm.SortByEV(pm.GetCoinsInPosition(*pmCoins), data)
+			for _, coinIn := range *pmCoins {
+				if !(ExistsInSlice(coinIn, &enter_coins)) {
+
+					if cashToAllocate <= pm.FreeCash || ((*evMap)[coinIn] > pm.CoinDict[coinIn].AvgProfit && pm.CoinDict[coinIn].ProfitHistory.Results.Size() > 0) {
+						break
+					}
+
+					amntOwnedStr := pm.CoinDict[coinIn].AmntOwned.String()
+					amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
+					curCashValue := data[coinIn].Close * amntOwnedFlt
+					cashNeeded := curCashValue - pm.FreeCash
+
+					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
+						cashReceived := pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
+						pm.FreeCash += cashReceived
+					} else {
+						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
+						// partially exit position
+						cashReceived := pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
+						pm.FreeCash = cashReceived
+					}
+				}
+				if pm.FreeCash > 0 {
+					amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
+					cashUsed := pm.enterPosition(coin, amntToAllocate)
+					pm.FreeCash -= cashUsed
+				}
+			}
+		}
+	}
 }
 
-// func (pm *PortfolioManager) PMAction(coin string, data *CandlestickData) {
-// 	recent_trades_maxlen := 20
-// 	strat := pm.strat
-// 	info := pm.coinDict[coin]
-// 	strat_data := strat.ProcessData(data)
-// 	strat.Process(strat_data)
-// 	enter_singals := []EnterSignal{}
-// 	if info.in_position {
-// 		if strat.CalcEnter(strat_data, coin){
-// 			append(enter_signals, EnterSignal{coin, info.avg_profit})
-// 		}
+func ExistsInSlice(coin string, slice *[]string) bool {
+	for _, item := range *slice {
+		if item == coin {
+			return true
+		}
+	}
+	return false
+}
 
-// 	} else {
-// 		if strat.CalcExit(strat_data, coin){
-// 			pm.cash += exitPosition(coin)
-// 		}
-// 	}
+func (pm *PortfolioManager) GetCoinsInPosition(coins []string) *[]string {
+	coinsInPosition := []string{}
+	for _, coin := range coins {
+		if pm.CoinDict[coin].InPosition {
+			coinsInPosition = append(coinsInPosition, coin)
+		}
+	}
+	return &coinsInPosition
+}
 
-// 	sort.Slice(enter_signals, func(i, j int) bool {
-// 		return enter_signals[i].avg_profit > enter_signals[j].avg_profit
-// 	})
-// 	for i, sig := range enter_signals {
-// 		allocation := CalcKellyPercent(pm.coinDict[sig.coin], recent_trades_maxlen)
-// 		// somewhere we need to update the portfolio value
-// 		cash_allocated := allocation * (pm.portfolio_value)
-// 		if cash_allocated > pm.cash {
-// 			cash -= enterPosition(coin, cash_allocated)
+func (pm *PortfolioManager) CalcPortfolioValue(data map[string]*CandlestickData) float64 {
+	total_value := pm.FreeCash
+	for _, coin := range *pm.Coins {
+		if pm.CoinDict[coin].InPosition {
+			amntOwnedFlt, _ := strconv.ParseFloat(pm.CoinDict[coin].AmntOwned.String(), 64)
+			total_value += amntOwnedFlt * data[coin].Close
+		}
+	}
+	return total_value
+}
 
-// 		} else {
+func (pm *PortfolioManager) SortByProfit(coins *[]string) {
+	sort.Slice(*coins, func(i, j int) bool {
+		return pm.CoinDict[(*coins)[i]].AvgProfit > pm.CoinDict[(*coins)[j]].AvgProfit
+	})
+}
 
-// 		}
-// 	}
+func (pm *PortfolioManager) SortByEV(coins *[]string, data map[string]*CandlestickData) *map[string]float64 {
+	evMap := make(map[string]float64)
+	for _, coin := range *coins {
 
-// }
+		enterPrice := pm.CoinDict[coin].EnterPriceFl
+		expectedValue := pm.CoinDict[coin].AvgProfit - ((data[coin].Close - enterPrice) / enterPrice)
+		evMap[coin] = expectedValue
+
+	}
+	sort.Slice(*coins, func(i, j int) bool {
+		return evMap[(*coins)[i]] > evMap[(*coins)[j]]
+	})
+
+	return &evMap
+}
 
 func CalcKellyPercent(info *CoinInfo, maxlen int) float64 {
 	low_amnt := 0.01
@@ -194,14 +281,6 @@ func CalcKellyPercent(info *CoinInfo, maxlen int) float64 {
 	return default_amnt
 }
 
-func (pm PortfolioManager) getPositions() []*CoinInfo {
-	positions := []*CoinInfo{}
-	// for i, coin := range *pm.coins {
-
-	// }
-	return positions
-}
-
 func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) float64 {
 	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true)
 	log.Println(filledOrder)
@@ -209,9 +288,11 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 	if filledOrder.Settled {
 		info.InPosition = true
 		info.CashInvested = cashAllocated
-		expValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
+		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fillSize, _ := decimal.NewFromString(filledOrder.FilledSize)
-		info.EnterPrice = expValue.Div(fillSize)
+		info.EnterPrice = execValue.Div(fillSize)
+		enterPriceFl, _ := strconv.ParseFloat(info.EnterPrice.String(), 64)
+		info.EnterPriceFl = enterPriceFl
 		info.AmntOwned = fillSize
 		return cashAllocated
 	} else {
@@ -225,13 +306,12 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 	info := pm.CoinDict[coin]
 	if filledOrder.Settled {
 		info.InPosition = false
-		expValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
+		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fees, _ := decimal.NewFromString(filledOrder.FillFees)
-		newCash, _ := strconv.ParseFloat(expValue.Sub(fees).String(), 64)
+		newCash, _ := strconv.ParseFloat(execValue.Sub(fees).String(), 64)
 		profitPercentage := (newCash / info.CashInvested) - 1.0
-		//calculate profit
+
 		info.updateProfitInfo(profitPercentage)
-		// calculate profit and append trade to recentTradeResults
 		return newCash
 	} else {
 		return 0.0
