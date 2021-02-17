@@ -4,8 +4,6 @@ package main
 
 func main() {
 	pm := initPM()
-	atlas := initAtlas(pm.Coins)
-	pm.SetStrategy(atlas)
 
 	go pm.StartServer()
 	pm.StartTrading()

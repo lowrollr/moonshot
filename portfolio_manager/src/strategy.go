@@ -1,86 +1,87 @@
 package main
 
-import "math"
+import (
+	"math"
+
+	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
+)
 
 type Strategy struct {
-	data  map[int32]map[string]float32
-	coins []string
+	Coins []string
 }
 
 type Atlas struct {
-	*Strategy
-	looking_to_enter map[string]bool
-	limit_up         map[string]float32
-	stop_loss        map[string]float32
-}
-
-type AtlasData struct {
-	Close        float32
-	RateOfChange float32
-	SMA          float32
-	Time         int64
+	Strategy          *Strategy
+	StopLoss          map[string]float64
+	RateOfChangeShort map[string]*RateOfChange
+	SMAGoal           map[string]*SMA
+	SMAShort          map[string]*SMA
 }
 
 func initStrategy(_coins *[]string) *Strategy {
 	var strat Strategy
-	strat.data = make(map[int32]map[string]float32)
-	strat.coins = *_coins
+	strat.Coins = *_coins
 	return &strat
 }
 
 func initAtlas(_coins *[]string) *Atlas {
 	var atlas Atlas
-	atlas.looking_to_enter = make(map[string]bool)
-	atlas.limit_up = make(map[string]float32)
-	atlas.stop_loss = make(map[string]float32)
+	atlas.StopLoss = make(map[string]float64)
+	atlas.RateOfChangeShort = make(map[string]*RateOfChange)
+	atlas.SMAGoal = make(map[string]*SMA)
+	atlas.SMAShort = make(map[string]*SMA)
 	atlas.Strategy = initStrategy(_coins)
-	for _, coin := range atlas.Strategy.coins {
-		atlas.looking_to_enter[coin] = false
-		atlas.limit_up[coin] = 0.0
-		atlas.stop_loss[coin] = 0.0
+	for _, coin := range atlas.Strategy.Coins {
+		atlas.StopLoss[coin] = 0.0
+		atlas.SMAGoal[coin] = &SMA{
+			Values: deque.New(),
+			MaxLen: 150,
+			CurSum: 0,
+		}
+		atlas.SMAShort[coin] = &SMA{
+			Values: deque.New(),
+			MaxLen: 30,
+			CurSum: 0,
+		}
+		atlas.RateOfChangeShort[coin] = &RateOfChange{
+			Values:   deque.New(),
+			MaxLen:   45,
+			LeftVal:  1,
+			RightVal: 1,
+		}
 	}
 	return &atlas
 }
 
-//I know it's not a float but dunno how to do the data rn
-func (atlas *Atlas) Process(data *AtlasData, coinName string) {
-	if atlas.stop_loss[coinName] > 0 {
-		atlas.stop_loss[coinName] = maxFloat32(atlas.stop_loss[coinName], data.Close*0.995)
+func (atlas *Atlas) Process(data *CandlestickData, coinName string) {
+
+	atlas.SMAShort[coinName].Update(data.Close)
+	atlas.SMAGoal[coinName].Update(data.Close)
+	atlas.RateOfChangeShort[coinName].Update(atlas.SMAShort[coinName].GetVal())
+	if atlas.StopLoss[coinName] > 0 {
+		atlas.StopLoss[coinName] = math.Max(atlas.StopLoss[coinName], data.Close*0.995)
 	}
 	return
 }
 
-func (atlas *Atlas) CalcEnter(data *AtlasData, coinName string) bool {
-	if atlas.looking_to_enter[coinName] && data.Close > atlas.limit_up[coinName] {
-		atlas.looking_to_enter[coinName] = false
-		return true
-	}
-	atlas.looking_to_enter[coinName] = false
+func (atlas *Atlas) CalcEnter(data *CandlestickData, coinName string) bool {
 
-	//Make prediction call to the beverly hills here
-	//so have to make prediction with all data inside here... features also have to be here?
-	//when should features be computed? Not every time right?
 	prediction := true
 
-	if prediction && data.Close < data.SMA*0.97 {
-		atlas.limit_up[coinName] = data.Close * 1.005
-		atlas.looking_to_enter[coinName] = true
-	}
-	return false
-}
-
-func (atlas *Atlas) CalcExit(data *AtlasData, coinName string) bool {
-	amntAbove := maxFloat32(-0.015, data.RateOfChange/2)
-	if data.Close > data.SMA*(1+amntAbove) {
-		atlas.stop_loss[coinName] = maxFloat32(atlas.stop_loss[coinName], data.Close*0.995)
-	}
-	if data.Close < atlas.stop_loss[coinName] {
-		atlas.stop_loss[coinName] = 0.0
+	if prediction && data.Close < atlas.SMAGoal[coinName].GetVal()*0.97 {
 		return true
 	}
 	return false
 }
 
-func maxFloat32(x, y float32) float32 {
-	return float32(math.Max(float64(x), float64(y)))
+func (atlas *Atlas) CalcExit(data *CandlestickData, coinName string) bool {
+	amntAbove := math.Max(-0.01, atlas.RateOfChangeShort[coinName].GetVal())
+	if data.Close > atlas.SMAGoal[coinName].GetVal()*(1+amntAbove) {
+		atlas.StopLoss[coinName] = math.Max(atlas.StopLoss[coinName], data.Close*0.995)
+	}
+	if data.Close < atlas.StopLoss[coinName] {
+		atlas.StopLoss[coinName] = 0.0
+		return true
+	}
+	return false
 }

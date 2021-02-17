@@ -7,12 +7,7 @@ WHAT:
 '''
 from v2.strategy.strategies.strategy import Strategy
 from v2.strategy.indicators.param import Param
-from v2.strategy.indicators.ultimate_oscillator import UltimateOscillator
-from v2.strategy.indicators.bollinger_bands import BollingerBands
-from v2.strategy.indicators.mmroc import MinMaxRateOfChange
 from v2.strategy.indicators.roc import RateOfChange
-from v2.strategy.indicators.rsi import RSI
-from v2.strategy.indicators.cmo import CMO
 from v2.strategy.indicators.sma import SMA
 import numpy as np
 
@@ -34,30 +29,22 @@ class Benchmark(Strategy):
     '''
     def __init__(self, coin_names, entry_models=[], exit_models=[]):
         super().__init__(entry_models, exit_models)
-        sma_for_mmroc = SMA(_params=[Param(0,0,0,'period', 10)], _value='close', _appended_name='for_mmroc')
+        
         sma_goal = SMA(_params=[Param(0,0,0,'period',150)], _value='close')
         sma_for_roc_short = SMA(_params=[Param(0,0,0,'period',30)], _value='close', _appended_name='for_short')
-        roc = RateOfChange(_params=[Param(0,0,0,'period',1440)], _value='SMA_for_mmroc')
+        
         roc_shorter = RateOfChange(_params=[Param(0,0,0,'period',45)], _value='SMA_for_short', _appended_name='shorter')
-        # boll_bands_long = BollingerBands(_params=[Param(0,0,0,'period',3000)], _value='close', _appended_name='long')
-        self.algo_indicators.extend([sma_goal, sma_for_mmroc, sma_for_roc_short, roc, roc_shorter])
+        
+        self.algo_indicators.extend([sma_goal, sma_for_roc_short, roc_shorter])
 
 
-        # Algorithm-centered class variables
-        self.looking_to_enter = dict()
         
-        
-        self.limit_up = dict()
     
         self.stop_loss = dict()
         
         self.profit_goal = dict()
         
         for x in coin_names:
-            self.looking_to_enter[x] = False
-            
-            
-            self.limit_up[x] = 0.0
             
             self.stop_loss[x] = 0.0
             
@@ -75,21 +62,12 @@ class Benchmark(Strategy):
         return
 
     def calc_entry(self, data, coin_name):
-        if self.looking_to_enter[coin_name] and data.close > self.limit_up[coin_name]:
-            
-            self.looking_to_enter[coin_name] = False
-            # self.stop_loss[coin_name] = data.close * 0.95
         
-            # self.profit_goal[coin_name] = data.SMA
-            return True
         
-        self.looking_to_enter[coin_name] = False
         time = data.time
         prediction = self.entry_models[1][f'{coin_name}_results'][time]
         if prediction and data.close < data.SMA *  (0.97):
             return True
-            # self.limit_up[coin_name] = data.close * 1.005
-            # self.looking_to_enter[coin_name] = True
             
         return False
 

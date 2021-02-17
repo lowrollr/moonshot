@@ -1,99 +1,137 @@
 package main
 
 import (
+	"math"
+	"net"
+	"sort"
 	"strconv"
-	"time"
 
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
+	decimal "github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
 	// "sort"
 	// "math"
 )
 
+type ProfitQueue struct {
+	Results *deque.Deque
+	SumOvr  float64
+	SumPos  float64
+	SumNeg  float64
+	NumPos  int
+	NumNeg  int
+	NumOvr  int
+}
+
 type CoinInfo struct {
-	LastClosePrice     float32
-	InPosition         bool
-	EnterValue         float32
-	CashInvested       float32
-	LastStartTime      int32
-	RecentTradeResults *deque.Deque
-	Allocation         float32
-	AvgProfit          float32
-	WinRate            float32
-	AvgWin             float32
-	AvgLoss            float32
+	InPosition    bool
+	EnterPrice    decimal.Decimal
+	EnterPriceFl  float64
+	AmntOwned     decimal.Decimal
+	CashInvested  float64
+	ProfitHistory *ProfitQueue
+	AvgProfit     float64
+	WinRate       float64
+	AvgWin        float64
+	AvgLoss       float64
 }
 
 type PortfolioManager struct {
-	Strat             *interface{}
-	ClientConnections map[string]*Client
+
+	MakerFee          float64
+	TakerFee          float64
+	Strat             *Atlas
+	ClientConnections map[string]*net.Conn
 	FrontendSocket    *ServerClient
 	CoinDict          map[string]*CoinInfo
 	Coins             *[]string
-	FreeCash          float32
-	PortfolioValue    float32
+	FreeCash          float64
+	PortfolioValue    float64
 	CoinbaseClient    *coinbasepro.Client
+	TradesToCalibrate int
 }
 
 type EnterSignal struct {
 	Coin   string
-	Profit float32
+	Profit float64
 }
 
 func initPM() *PortfolioManager {
-	//starting cash commes from binance init
 	time.Sleep(2)
 	mapDomainConnection := StartClient()
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
+	strategy := initAtlas(coins)
+
 	client := coinbasepro.NewClient()
 	accounts, err := client.GetAccounts()
 	if err != nil {
 		println(err.Error())
 	}
 
-	log.Println(marketOrder(client, "BTC", 20000.00, true))
-	log.Println(marketOrder(client, "BTC", 15000.00, false))
-
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
 		coinInfoDict[coin] = &CoinInfo{
-			LastClosePrice:     0.0,
-			InPosition:         false,
-			EnterValue:         0.0,
-			CashInvested:       0.0,
-			LastStartTime:      0,
-			RecentTradeResults: deque.New(),
-			Allocation:         0.0,
-			AvgProfit:          0.0,
-			WinRate:            0.0,
-			AvgWin:             0.0,
-			AvgLoss:            0.0,
+			InPosition:   false,
+			EnterPrice:   decimal.NewFromFloat(0.0),
+			EnterPriceFl: -1.0,
+			AmntOwned:    decimal.NewFromFloat(0.0),
+			ProfitHistory: &ProfitQueue{
+				Results: deque.New(),
+				SumNeg:  0,
+				SumPos:  0,
+				SumOvr:  0,
+				NumOvr:  0,
+				NumPos:  0,
+				NumNeg:  0,
+			},
+			AvgProfit: 0.0,
+			WinRate:   0.0,
+			AvgWin:    0.0,
+			AvgLoss:   0.0,
 		}
 	}
 	pm := &PortfolioManager{ClientConnections: mapDomainConnection,
-		CoinDict:       coinInfoDict,
-		Coins:          coins,
-		FreeCash:       0.0,
-		PortfolioValue: 0.0,
-		CoinbaseClient: client,
+		CoinDict:          coinInfoDict,
+		Coins:             coins,
+		FreeCash:          0.0,
+		PortfolioValue:    0.0,
+		CoinbaseClient:    client,
+		TradesToCalibrate: 20,
+		Strat:             strategy,
+		MakerFee:          0.5,
+		TakerFee:          0.5,
 	}
 	for _, a := range accounts {
 		// is account USD
 		currency := a.Currency
 		if currency == "USD" {
-			cashAvailable, err := strconv.ParseFloat(a.Available, 32)
+			cashAvailable, err := strconv.ParseFloat(a.Available, 64)
 			if err == nil {
-				pm.FreeCash = float32(cashAvailable)
+				pm.FreeCash = cashAvailable
 			}
-			portfolioValue, err := strconv.ParseFloat(a.Balance, 32)
+			portfolioValue, err := strconv.ParseFloat(a.Balance, 64)
 			if err == nil {
-				pm.PortfolioValue = float32(portfolioValue)
+				pm.PortfolioValue = portfolioValue
 			}
 
 			break
 		}
 	}
+	fees, err := client.GetFees()
+	if err != nil {
+		log.Println("Error fetching account fees!")
+	} else {
+		pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
+		pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
+	}
+	// log.Println(pm.CoinDict["BTC"])
+	// pm.enterPosition("BTC", 20000)
+	// log.Println(pm.CoinDict["BTC"])
+	// log.Println(pm.CoinDict["BTC"].AmntOwned)
+
+	// pm.exitPosition("BTC", pm.CoinDict["BTC"].AmntOwned)
+	// log.Println(pm.CoinDict["BTC"])
 
 	mapDomainConnection[domainToUrl["beverly_hills"]].StartRemoteServer("beverly_hills")
 	pm.ClientConnections = mapDomainConnection
@@ -102,89 +140,211 @@ func initPM() *PortfolioManager {
 
 func (pm *PortfolioManager) StartTrading() {
 	for {
-		time.Sleep(time.Second)
+		// wait for coins from main data consumer
+		// return as dict mapping coin -> Candlestick
+		// pass dict to PMProcess func to process the data
+		// pm.PMProcess()
 	}
-	//do any more init things that have to happen here
-	//send start to the data consumer
+
 }
 
-func (pm *PortfolioManager) SetStrategy(strat interface{}) {
-	//test if strat has the methods we need.
-	// -> calcentry etc.
+func (pm *PortfolioManager) PMProcess(data map[string]*CandlestickData) {
+	// calculate current (unrealized) portfolio value
+	pm.PortfolioValue = pm.CalcPortfolioValue(data)
+	// check for buy/sell signals from strategy
+	enter_coins := []string{}
+	for _, coin := range *pm.Coins {
+		candle := data[coin]
+		pm.Strat.Process(candle, coin)
+		if pm.CoinDict[coin].InPosition {
+			if pm.Strat.CalcExit(candle, coin) {
+				pm.PortfolioValue += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+			}
+		} else {
+			if pm.Strat.CalcEnter(candle, coin) {
+				enter_coins = append(enter_coins, coin)
+			}
+		}
+	}
+	if len(enter_coins) > 0 {
+		pm.SortByProfit(&enter_coins)
+	}
+	for _, coin := range enter_coins {
+		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
+		cashToAllocate := pm.PortfolioValue * allocation
+		if cashToAllocate < pm.FreeCash {
+			cashUsed := pm.enterPosition(coin, cashToAllocate)
+			pm.FreeCash -= cashUsed
+		} else {
+			// all coins in positions sorted by EV
+			pmCoins := pm.Coins
+			evMap := pm.SortByEV(pm.GetCoinsInPosition(*pmCoins), data)
+			for _, coinIn := range *pmCoins {
+				if !(ExistsInSlice(coinIn, &enter_coins)) {
+
+					if cashToAllocate <= pm.FreeCash || ((*evMap)[coinIn] > pm.CoinDict[coinIn].AvgProfit && pm.CoinDict[coinIn].ProfitHistory.Results.Size() > 0) {
+						break
+					}
+
+					amntOwnedStr := pm.CoinDict[coinIn].AmntOwned.String()
+					amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
+					curCashValue := data[coinIn].Close * amntOwnedFlt
+					cashNeeded := curCashValue - pm.FreeCash
+
+					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
+						cashReceived := pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
+						pm.FreeCash += cashReceived
+					} else {
+						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
+						// partially exit position
+						cashReceived := pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
+						pm.FreeCash = cashReceived
+					}
+				}
+				if pm.FreeCash > 0 {
+					amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
+					cashUsed := pm.enterPosition(coin, amntToAllocate)
+					pm.FreeCash -= cashUsed
+				}
+			}
+		}
+	}
 }
 
-// func (pm *PortfolioManager) PMAction(coin string, data *CandlestickData) {
-// 	recent_trades_maxlen := 20
-// 	strat := pm.strat
-// 	info := pm.coinDict[coin]
-// 	strat_data := strat.ProcessData(data)
-// 	strat.Process(strat_data)
-// 	enter_singals := []EnterSignal{}
-// 	if info.in_position {
-// 		if strat.CalcEnter(strat_data, coin){
-// 			append(enter_signals, EnterSignal{coin, info.avg_profit})
-// 		}
+func ExistsInSlice(coin string, slice *[]string) bool {
+	for _, item := range *slice {
+		if item == coin {
+			return true
+		}
+	}
+	return false
+}
 
-// 	} else {
-// 		if strat.CalcExit(strat_data, coin){
-// 			pm.cash += exitPosition(coin)
-// 		}
-// 	}
+func (pm *PortfolioManager) GetCoinsInPosition(coins []string) *[]string {
+	coinsInPosition := []string{}
+	for _, coin := range coins {
+		if pm.CoinDict[coin].InPosition {
+			coinsInPosition = append(coinsInPosition, coin)
+		}
+	}
+	return &coinsInPosition
+}
 
-// 	sort.Slice(enter_signals, func(i, j int) bool {
-// 		return enter_signals[i].avg_profit > enter_signals[j].avg_profit
-// 	})
-// 	for i, sig := range enter_signals {
-// 		allocation := CalcKellyPercent(pm.coinDict[sig.coin], recent_trades_maxlen)
-// 		// somewhere we need to update the portfolio value
-// 		cash_allocated := allocation * (pm.portfolio_value)
-// 		if cash_allocated > pm.cash {
-// 			cash -= enterPosition(coin, cash_allocated)
+func (pm *PortfolioManager) CalcPortfolioValue(data map[string]*CandlestickData) float64 {
+	total_value := pm.FreeCash
+	for _, coin := range *pm.Coins {
+		if pm.CoinDict[coin].InPosition {
+			amntOwnedFlt, _ := strconv.ParseFloat(pm.CoinDict[coin].AmntOwned.String(), 64)
+			total_value += amntOwnedFlt * data[coin].Close
+		}
+	}
+	return total_value
+}
 
-// 		} else {
+func (pm *PortfolioManager) SortByProfit(coins *[]string) {
+	sort.Slice(*coins, func(i, j int) bool {
+		return pm.CoinDict[(*coins)[i]].AvgProfit > pm.CoinDict[(*coins)[j]].AvgProfit
+	})
+}
 
-// 		}
-// 	}
+func (pm *PortfolioManager) SortByEV(coins *[]string, data map[string]*CandlestickData) *map[string]float64 {
+	evMap := make(map[string]float64)
+	for _, coin := range *coins {
 
-// }
+		enterPrice := pm.CoinDict[coin].EnterPriceFl
+		expectedValue := pm.CoinDict[coin].AvgProfit - ((data[coin].Close - enterPrice) / enterPrice)
+		evMap[coin] = expectedValue
 
-func CalcKellyPercent(info *CoinInfo, maxlen int) float32 {
-	// low_amnt := 0.01
+	}
+	sort.Slice(*coins, func(i, j int) bool {
+		return evMap[(*coins)[i]] > evMap[(*coins)[j]]
+	})
+
+	return &evMap
+}
+
+func CalcKellyPercent(info *CoinInfo, maxlen int) float64 {
+	low_amnt := 0.01
 	default_amnt := 0.05
-	if info.RecentTradeResults.Size() == maxlen {
-		// if info.avg_win && info.avg_loss {
-		// 	kelly := info.win_rate - ((1 - info.win_rate) /(info.avg_win/math.Abs(info.avg_loss)))
-		// 	if kelly > 0 {
-		// 		return kelly
-		// 	} else {
-		// 		return float32(low_amnt)
-		// 	}
-		// }
+	if info.ProfitHistory.Results.Size() == maxlen {
+		if info.AvgWin != 0.0 && info.AvgLoss != 0.0 {
+			kelly := info.WinRate - ((1 - info.WinRate) / (info.AvgWin / math.Abs(info.AvgLoss)))
+			if kelly > 0 {
+				return kelly
+			} else {
+				return low_amnt
+			}
+		}
 	}
-	return float32(default_amnt)
+	return default_amnt
 }
 
-func (pm PortfolioManager) getPositions() []*CoinInfo {
-	positions := []*CoinInfo{}
-	// for i, coin := range *pm.coins {
-
-	// }
-	return positions
+func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) float64 {
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true)
+	log.Println(filledOrder)
+	info := pm.CoinDict[coin]
+	if filledOrder.Settled {
+		info.InPosition = true
+		info.CashInvested = cashAllocated
+		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
+		fillSize, _ := decimal.NewFromString(filledOrder.FilledSize)
+		info.EnterPrice = execValue.Div(fillSize)
+		enterPriceFl, _ := strconv.ParseFloat(info.EnterPrice.String(), 64)
+		info.EnterPriceFl = enterPriceFl
+		info.AmntOwned = fillSize
+		return cashAllocated
+	} else {
+		return 0.0
+	}
 }
 
-func enterPosition(coin string, cash_allocated float32) float32 {
-	//enter the position in coin
+func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Decimal) float64 {
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false)
+	log.Println(filledOrder)
+	info := pm.CoinDict[coin]
+	if filledOrder.Settled {
+		info.InPosition = false
+		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
+		fees, _ := decimal.NewFromString(filledOrder.FillFees)
+		newCash, _ := strconv.ParseFloat(execValue.Sub(fees).String(), 64)
+		profitPercentage := (newCash / info.CashInvested) - 1.0
 
-	// return the amount of cash we actually allocated to the position, assuming it could be
-	// slightly different than the amount of cash we intended to allocate
-	return 0.0
+		info.updateProfitInfo(profitPercentage)
+		return newCash
+	} else {
+		return 0.0
+	}
 }
 
-func exitPosition(coin string) float32 {
-	//exit the position in coin
+func (info *CoinInfo) updateProfitInfo(profitPercentage float64) {
 
-	new_cash := 0.0
+	profitQueue := info.ProfitHistory
 
-	// return the resultant cash we acquire from exiting the position
-	return float32(new_cash)
+	profitQueue.Results.PushRight(profitPercentage)
+	profitQueue.SumOvr += profitPercentage
+	profitQueue.NumOvr += 1
+	if profitPercentage > 0 {
+		profitQueue.SumPos += profitPercentage
+		profitQueue.NumPos += 1
+	} else if profitPercentage < 0 {
+		profitQueue.SumNeg += profitPercentage
+		profitQueue.NumNeg += 1
+	}
+	if profitQueue.Results.Size() > 20 {
+		oldVal := float64(profitQueue.Results.PopLeft().(float64))
+		profitQueue.SumOvr -= oldVal
+		profitQueue.NumOvr -= 1
+		if oldVal > 0 {
+			profitQueue.SumPos -= oldVal
+			profitQueue.NumPos -= 1
+		} else {
+			profitQueue.SumNeg -= oldVal
+			profitQueue.NumNeg -= 1
+		}
+	}
+
+	info.AvgLoss = profitQueue.SumNeg / float64(profitQueue.NumNeg)
+	info.AvgWin = profitQueue.SumPos / float64(profitQueue.NumPos)
+	info.AvgProfit = profitQueue.SumOvr / float64(profitQueue.NumOvr)
+	info.WinRate = float64(profitQueue.NumPos) / float64(profitQueue.NumOvr)
 }
