@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"net"
+	"net/http"
 	"os"
+	"sync"
 
-	"github.com/ross-hugo/go-binance/v2"
+	ws "github.com/gorilla/websocket"
 )
 
 const (
@@ -15,6 +16,12 @@ const (
 var (
 	apiKey    = os.Getenv("BINANCEAPIKEY")
 	secretKey = os.Getenv("BINANCESECRETKEY")
+	wsDialer  ws.Dialer
+	upgrader  = ws.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 
 	domainToUrl = map[string]string{
 		"main_data_consumer": "main_data_consumer:" + os.Getenv("DATAPORT"),
@@ -35,8 +42,7 @@ var (
 		3: "frontend",
 	}
 
-	binanceClient = binance.Client{}
-	listenKey     = ""
+	listenKey = ""
 
 	CONPORT = ":" + string(os.Getenv("SERVERPORT"))
 
@@ -44,25 +50,27 @@ var (
 )
 
 type ServerClient struct {
-	// incoming chan string
-	outgoing chan string
-	reader   *bufio.Reader
-	writer   *bufio.Writer
-	conn     *net.Conn
+	sync.RWMutex
+	conn *ws.Conn
 }
 
 type Client struct {
-	outgoing chan string
-	reader   *bufio.Reader
-	writer   *bufio.Writer
-	conn     net.Conn
+	conn *ws.Conn
 }
 
 type SocketMessage struct {
+	Type        string `json:"type"`
 	Msg         string `json:"msg"`
 	Source      int    `json:"src"`
 	Destination int    `json:"dest"`
 }
+
+
+type SocketCoinsMessage struct {
+	Type        string   `json:"type"`
+	Msg         []string `json:"msg"`
+	Source      int      `json:"src"`
+	Destination int      `json:"dest"`
 
 type CandlestickData struct {
 	Time   int

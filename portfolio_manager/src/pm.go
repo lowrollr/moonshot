@@ -38,6 +38,7 @@ type CoinInfo struct {
 }
 
 type PortfolioManager struct {
+
 	MakerFee          float64
 	TakerFee          float64
 	Strat             *Atlas
@@ -57,11 +58,11 @@ type EnterSignal struct {
 }
 
 func initPM() *PortfolioManager {
-
-	//starting cash commes from binance init
-	mapDomainConnection := startClient()
-	coins := getCoins(mapDomainConnection[domainToUrl["main_data_consumer"]])
+	time.Sleep(2)
+	mapDomainConnection := StartClient()
+	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
+
 	client := coinbasepro.NewClient()
 	accounts, err := client.GetAccounts()
 	if err != nil {
@@ -132,15 +133,12 @@ func initPM() *PortfolioManager {
 	// pm.exitPosition("BTC", pm.CoinDict["BTC"].AmntOwned)
 	// log.Println(pm.CoinDict["BTC"])
 
-	// }
-
-	StartRemoteServer(mapDomainConnection[domainToUrl["beverly_hills"]], "beverly_hills")
+	mapDomainConnection[domainToUrl["beverly_hills"]].StartRemoteServer("beverly_hills")
 	pm.ClientConnections = mapDomainConnection
 	return pm
 }
 
 func (pm *PortfolioManager) StartTrading() {
-	StartRemoteServer(pm.ClientConnections[domainToUrl["main_data_consumer"]], "main_data_consumer")
 	for {
 		// wait for coins from main data consumer
 		// return as dict mapping coin -> Candlestick

@@ -14,7 +14,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ross-hugo/go-binance/v2"
@@ -23,12 +22,11 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-type dumbo struct{
+type dumbo struct {
 	DBInterface *gorm.DB
 }
 
-func (Dumbo *dumbo) InitializeDB(wg *sync.WaitGroup) {
-	defer wg.Done()
+func (Dumbo *dumbo) InitializeDB() {
 	fmt.Println("Connecting to database")
 
 	var err error

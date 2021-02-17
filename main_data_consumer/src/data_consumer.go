@@ -2,117 +2,91 @@ package main
 
 import (
 	"encoding/json"
-	"math"
-	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	ws "github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 type DataConsumer struct {
-	SocketServer   *net.Listener
-	NumConnections int
 	Clients        map[string]*Client
 	Coins          *[]string
 	Candlesticks   map[string]*Candlestick
+	NumConnections int
 }
 
-func (data *DataConsumer) InitializeServer(wg *sync.WaitGroup) {
-	defer wg.Done()
-	listener, err := net.Listen("tcp", ":"+string(os.Getenv("SERVERPORT")))
-	if err != nil {
-		log.Panic(err)
+func initDC() *DataConsumer {
+	emptyClients := map[string]*Client{}
+	for con, _ := range containerToId {
+		emptyClients[con] = &Client{}
 	}
-	data.SocketServer = &listener
-	data.NumConnections = 0
+	return &DataConsumer{
+		Clients:        emptyClients,
+		NumConnections: 0,
+	}
 }
 
-func (data *DataConsumer) SyncSetUp() {
+func (data *DataConsumer) DBSetUp() {
 	data.Coins = Dumbo.SelectCoins(-1)
-	wg := new(sync.WaitGroup)
-	wg.Add(2)
+	Dumbo.InitializeDB()
+}
 
-	go data.InitializeServer(wg)
-	go Dumbo.InitializeDB(wg)
+func (data *DataConsumer) WsHTTPListen() {
+	http.HandleFunc("/", data.handleConnections)
+	err := http.ListenAndServe(":"+string(os.Getenv("SERVERPORT")), nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}
 
-	wg.Wait()
+func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Warn("error %v", err)
+	}
+	message := SocketMessage{}
+	_, bytes, err := ws.ReadMessage()
+	if err != nil {
+		log.Warn("error %v", err)
+	}
+	err = json.Unmarshal(bytes, &message)
+	if err != nil {
+		log.Warn("Was not able to unmarshall", err)
+	}
+
+	if message.Type == "coins" {
+		(*data.Clients[idToContainer[message.Source]]).SetClient(ws)
+		coinMessage := SocketCoinMessageConstruct(
+			data.Coins,
+			containerToId["main_data_consumer"],
+			message.Source,
+		)
+		data.Clients[idToContainer[message.Source]].
+			WriteSocketCoinsJSON(coinMessage)
+		data.NumConnections++
+	} else if message.Type == "init" {
+		data.Clients[idToContainer[message.Source]].SetClient(ws)
+		log.Println("Reconnected to ", idToContainer[message.Source], ws.RemoteAddr())
+	} else {
+		log.Println(message)
+		log.Warn("Did not provide correct type")
+	}
+	return
 }
 
 func (data *DataConsumer) ServerListen() {
-	data.Clients = make(map[string]*Client)
-	CoinByte, err := json.Marshal(data.Coins)
-	if err != nil {
-		log.Panic("Could not convert coins to Json. Stop. Error: " + err.Error())
-	}
-
-	for len(data.Clients) < 3 {
-		//change this so that it's more multithreaded. Have goroutine for each service
-		// when each have been hit with start, then you can start running
-		log.Println("Waiting for a connection...")
-		conn, err := (*data.SocketServer).Accept()
-		if err != nil {
-			log.Panic("Could not make connection " + err.Error())
-		}
-		client := NewClient(conn)
-
-		for {
-			msgContent, messageType := client.Receive()
-			if len(*msgContent) == 0 {
-				conn.Close()
-				break
-			}
-			if messageType == "coinRequest" {
-				var ClientJson SocketMessage
-				err = json.Unmarshal(*msgContent, &ClientJson)
-				if err != nil {
-					log.Warn("Was not able to unmarshall the client coin request " + err.Error())
-				}
-				writeMsg, err := ConstructMessage(&CoinByte, "coinServe")
-				if err != nil {
-					log.Panic("There is no message type defined provided")
-				}
-				client.WriteAll(writeMsg)
-				log.Println("Sent coins to", idToContainer[ClientJson.Source], conn.RemoteAddr())
-
-				data.Clients[idToContainer[ClientJson.Source]] = client
-				data.NumConnections++
-				break
-			}
-		}
-	}
-	//listen for start messages from all three
-	for source, client := range data.Clients {
-		if source == "beverly_hills" {
-			client.WaitStart()
-		}
-	}
-}
-
-func (data *DataConsumer) waitFunc() {
-	go ContinuouslyPrintSockets()
 	for {
-		conn, err := (*data.SocketServer).Accept()
-		if err != nil {
-			log.Panic("Could not make connection " + err.Error())
+		if data.NumConnections > 2 {
+			break
 		}
-		client := NewClient(conn)
-		msgContent, _ := client.Receive()
-		if len(*msgContent) > 0 {
-			var ClientJson SocketMessage
-			err = json.Unmarshal(*msgContent, &ClientJson)
-			if err == nil {
-				data.Clients[idToContainer[ClientJson.Source]] = client
-				log.Println("Reconnected to ", idToContainer[ClientJson.Source], conn.RemoteAddr())
-			}
-		} else {
-			conn.Close()
-		}
+		time.Sleep(1)
 	}
+
+	data.Clients["beverly_hills"].WaitStart()
 }
 
 func (data *DataConsumer) StartConsume() {
@@ -124,114 +98,115 @@ func (data *DataConsumer) Consume() {
 	data.Candlesticks = make(map[string]*Candlestick)
 	log.Println("Start Consuming")
 
-	for _, symbol := range *data.Coins {
-		data.Candlesticks[strings.ToLower(symbol)] = nil
-		symbol = strings.ToUpper(symbol) + "-USD"
-		go data.SymbolWebSocket(symbol)
+	symbolsUSD := []string{}
+	for _, sym := range *data.Coins {
+		symbolsUSD = append(symbolsUSD, strings.ToUpper(sym)+"-USD")
 	}
-
-	log.Println("\n\nTotal Number of sockets at the beginning: ")
-	printNumSockets()
-	//perpetual wait
-	data.waitFunc()
+	data.SymbolWebSocket(&symbolsUSD)
 }
 
-func (data *DataConsumer) SymbolWebSocket(symbol string) {
+func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 	for {
-		log.Println("Starting initialization for coin: " + symbol)
-		stop_candle_chan, _, err := InitializeSymbolSocket(symbol)
+		log.Println("Starting initialization for coins: " + strings.Join(*symbols, ", "))
+		symbolConn, err := InitializeSymbolSocket(symbols)
 		if err != nil {
-			log.Warn("Was not able to open websocket for " + symbol + " with error: " + err.Error())
-			printNumSockets()
+			log.Panic("Was not able to open websocket with error: " + err.Error())
 		}
-		<-stop_candle_chan
-		log.Println("Restarting candlestick socket for coin: " + symbol)
-		printNumSockets()
+		data.ConsumerData(symbolConn)
 	}
 }
 
-func InitializeSymbolSocket(symbol string) (){
-
+func (data *DataConsumer) ConsumerData(conn *ws.Conn) {
+	for {
+		message := CoinBaseMessage{}
+		if err := conn.ReadJSON(&message); err != nil {
+			log.Warn("Was not able to retrieve message with error: " + err.Error())
+		}
+		go data.ProcessTick(&message)
+	}
 }
 
-func (data *DataConsumer) BuildAndSendCandles(event *binance.WsPartialDepthEvent) {
-	var mutex = &sync.Mutex{}
-	time_now := time.Now()
-	now := int32(math.Trunc(float64(time_now.UnixNano()) / float64(time.Minute.Nanoseconds())))
-	bid_price, _ := strconv.ParseFloat(event.Bids[0].Price, 32)
-	ask_price, _ := strconv.ParseFloat(event.Asks[0].Price, 32)
-	trade_price := float32((bid_price + ask_price) / 2)
-	trade_coin := event.Symbol[:len(event.Symbol)-4]
-	messageToFrontend := CoinDataMessage{
-		Msg: CoinPrice{
+//TODO seperate into functions
+func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
+	price, _ := strconv.ParseFloat(msg.Price, 32)
+	tradePrice := float32(price)
+	vol, _ := strconv.ParseFloat(msg.LastSize, 32)
+	volume := float32(vol)
+	//send data to the frontend
+	trade_coin := strings.Split(msg.ProductID, "-")[0]
+	now := msg.Time.Minute()
+
+	messageToFrontend := SocketPriceMessageConstruct(
+		&CoinPrice{
 			Coin:  trade_coin,
-			Price: trade_price},
-		Source:      containerToId["main_data_consumer"],
-		Destination: containerToId["frontend"]}
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
+			Price: tradePrice,
+		},
+		containerToId["main_data_consumer"],
+		containerToId["frontend"],
+	)
+
 	frontendClient := data.Clients["frontend"]
-	coinPriceByte, _ := json.Marshal(messageToFrontend)
-	writeBytes, _ := ConstructMessage(&coinPriceByte, "curPrice")
-	go frontendClient.WriteSocketMessage(writeBytes, wg)
-	log.Println(event)
-	mutex.Lock()
+	go frontendClient.WriteSocketPriceJSON(messageToFrontend)
+	data.Candlesticks[trade_coin].Lock()
 	candle := data.Candlesticks[trade_coin]
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
 			Coin:      trade_coin,
 			StartTime: now,
-			Open:      trade_price,
-			High:      trade_price,
-			Low:       trade_price,
-			Close:     trade_price}
-
+			Open:      tradePrice,
+			High:      tradePrice,
+			Low:       tradePrice,
+			Close:     tradePrice,
+			Volume:    volume,
+		}
 	} else if candle.StartTime != now {
-		wg.Add(2)
 		for destinationStr, client := range data.Clients {
-			candleMessage := SocketCandleMessage{
-				Source:      containerToId["main_data_consumer"],
-				Destination: containerToId[destinationStr],
-				Msg:         *data.Candlesticks[trade_coin],
-			}
 			if destinationStr != "frontend" {
-				candleByte, _ := json.Marshal(candleMessage)
-				writeBytes, _ = ConstructMessage(&candleByte, "candleStick")
-				go client.WriteSocketMessage(writeBytes, wg)
+				candleMessage := SocketCandleMessage{
+					Source:      containerToId["main_data_consumer"],
+					Destination: containerToId[destinationStr],
+					Msg:         *data.Candlesticks[trade_coin],
+				}
+				go client.WriteSocketCandleJSON(&candleMessage)
 			}
 		}
 		data.Candlesticks[trade_coin] = &Candlestick{
 			Coin:      trade_coin,
 			StartTime: now,
-			Open:      trade_price,
-			High:      trade_price,
-			Low:       trade_price,
-			Close:     trade_price}
+			Open:      tradePrice,
+			High:      tradePrice,
+			Low:       tradePrice,
+			Close:     tradePrice,
+		}
 	} else {
-		candle.Close = trade_price
-		if trade_price > candle.High {
-			candle.High = trade_price
-		}
-		if trade_price < candle.Low {
-			candle.Low = trade_price
-		}
-
+		candle.Close = tradePrice
+		candle.High = Float32Max(candle.High, tradePrice)
+		candle.Low = Float32Min(candle.Low, tradePrice)
 	}
-	mutex.Unlock()
-	wg.Wait()
-	// store in db
-	// err := Dumbo.StoreCryptoKline(event)
-	// if err != nil {
-	// 	log.Warn("Was not able to store kline data with error: " + err.Error())
-	// 	printNumSockets()
-	// }
+	data.Candlesticks[trade_coin].Unlock()
+	return
+}
 
-	// EfficientSleep(1, time_now, time.Second)
+func InitializeSymbolSocket(symbols *[]string) (*ws.Conn, error) {
+	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
+	if err != nil {
+		return nil, err
+	}
+	subscribe := CoinBaseMessage{
+		Type: "subscribe",
+		Channels: []MessageChannel{
+			MessageChannel{
+				Name:       "ticker",
+				ProductIds: *symbols,
+			},
+		},
+	}
+	if err := wsConn.WriteJSON(subscribe); err != nil {
+		return nil, err
+	}
+	return wsConn, nil
 }
 
 func InitConsume() {
-	binance.WebsocketKeepalive = true
-
-	binance.WebsocketTimeout = time.Second * 30
 	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true})
 }
