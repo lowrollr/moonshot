@@ -27,29 +27,9 @@ class BeverlyHills():
         self.numClients = 0
         
         self.consumerConnect()
-        self.pmConnect()
 
         self.data_engine = DataEngine(self.coins)
 
-    def pmConnect(self):
-        conn = None
-        print("Connecting to Portfolio Manager")
-        while True:
-            print("Trying to connect", flush=True)
-            try:
-                conn = startClient('portfolio_manager', os.environ["PM_PORT"])
-                break
-            except Exception as e:
-                print(e)
-                time.sleep(5)
-
-        self.connections['portfolio_manager'] = conn
-        while True:
-            msg = readData(conn, 'portfolio_manager', os.environ["PM_PORT"])
-            if msg["type"] == "init":
-                print("Recieved init message ")
-                break
-                
 
 
     def consumerConnect(self):
@@ -82,7 +62,8 @@ class BeverlyHills():
         self.coins = coin_msg["msg"]
     
     def compute(self):
-        
+        while True:
+            data = readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"])
             
 
     def startServer(self):

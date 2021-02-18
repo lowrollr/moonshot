@@ -592,10 +592,10 @@ class notebookUtils:
 
         return version_str
 
-    def exportProductionModel(self, model, name, new_version, indicators, features, proba_threshold=0.0, is_nn=False):
+    def exportProductionModel(self, model, model_type, name, new_version, indicators, features, proba_threshold=0.0, is_nn=False):
         model_dict = dict()
         model_dict['proba_threshold'] = proba_threshold
-        
+        model_dict['features'] = features    
         version_str = ''
         base_path = './production_models/'
         model_dir = f'{base_path}{name}'
@@ -616,36 +616,45 @@ class notebookUtils:
                 version_str = f'{highest_version[0] + 1}_0'
             else:
                 version_str = f'{highest_version[0]}_{highest_version[1] + 1}'
-            
         else:
             os.mkdir(model_dir)
             version_str = '1_0'
         model_dir = f'{model_dir}/{version_str}'
         os.mkdir(model_dir)
-            
+        # we need to package all the information needed to construct the appropriate indicator object
+        # since we cannot send the indicator itself
+        # this includes:
+        # -> name
+        # -> type of indicator
+        # -> params
+        # -> value (what it's being computed upon)
+        # it's necessary to send all of this information, as indicators constructed for a model can be highly coupled
+        # we need this to work exactly the same way in beverly hills
+        # rather than rely on defaults in beverly hills, we can just send the information stored in the object
+        # since beverly hills is not really an environment for development
+        indicator_dict = dict()
+        for ind in indicators:
+            indicator_dict[ind.name] = dict()
+            # package params
+            indicator_dict[ind.name]['params'] = dict()
+            for param in ind.params:
+                indicator_dict[ind.name]['params'][param.name] = param.value
+            # store value
+            indicator_dict[ind.name]['value'] = ind.value
+            # store indicator type (class)
+            indicator_dict[ind.name]['type'] = type(ind).__name__
+        model_dict['indicators'] = indicator_dict
+
         if is_nn:
             model.save(f'{model_dir}/')
             model_dict['model'] = None
         else:
             model_dict['model'] = model
 
-        ind_dict = dict()
-        for feat in features:
-            featChars = feat.split("_")
-            if len(featChars) > 1:
-                if not ind_dict.get(featChars[0], None):
-                    ind_dict[featChars[0]] = dict()
-                if not ind_dict.get(featChars[0]).get(featChars[1], None):
-                    ind_dict[featChars[0]][featChars[1]] = dict()
-                if not ind_dict.get(featChars[0]).get(featChars[1]).get(featChars[2], None):
-                    ind_dict[featChars[0]][featChars[1]][featChars[2]] = set()
-
-                ind_dict[featChars[0]][featChars[1]][featChars[2]].add(float(featChars[3]))
-            else:
-                ind_dict[featChars[0] + "$default"] = dict()
-
-        model_dict['features'] = ind_dict
-
         pickle.dump(model_dict, open(f'{model_dir}/{name}_{version_str}.sav', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
         return version_str
+
+
+
+        
