@@ -34,7 +34,7 @@ def readData(conn, name, port):
             conn = startClient(name, port)
             continue
 
-def readDataServer(conn):
+def readDataServer(conn, name, port):
     data = ""
     while True:
         try:
@@ -46,6 +46,6 @@ def readDataServer(conn):
             else:
                 break
         except ConnectionResetError as err:
-            conn = startClient()
+            conn = startClient(name, port)
             continue
     return data

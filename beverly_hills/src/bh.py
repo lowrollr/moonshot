@@ -7,7 +7,11 @@ import asyncio
 from autobahn.asyncio.websocket import WebSocketServerFactory
 from server import BeverlyWebSocketProtocol
 
-import client as client_file
+from client import (
+    startClient,
+    readData,
+    readDataServer
+)
 from data_engine import DataEngine
 from vars import (
     containersToId,
@@ -23,16 +27,38 @@ class BeverlyHills():
         self.numClients = 0
         
         self.consumerConnect()
+        self.pmConnect()
 
         self.data_engine = DataEngine(self.coins)
 
-    def consumerConnect(self):
+    def pmConnect(self):
         conn = None
-        print("Starting Connect")
+        print("Connecting to Portfolio Manager")
         while True:
             print("Trying to connect", flush=True)
             try:
-                conn = client_file.startClient('main_data_consumer', os.environ["DATAPORT"])
+                conn = startClient('portfolio_manager', os.environ["PM_PORT"])
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(5)
+
+        self.connections['portfolio_manager'] = conn
+        while True:
+            msg = readData(conn, 'portfolio_manager', os.environ["PM_PORT"])
+            if msg["type"] == "init":
+                print("Recieved init message ")
+                break
+                
+
+
+    def consumerConnect(self):
+        conn = None
+        print("Connecting to Data Consumer")
+        while True:
+            print("Trying to connect", flush=True)
+            try:
+                conn = startClient('main_data_consumer', os.environ["DATAPORT"])
                 break
             except Exception as e:
                 print(e)
@@ -44,7 +70,7 @@ class BeverlyHills():
             #change this to something else 
             rawMsg = {'type': 'coins', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             conn.send(json.dumps(rawMsg).encode('utf-8'))
-            coins = client_file.readData(conn)
+            coins = readData(conn, 'main_data_consumer', os.environ["DATAPORT"])
             if len(coins) > 0:
                 break
             if coins["type"] == "coins":
