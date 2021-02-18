@@ -33,19 +33,3 @@ def readData(conn, name, port):
         except ConnectionResetError:
             conn = startClient(name, port)
             continue
-
-def readDataServer(conn, name, port):
-    data = ""
-    while True:
-        try:
-            buffer = conn.recv(4096)
-            if buffer:
-                data += buffer.decode('utf-8')
-                if len(buffer) < 2048:
-                    break
-            else:
-                break
-        except ConnectionResetError as err:
-            conn = startClient(name, port)
-            continue
-    return data
