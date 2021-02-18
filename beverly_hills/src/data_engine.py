@@ -5,7 +5,7 @@ from collections import deque
 class DataEngine():
     def __init__(self, coins):
         self.model = None
-        self.propba_thresh = 0.0
+        self.proba_thresh = 0.0
         self.max_period = 0
         self.features = dict()
         self.data_count = 0
@@ -75,7 +75,7 @@ class DataEngine():
 
         self.features = mod_obj['features']
         self.model = mod_obj['model']
-        self.propba_thresh = mod_obj['proba_threshold']
+        self.proba_thresh = mod_obj['proba_threshold']
 
     def is_full(self):
         if self.data_count < self.max_period:

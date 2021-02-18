@@ -10,8 +10,8 @@ from vars import (
 )
 
 def startClient(name, port):
+    uri = "ws://" + name + ":" + port
     while True:
-        uri = "ws://" + name + ":" + port
         try:
             ws = create_connection(uri)
             if not ws is None:

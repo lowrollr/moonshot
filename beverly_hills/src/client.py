@@ -8,9 +8,7 @@ from websocket import create_connection
 
 # websocket.enableTrace(True)
 
-def startClient():
-    name = "main_data_consumer"
-    port = os.environ["DATAPORT"]
+def startClient(name, port):
     uri = "ws://" + name + ":" + port
     while True:
         try:
@@ -26,14 +24,14 @@ def startClient():
             time.sleep(3)
     raise Exception(f"Was not able to connect to {name}:{port}")
 
-def readData(conn):
+def readData(conn, name, port):
     while True:
         try:
             data = conn.recv()
             return data
             
         except ConnectionResetError:
-            conn = startClient()
+            conn = startClient(name, port)
             continue
 
 def readDataServer(conn):
