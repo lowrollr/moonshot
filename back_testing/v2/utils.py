@@ -19,6 +19,7 @@ import multiprocessing as mp
 from collections import deque
 from itertools import repeat
 import csv
+from load_config import load_config
 
 '''
 ARGS:
@@ -95,6 +96,17 @@ def convertTimespan(full_arr):
     else: # throw error if number of dates is incorrect 
         raise Exception("config: Dates must be specified with one or two values")
 
+
+def retreiveFees(fee_val, maker_taker):
+    if type(fee_val) is str:
+        fee_config = load_config("fee.hjson")
+        if fee_val not in fee_config:
+            raise Exception("The fee value is not defined within the fee config")
+        else:
+            return fee_config[fee_val][0][maker_taker], fee_config[fee_val], True
+        pass
+    else:
+        return fee_val, [], False
 
 '''
 ARGS:
@@ -468,14 +480,10 @@ def enterPosition(info, cash_allocated, fees, time):
     info['in_position'] = True
     info['last_start_time'] = time
 
-
-
 def exitPosition(info, fees, time):
     info['in_position'] = False
     new_cash = (1-fees) * ((info['cash_invested'] / info['enter_value']) * info['last_close_price'])
     profit = (new_cash / ((info['cash_invested'] * (1 + fees)))) - 1
     info['recent_trade_results'].append((profit, (info['last_start_time'], time)))
     info['cash_invested'] = 0.0
-
-
     return new_cash

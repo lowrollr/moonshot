@@ -4,9 +4,10 @@
 
     # directory to pull data from
     data_source: "binance",
+    starting_cash: 30000.00,
     # Currencies to trade against Tether (USDT)
     // currencies: ['ALGO', 'ATOM',  'BAND', 'BAT', 'BNB', 'DASH', 'DOGE', 'ENJ', 'EOS', 'ETC', 'ETH', 'ICX', 'IOTA', 'LINK', 'LTC', 'MATIC', 'NANO', 'NEO', 'OMG', 'ONE', 'ONT', 'QTUM', 'RVN', 'VET', 'WAVES', 'XLM', 'XRP', 'XTZ', 'ZEC', 'ZIL', 'ZRX'],    
-    currencies: ['BTC']
+    currencies: ['all', 'BTC']
     # Whether or not to daisy chain all data chunks for a particular coin
     daisy_chain: true,
     # If daisy_chain is false, the user must specify a chunk id to run on. Indexed at 1
@@ -24,7 +25,10 @@
     # determining if we are testing on a genetic algorithm or just a single run through
     genetic: false,
     # Fees to subtract from trades (percentage)
-    fees: 0.001,
+    // fees: 0.001,
+    fees: "coinbase",
+    #maker or taker fees
+    makerTaker: "taker",
     # Strategoes to execute (file name sans version no.)
     scale: true,
 

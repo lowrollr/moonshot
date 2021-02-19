@@ -60,17 +60,26 @@ class Trading:
         # Parse each field as needed and construct the proper paremeters
         self.currencies = config['currencies']
         self.daisy_chain = config['daisy_chain']
+        self.starting_cash = config['starting_cash']
         self.chunk_ids = config['chunk_ids']
         self.freq = config['freq']
-        self.fees = float(config['fees'])
+        self.maker_or_taker = config['makerTaker']
+        self.fees, self.fee_structure, self.is_fee_dynamic = utils.retreiveFees(config['fees'], self.maker_or_taker)
         self.indicators_to_graph = config['indicators_to_graph']
         self.strategies = config['strategies']
         self.timespan = []
-        self.slippage = float(config["slippage"])
         self.report_format = config['report_format']
         self.data_source = config['data_source']
         self.scale = config['scale']
         self.padding = config['padding']
+        self.trade_vol_queue = deque()
+        self.trade_vol_val = 0
+
+        self.larger_fees = []
+        self.smaller_fees = []
+        if self.fee_structure != []:
+            self.smaller_fees = self.fee_structure[::-1]
+        
         if config['timespan'] == 'max': # test over entire dataset
             self.timespan = [0, sys.maxsize]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
@@ -79,7 +88,6 @@ class Trading:
             self.timespan = [int(config['timespan'][0]), sys.maxsize]
         else: 
             self.timespan = [int(x) for x in config['timespan']]
-        
         
         self.test_param_ranges = config['test_param_ranges'] 
         
@@ -145,7 +153,6 @@ class Trading:
                     # append the group to the master group list, paired with the dataset name
                     self.df_groups.append([cur_group, b])
                 
-
 
     '''
     ARGS:
@@ -222,9 +229,9 @@ class Trading:
     def executeStrategy(self, strategy, dataset, first_times, dataset_name, should_print=True, plot=True, *args):
         # remove the first x rows equal to the amount of padding specified
         dataset = dataset[self.padding:]
-
+        
         # initialize starting position to 1000000 units
-        position_quote = 1000000.00
+        position_quote = self.starting_cash
         account_value = position_quote
         start = position_quote
         # initialize base position to 0 units
@@ -232,8 +239,6 @@ class Trading:
 
         # this will keep track of whether or not we are engaged in a position in the base currency
         position_taken = False
-        
-        
         
         # this keeps track of fees we incur by entering a postion in the base currency
         # these will be subtracted once we have converted our position back to the quote currency
@@ -245,19 +250,12 @@ class Trading:
 
         # keeps track of the last quote position we were engaged in (useful for backtracking to last quote position when reached end of time window)
         old_quote = 0.0
-        
-        # keep track of slippage
-        slippage_tot = 0.0
-        slippage_pos_base = 0.00
-        slippage_pos_quote = position_quote
-        slippage_fees = 0.0
 
         # stores tuples (time, value) for when we enter/exit a position
         # these get plotted
         entries = []
         exits = []
         account_history = []
-
 
         starting_base_value = dataset['close'].values[0]
         # grab all the rows in the dataset as Series objects
@@ -277,7 +275,6 @@ class Trading:
 
                 # keep track of the close price for the given tick
                 close = row.close
-                slippage_close = close
 
                 # run the process function (will execute anything that needs to happen each tick for the strategy)
                 strategy.process(row, dataset_name)
@@ -303,16 +300,6 @@ class Trading:
 
                         # append entry to entries log for the graph as well as to the text log
                         entries.append([row.time, close])
-                        
-                        # # do slippage things if we are keeping track of slippage
-                        # if self.slippage != 0:
-                        #     slippage_fees = slippage_pos_quote * self.fees
-                        #     slippage_close = utils.add_slippage("pos", close, self.slippage)
-                        #     slippage_log.append(str(row.time) + ': bought at ' + str(slippage_close) + " tried to buy at " + str(close))
-                        #     slippage_pos_base = slippage_pos_quote / slippage_close
-                        #     slippage_tot += close - slippage_close
-                        #     slippage_pos_quote = 0.0
-                    
                     
                 else: # otherwise, we are looking to exit a position
                     
@@ -333,16 +320,6 @@ class Trading:
                         # append exit to exits log for the graph as well as to the text log
                         exits.append([row.time, close])
 
-                        # # do slippage things if we are keeping track of slippage
-                        # if self.slippage != 0:
-                        #     slippage_close = utils.add_slippage("neg", close, self.slippage)
-                        #     slippage_pos_quote = slippage_pos_base * slippage_close
-                        #     slippage_pos_quote = slippage_pos_quote * (1 - self.fees)
-                        #     slippage_pos_quote -= slippage_fees
-                        #     slippage_tot += slippage_close - close
-                        #     slippage_pos_base = 0.0
-                        #     slippage_log.append(str(row.time) + ": sold at " + str(slippage_close) + " tried to sell at " + str(close))
-                
         dataset['account_value'] = np.array(account_history)
 
         ending_value = close
@@ -359,17 +336,9 @@ class Trading:
         if position_base:
             conv_position = (position_base * close) * (1 - self.fees)
 
-        # compute slippage
-        # slippage_conv_pos = slippage_pos_quote
-        # if self.slippage != 0:
-        #     slippage_close = utils.add_slippage("neg", close, self.slippage)
-        #     slippage_conv_pos = (slippage_pos_base * slippage_close) * (1 - self.fees)
-
-        # std_dev = utils.getLogStd(log)
-        
         # write stats to dict to send to reports
         stats = dict()
-        stats['Initial Portfolio Value'] = 1000000.00
+        stats['Initial Portfolio Value'] = self.starting_cash
         stats['Exit Portfolio Value'] = round(conv_position, 2)
         stats['Portfolio RateOfChange ($)'] = round(conv_position - start, 2)
         stats['Portfolio RateOfChange (%)'] = str(round(((conv_position / start) * 100) - 100, 2)) + '%'
@@ -403,7 +372,7 @@ class Trading:
             all_timestamps.extend(list(coin_times[name].keys()))
         all_timestamps = sorted(list(set(all_timestamps)))
 
-        cash = 1000000.00
+        cash = self.starting_cash
         entries = dict()
         exits = dict()
         kelly_values = dict()
@@ -470,7 +439,9 @@ class Trading:
                                 sell_signals[coin].append((row.time, row.close))
                                 exits[coin].append((row.time, row.close))
                                 exited_position = True
-                                cash += utils.exitPosition(coin_info[coin], self.fees, time)
+                                exited_cash = utils.exitPosition(coin_info[coin], self.fees, time)
+                                self.computeVolumeFee(exited_cash, time)
+                                cash += exited_cash
                                 trade_count += 1
       
                 if enter_signals:
@@ -486,6 +457,7 @@ class Trading:
                         if cash_allocated <= cash:
                             cash -= cash_allocated
                             utils.enterPosition(coin_info[coin], cash_allocated, self.fees, time)
+                            self.computeVolumeFee(cash_allocated, time)
                             entries[coin].append((time, coin_info[coin]['last_close_price']))
                             
                         else:
@@ -500,10 +472,11 @@ class Trading:
                                 cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
                                 # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
                                 if not cash or cash_allocated >= cash_available * (1/2):
-                                    
                                     exited_position = True
                                     exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
-                                    cash +=  utils.exitPosition(coin_info[coin_c], self.fees, time)
+                                    exited_cash = utils.exitPosition(coin_info[coin_c], self.fees, time)
+                                    self.computeVolumeFee(exited_cash, time)
+                                    cash +=  exited_cash
                                     trade_count += 1
                                     
                                 else:
@@ -516,14 +489,12 @@ class Trading:
                                 # open the new position
                                 cash -= cash_allocated
                                 utils.enterPosition(coin_info[coin], cash_allocated, self.fees, time)
+                                self.computeVolumeFee(cash_allocated, time)
                                 entries[coin].append((time, coin_info[coin]['last_close_price']))
                                 
-
-
                                 
                 # update weights
                 if exited_position:
-                    
                     for coin in coins:
                         if coin_info[coin]['recent_trade_results']:
                             trade_results = [x[0] for x in coin_info[coin]['recent_trade_results']]
@@ -558,13 +529,36 @@ class Trading:
         for coin in coins:
             if coin_info[coin]['in_position']:
                 exits[coin].append((time, coin_info[coin]['last_close_price']))
-                cash += utils.exitPosition(coin_info[coin], self.fees, time)
+                exited_cash = utils.exitPosition(coin_info[coin], self.fees, time)
+                self.computeVolumeFee(exited_cash, time)
+                cash += exited_cash
                 trade_count += 1
         volume_bars.append((time - (720 * 60000), trade_count))
         print(f'Cash: {cash}')
         writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.fees, buy_signals, sell_signals, volume_bars)
 
-    '''         
+
+    def computeVolumeFee(self, volume, time):
+        month_time = 1440 * 60000 * 30
+        
+        if self.fee_structure != []:
+            self.trade_vol_queue.append((time, volume))
+            self.trade_vol_val += volume
+            while self.trade_vol_queue[0][0] < self.trade_vol_queue[-1][0] - month_time:
+                expired_vol = self.trade_vol_queue.popleft()
+                self.trade_vol_val -= expired_vol[1]
+
+            #update self.fee
+            # self.larger_fees
+            # self.smaller_fees
+            while (self.smaller_fees != [] and self.trade_vol_val > self.smaller_fees[-1]["end"]) or (self.larger_fees != [] and self.trade_vol_val < self.larger_fees[-1]["start"]):
+                if self.trade_vol_val > self.smaller_fees[-1]["end"]:
+                    self.larger_fees.append(self.smaller_fees.pop())
+                if self.trade_vol_val < self.larger_fees[-1]["start"]:
+                    self.smaller_fees.append(self.larger_fees.pop())
+            self.fees = self.smaller_fees[-1][self.maker_or_taker]
+
+    '''
     ARGS:
         -> None
     RETURN:
@@ -607,14 +601,12 @@ class Trading:
                 print('Generating Model Data...')
                 new_features = self.generateIndicatorData(dataset_chunks, x.indicators)
 
-                
                 # we'll store the starting time of each dataset chunk here, to ensure we don't trade in between chunks
                 
 
                 # construct a single dataframe from all of the individual dataframes in the group, and construct the first_times set
                 dataset = pd.DataFrame()
                 dataset = pd.concat(dataset_chunks)
-                
                 
 
                 if self.scale:
