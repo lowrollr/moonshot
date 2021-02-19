@@ -1,26 +1,26 @@
 {
     "coinbase": [
-        {"start": 0,         "end": 10000,      "taker": 0.5,  "maker": 0.5},
-        {"start": 10000,     "end": 50000,      "taker": 0.35, "maker": 0.35},
-        {"start": 50000,     "end": 100000,     "taker": 0.25, "maker": 0.15},
-        {"start": 100000,    "end": 1000000,    "taker": 0.2,  "maker": 0.1},
-        {"start": 1000000,   "end": 10000000,   "taker": 0.18, "maker": 0.08},
-        {"start": 10000000,  "end": 50000000,   "taker": 0.15, "maker": 0.05},
-        {"start": 50000000,  "end": 100000000,  "taker": 0.1,  "maker": 0},
-        {"start": 100000000, "end": 300000000,  "taker": 0.07, "maker": 0},
-        {"start": 300000000, "end": 500000000,  "taker": 0.05, "maker": 0},
-        {"start": 500000000, "end": 1000000000, "taker": 0.04, "maker": 0},
-        {"start": 1000000000,"end": "inf",      "taker": 0.04, "maker": 0}
+        {"start": 0,         "end": 10000,      "taker": 0.005,  "maker": 0.005},
+        {"start": 10000,     "end": 50000,      "taker": 0.0035, "maker": 0.0035},
+        {"start": 50000,     "end": 100000,     "taker": 0.0025, "maker": 0.0015},
+        {"start": 100000,    "end": 1000000,    "taker": 0.002,  "maker": 0.001},
+        {"start": 1000000,   "end": 10000000,   "taker": 0.0018, "maker": 0.0008},
+        {"start": 10000000,  "end": 50000000,   "taker": 0.0015, "maker": 0.0005},
+        {"start": 50000000,  "end": 100000000,  "taker": 0.001,  "maker": 0.00},
+        {"start": 100000000, "end": 300000000,  "taker": 0.0007, "maker": 0.00},
+        {"start": 300000000, "end": 500000000,  "taker": 0.0005, "maker": 0.00},
+        {"start": 500000000, "end": 1000000000, "taker": 0.0004, "maker": 0.00},
+        {"start": 1000000000,"end": "inf",      "taker": 0.0004, "maker": 0.00}
     ],
     "kraken": [
-        {"start": 0,        "end": 50000,    "taker": 0.26, "maker": 0.16},
-        {"start": 50000,    "end": 100000,   "taker": 0.25, "maker": 0.15},
-        {"start": 100000,   "end": 250000,   "taker": 0.25, "maker": 0.15},
-        {"start": 250000,   "end": 500000,   "taker": 0.25, "maker": 0.15},
-        {"start": 500000,   "end": 1000000,  "taker": 0.25, "maker": 0.15},
-        {"start": 1000000,  "end": 2500000,  "taker": 0.2,  "maker": 0.1},
-        {"start": 2500000,  "end": 5000000,  "taker": 0.18, "maker": 0.08},
-        {"start": 5000000,  "end": 10000000, "taker": 0.15, "maker": 0.05},
-        {"start": 10000000, "end": "inf",    "taker": 0.1,  "maker": 0}
+        {"start": 0,        "end": 50000,    "taker": 0.0026, "maker": 0.0016},
+        {"start": 50000,    "end": 100000,   "taker": 0.0025, "maker": 0.0015},
+        {"start": 100000,   "end": 250000,   "taker": 0.0025, "maker": 0.0015},
+        {"start": 250000,   "end": 500000,   "taker": 0.0025, "maker": 0.0015},
+        {"start": 500000,   "end": 1000000,  "taker": 0.0025, "maker": 0.0015},
+        {"start": 1000000,  "end": 2500000,  "taker": 0.002,  "maker": 0.001},
+        {"start": 2500000,  "end": 5000000,  "taker": 0.0018, "maker": 0.0008},
+        {"start": 5000000,  "end": 10000000, "taker": 0.0015, "maker": 0.0005},
+        {"start": 10000000, "end": "inf",    "taker": 0.001,  "maker": 0}
     ]
 }
