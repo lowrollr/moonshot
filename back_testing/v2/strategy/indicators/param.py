@@ -30,7 +30,7 @@ class Param:
     WHAT: 
         -> Initializes param value, range, precision, and name
     '''
-    def __init__(self, _low = 0.0, _up = 0.0, _prec = 0.0, _name="place_holder", _default=0.0):
+    def __init__(self, _low = 0.0, _up = 0.0, _prec = 0.0, _name="", _default=0.0):
         self.global_low = _low
         self.global_up = _up
         self.low = _low

@@ -65,12 +65,12 @@ type SocketMessage struct {
 	Destination int    `json:"dest"`
 }
 
-
 type SocketCoinsMessage struct {
 	Type        string   `json:"type"`
 	Msg         []string `json:"msg"`
 	Source      int      `json:"src"`
 	Destination int      `json:"dest"`
+}
 
 type CandlestickData struct {
 	Time   int
