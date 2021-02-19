@@ -457,7 +457,7 @@ class Trading:
                         if cash_allocated <= cash:
                             cash -= cash_allocated
                             utils.enterPosition(coin_info[coin], cash_allocated, self.fees, time)
-                            self.computeVolumeFee(cash_allocated, time)
+                            self.computeVolumeFee(coin_info[coin]['cash_invested'], time)
                             entries[coin].append((time, coin_info[coin]['last_close_price']))
                             
                         else:
@@ -481,6 +481,7 @@ class Trading:
                                     
                                 else:
                                     # partially close the position, but keep the reamining capital that's not needed in the position
+                                    self.computeVolumeFee(cash_needed, time)
                                     coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
                                     cash += cash_needed
   
@@ -489,7 +490,7 @@ class Trading:
                                 # open the new position
                                 cash -= cash_allocated
                                 utils.enterPosition(coin_info[coin], cash_allocated, self.fees, time)
-                                self.computeVolumeFee(cash_allocated, time)
+                                self.computeVolumeFee(coin_info[coin]['cash_invested'], time)
                                 entries[coin].append((time, coin_info[coin]['last_close_price']))
                                 
                                 
