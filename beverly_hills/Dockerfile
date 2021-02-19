@@ -14,6 +14,7 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
   make && \
   make install
 
+RUN python3 -m pip install ta-lib
 RUN rm -R ta-lib ta-lib-0.4.0-src.tar.gz
 COPY src .
 RUN chmod +x wait-for-it.sh
