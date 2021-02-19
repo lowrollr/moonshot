@@ -2,7 +2,6 @@ package main
 
 import (
 	"math"
-	"net"
 	"sort"
 	"strconv"
 
@@ -38,11 +37,10 @@ type CoinInfo struct {
 }
 
 type PortfolioManager struct {
-
 	MakerFee          float64
 	TakerFee          float64
 	Strat             *Atlas
-	ClientConnections map[string]*net.Conn
+	ClientConnections map[string]*Client
 	FrontendSocket    *ServerClient
 	CoinDict          map[string]*CoinInfo
 	Coins             *[]string
@@ -58,7 +56,6 @@ type EnterSignal struct {
 }
 
 func initPM() *PortfolioManager {
-	time.Sleep(2)
 	mapDomainConnection := StartClient()
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
@@ -91,7 +88,8 @@ func initPM() *PortfolioManager {
 			AvgLoss:   0.0,
 		}
 	}
-	pm := &PortfolioManager{ClientConnections: mapDomainConnection,
+	pm := &PortfolioManager{
+		ClientConnections: mapDomainConnection,
 		CoinDict:          coinInfoDict,
 		Coins:             coins,
 		FreeCash:          0.0,
