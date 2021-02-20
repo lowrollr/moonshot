@@ -1,7 +1,7 @@
 
 
 from indicators.indicator import Indicator
-from talipp.indicators import SMA
+from talipp.indicators import RSI
 from data.data_queue import DataQueue
 
 

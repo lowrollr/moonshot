@@ -9,10 +9,9 @@ from server import BeverlyWebSocketProtocol
 
 from client import (
     startClient,
-    readData,
-    readDataServer
+    readData
 )
-from data_engine import DataEngine
+from compute import ComputeEngine
 from vars import (
     containersToId,
     idToContainer
@@ -27,8 +26,9 @@ class BeverlyHills():
         self.numClients = 0
         
         self.consumerConnect()
+        self.computeEngine = ComputeEngine(coins=self.coins)
 
-        self.data_engine = DataEngine(self.coins)
+        
 
 
 
@@ -90,3 +90,4 @@ def pingFrontend(conn):
     while True:
         conn.sendall(bytes(1,encoding='utf-8'))
         time.sleep(2)
+

@@ -5,10 +5,10 @@ import importlib
 import inspect
 from indicators.indicator import Indicator
 
-class computeEngine:
+class ComputeEngine:
     def __init__(self, coins):
         self.coins = coins
-        mod_obj = importModel
+        mod_obj = importModel('strawmaker')
         self.features = mod_obj['features']
         self.probability_threshold = mod_obj['proba_threshold']
         self.indicator_dict = mod_obj['indicators']
