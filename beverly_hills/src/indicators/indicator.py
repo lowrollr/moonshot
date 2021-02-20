@@ -1,10 +1,11 @@
 
 
 class Indicator:
-    def __init__(self, params, name, scalingWindowSize):
+    def __init__(self, params, name, scalingWindowSize, value):
         self.name = name
         self.params = params
         self.windowSize = scalingWindowSize
+        self.value = value
         self.resultQueues = dict()
 
     
