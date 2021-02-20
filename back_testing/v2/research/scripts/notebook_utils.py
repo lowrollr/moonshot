@@ -595,6 +595,7 @@ class notebookUtils:
     def exportProductionModel(self, model, model_type, name, new_version, indicators, features, proba_threshold=0.0, is_nn=False):
         model_dict = dict()
         model_dict['proba_threshold'] = proba_threshold
+        model_dict['model_type'] = model_type
         model_dict['features'] = features    
         version_str = ''
         base_path = './production_models/'
@@ -655,6 +656,31 @@ class notebookUtils:
 
         return version_str
 
+    def importModel(self, model, version="latest", is_entry=True):
+        #get the correct model
+        base_dir = './v2/strategy/saved_models/' + model + '/'
 
+        if version == 'latest': # fetch the latest version of the given strategy
+            all_files = os.listdir(base_dir)
+            highest_version = [0, 0]
 
+            for f in [x for x in os.scandir(f'{base_dir}/')if x.is_dir()]:
+                parts = f.name.split('_')
+                version = int(parts[0])
+                subversion = int(parts[1])
+                if version == highest_version[0]:
+                    if subversion > highest_version[1]:
+                        highest_version = [version, subversion]
+                elif version > highest_version[0]:
+                    highest_version = [version, subversion]
+                    
+            # set version to be the highest version found
+            version = f'{highest_version[0]}_{highest_version[1]}'
+        
+        # this code attempts to find the module (strategy) with the given name, 
+        # and gets the corresponding object if it exists
+        full_path = base_dir + version + '/' + model + '_' + version + '.sav'
+        
+        model_data = pickle.load(open(full_path, 'rb'))
+        return model_data
         
