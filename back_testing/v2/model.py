@@ -77,6 +77,7 @@ class Trading:
 
         self.larger_fees = []
         self.smaller_fees = []
+        self.all_volumes_fees = []
         if self.fee_structure != []:
             self.smaller_fees = self.fee_structure[::-1]
         
@@ -372,6 +373,7 @@ class Trading:
             all_timestamps.extend(list(coin_times[name].keys()))
         all_timestamps = sorted(list(set(all_timestamps)))
 
+        self.all_volumes_fees.append((0, self.fees, all_timestamps[0]))
         cash = self.starting_cash
         entries = dict()
         exits = dict()
@@ -536,9 +538,12 @@ class Trading:
                 trade_count += 1
         volume_bars.append((time - (720 * 60000), trade_count))
         print(f'Cash: {cash}')
-        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.fees, buy_signals, sell_signals, volume_bars)
+        writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.all_volumes_fees, buy_signals, sell_signals, volume_bars)
 
 
+    '''
+
+    '''
     def computeVolumeFee(self, volume, time):
         month_time = 1440 * 60000 * 30
         
@@ -557,7 +562,9 @@ class Trading:
                     self.larger_fees.append(self.smaller_fees.pop())
                 if self.trade_vol_val < self.larger_fees[-1]["start"]:
                     self.smaller_fees.append(self.larger_fees.pop())
+            
             self.fees = self.smaller_fees[-1][self.maker_or_taker]
+            self.all_volumes_fees.append((self.trade_vol_val, self.fees, time))
 
     '''
     ARGS:
