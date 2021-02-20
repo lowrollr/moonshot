@@ -4,10 +4,7 @@ from threading import Thread
 from autobahn.asyncio.websocket import WebSocketServerProtocol
 
 class BeverlyWebSocketProtocol(WebSocketServerProtocol):
-    def __init__(self, dataDict, model):
-        super().__init__()
-        self.dataDict = dataDict
-        self.model = model
+    
 
     def onConnect(self, request):
         print("Client connecting: {}".format(request.peer))
