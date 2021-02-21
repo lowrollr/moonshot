@@ -476,6 +476,7 @@ def getCurrentReturn(info):
 
 def enterPosition(info, cash_allocated, fees, time):
     info['cash_invested'] = cash_allocated * (1 - fees)
+    info['amnt_owned'] = info['cash_invested'] / info['last_close_price']
     info['position_cost'] = cash_allocated
     info['enter_value'] = info['last_close_price']
     info['in_position'] = True
@@ -483,8 +484,10 @@ def enterPosition(info, cash_allocated, fees, time):
 
 def exitPosition(info, fees, time):
     info['in_position'] = False
-    new_cash = (1-fees) * ((info['cash_invested'] / info['enter_value']) * info['last_close_price'])
-    profit = (new_cash / info['position_cost']) - 1
+    new_cash = (1-fees) * (info['amnt_owned'] * info['last_close_price'])
+    profit = ((new_cash + info['intermediate_cash']) / info['position_cost']) - 1
     info['recent_trade_results'].append((profit, (info['last_start_time'], time)))
     info['cash_invested'] = 0.0
+    info['intermediate_cash'] = 0.0
+    info['amnt_owned'] = 0.0
     return new_cash

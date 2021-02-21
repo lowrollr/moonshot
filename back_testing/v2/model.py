@@ -377,6 +377,7 @@ class Trading:
         cash = self.starting_cash
         entries = dict()
         exits = dict()
+        profits = dict()
         kelly_values = dict()
         coin_allocations = dict()
         portfolio_value = []
@@ -398,6 +399,8 @@ class Trading:
             coin_info[coin]['avg_win'] = 0.0
             coin_info[coin]['avg_loss'] = 0.0
             coin_info[coin]['position_cost'] = 0.0
+            coin_info[coin]['intermediate_cash'] = 0.0
+            coin_info[coin]['amnt_owned'] = 0.0
             entries[coin] = []
             exits[coin] = []
             kelly_values[coin] = []
@@ -455,7 +458,7 @@ class Trading:
                         
                         allocation = utils.calcKellyPercent(coin_info[coin])
                         kelly_values[coin].append((time, allocation))
-                        locked_cash = sum([((coin_info[x]['cash_invested'] / coin_info[x]['enter_value']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])
+                        locked_cash = sum([(coin_info[x]['amnt_owned'] * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])
                         cash_allocated = allocation * (locked_cash + cash)
                         if cash_allocated <= cash:
                             cash -= cash_allocated
@@ -472,7 +475,7 @@ class Trading:
                                 if cash_allocated <= cash or(e_profit > coin_info[coin_c]['avg_profit'] and coin_info[coin_c]['recent_trade_results']):
                                     break
                                 cash_needed = cash_allocated - cash
-                                cash_available = (1-self.fees)*((coin_info[coin_c]['cash_invested'] / coin_info[coin_c]['enter_value']) * coin_info[coin_c]['last_close_price'])
+                                cash_available = (1-self.fees)*(coin_info[coin_c]['amnt_owned'] * coin_info[coin_c]['last_close_price'])
                                 # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
                                 if not cash or cash_allocated >= cash_available * (1/2):
                                     exited_position = True
@@ -484,8 +487,9 @@ class Trading:
                                     
                                 else:
                                     # partially close the position, but keep the reamining capital that's not needed in the position
-                                    
-                                    coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
+                                    amnt_to_close = cash_needed / cash_available
+                                    coin_info[coin_c]['amnt_owned'] -= coin_info[coin_c]['amnt_owned'] * (amnt_to_close)
+                                    coin_info[coin_c]['intermediate_cash'] += cash_needed
                                     self.computeVolumeFee(cash_needed, time)
                                     cash += cash_needed
   
