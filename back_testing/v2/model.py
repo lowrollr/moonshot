@@ -397,6 +397,7 @@ class Trading:
             coin_info[coin]['win_rate'] = 0.0
             coin_info[coin]['avg_win'] = 0.0
             coin_info[coin]['avg_loss'] = 0.0
+            coin_info[coin]['position_cost'] = 0.0
             entries[coin] = []
             exits[coin] = []
             kelly_values[coin] = []
@@ -483,8 +484,9 @@ class Trading:
                                     
                                 else:
                                     # partially close the position, but keep the reamining capital that's not needed in the position
-                                    self.computeVolumeFee(cash_needed, time)
+                                    
                                     coin_info[coin_c]['cash_invested'] = (cash_available - cash_needed) / (1 - self.fees)
+                                    self.computeVolumeFee(cash_needed, time)
                                     cash += cash_needed
   
                             # sanity check that there's enough cash to support this transaction
