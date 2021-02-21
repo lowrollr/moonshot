@@ -492,6 +492,8 @@ class Trading:
                                     coin_info[coin_c]['intermediate_cash'] += cash_needed
                                     self.computeVolumeFee(cash_needed, time)
                                     cash += cash_needed
+
+                                    
   
                             # sanity check that there's enough cash to support this transaction
                             if cash_allocated <= cash:
