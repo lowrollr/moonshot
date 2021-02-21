@@ -4,7 +4,6 @@ from threading import Thread
 from autobahn.asyncio.websocket import WebSocketServerProtocol
 
 class BeverlyWebSocketProtocol(WebSocketServerProtocol):
-    
 
     def onConnect(self, request):
         print("Client connecting: {}".format(request.peer))
@@ -17,9 +16,8 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
             print("Binary message received: {} bytes".format(len(payload)))
         else:
             print("Text message received: {}".format(payload.decode('utf8')))
-
-        # echo back message verbatim
-        self.sendMessage(payload, isBinary)
+        
+        
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {}".format(reason))

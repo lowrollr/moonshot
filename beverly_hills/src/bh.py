@@ -17,6 +17,7 @@ from vars import (
     idToContainer
 )
 
+
 class BeverlyHills():
     def __init__(self):
         #initialize all data structures
@@ -24,10 +25,9 @@ class BeverlyHills():
         self.coins = []
         self.connections = dict()
         self.numClients = 0
-        
+        self.candles = dict()
         self.consumerConnect()
         self.computeEngine = ComputeEngine(coins=self.coins)
-
         
 
 
@@ -71,10 +71,10 @@ class BeverlyHills():
         asyncio.set_event_loop(loop)
         socketServer = WebSocketServerFactory()
         socketServer.protocol = BeverlyWebSocketProtocol
+        socketServer.candlestickData = self.candles
         
         coro = loop.create_server(socketServer, '0.0.0.0', int(os.environ["SERVERPORT"]))
         server = loop.run_until_complete(coro)
-
         loop.run_forever()
 
     def loop(self):
