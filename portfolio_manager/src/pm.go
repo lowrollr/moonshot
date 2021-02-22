@@ -58,6 +58,7 @@ type EnterSignal struct {
 
 func initPM() *PortfolioManager {
 	mapDomainConnection := StartClient()
+	log.Println(mapDomainConnection)
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
 
@@ -143,11 +144,12 @@ func initPM() *PortfolioManager {
 func (pm *PortfolioManager) StartTrading() {
 
 	for {
-		newCandleData := pm.ClientConnections["main_data_consumer"].ReceiveCandleData()
-		if len(newCandleData) > 0 {
-			pm.CandleDict = newCandleData
-			pm.PMProcess()
-		}
+		log.Println(pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData())
+		// newCandleData := pm.ClientConnections["main_data_consumer"].ReceiveCandleData()
+		// if len(newCandleData) > 0 {
+		// 	pm.CandleDict = newCandleData
+		// 	pm.PMProcess()
+		// }
 
 	}
 

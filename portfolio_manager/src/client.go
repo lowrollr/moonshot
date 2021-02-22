@@ -19,6 +19,7 @@ func (client *Client) Receive() string {
 
 func (client *Client) ReceiveCandleData() map[string]*CandlestickData {
 	message := SocketCandleMessage{}
+
 	err := client.conn.ReadJSON(&message)
 	if err != nil {
 		log.Warn("Was not able to read json data from socket because", err)
