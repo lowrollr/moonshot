@@ -526,11 +526,11 @@ class Trading:
                             
             
                 # log coin allocations and portfolio value
-                portfolio_value.append((time, cash + sum([((coin_info[x]['cash_invested'] / coin_info[x]['enter_value']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])))
+                portfolio_value.append((time, cash + sum([((coin_info[x]['amnt_owned']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])))
                 for coin in coins:
                     
                     if coin_info[coin]['in_position']:
-                        coin_allocations[coin].append((time, ((coin_info[coin]['cash_invested'] / coin_info[coin]['enter_value']) * coin_info[coin]['last_close_price']) / portfolio_value[-1][1]))
+                        coin_allocations[coin].append((time, ((coin_info[coin]['amnt_owned']) * coin_info[coin]['last_close_price']) / portfolio_value[-1][1]))
                     else:
                         coin_allocations[coin].append((time, 0.0))
                 coin_allocations['CASH'].append((time, cash / portfolio_value[-1][1]))
