@@ -134,6 +134,8 @@ func initPM() *PortfolioManager {
 	// log.Println(pm.CoinDict["BTC"])
 
 	mapDomainConnection[domainToUrl["beverly_hills"]].StartRemoteServer("beverly_hills")
+	mapDomainConnection[domainToUrl["main_data_consumer"]].StartRemoteServer("main_data_consumer")
+
 	pm.ClientConnections = mapDomainConnection
 	return pm
 }

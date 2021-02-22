@@ -51,7 +51,7 @@ func StartClient() map[string]*Client {
 	mapDomainConnection := make(map[string]*Client)
 	for hostname, fullUrl := range domainToUrl {
 		mapDomainConnection[fullUrl] = NewInternalClient(ConnectServer(fullUrl))
-		if hostname == "beverly_hills" || hostname == "main_data_consumer" {
+		if hostname == "beverly_hills" {
 			StartInit(mapDomainConnection[fullUrl])
 		}
 	}
