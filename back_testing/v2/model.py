@@ -565,10 +565,10 @@ class Trading:
             #update self.fee
             # self.larger_fees
             # self.smaller_fees
-            while (self.smaller_fees != [] and self.trade_vol_val > self.smaller_fees[-1]["end"]) or (self.larger_fees != [] and self.trade_vol_val < self.larger_fees[-1]["start"]):
+            while (self.smaller_fees != [] and self.trade_vol_val > self.smaller_fees[-1]["end"]) or (self.larger_fees != [] and self.trade_vol_val < self.smaller_fees[-1]["start"]):
                 if self.trade_vol_val > self.smaller_fees[-1]["end"]:
                     self.larger_fees.append(self.smaller_fees.pop())
-                if self.trade_vol_val < self.larger_fees[-1]["start"]:
+                if self.trade_vol_val < self.smaller_fees[-1]["start"]:
                     self.smaller_fees.append(self.larger_fees.pop())
             
             self.fees = self.smaller_fees[-1][self.maker_or_taker]
