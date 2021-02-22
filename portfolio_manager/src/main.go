@@ -3,8 +3,8 @@ package main
 //"alert"
 
 func main() {
-	pm := initPM()
 
+	pm := initPM()
 	go pm.StartServer()
 	pm.StartTrading()
 

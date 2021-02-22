@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"time"
 
 	ws "github.com/gorilla/websocket"
@@ -14,6 +15,17 @@ func (client *Client) Receive() string {
 		log.Warn("Was not able to read json data from socket because", err)
 	}
 	return message.Msg
+}
+
+func (client *Client) ReceiveCandleData() map[string]*CandlestickData {
+	message := SocketCandleMessage{}
+	err := client.conn.ReadJSON(&message)
+	if err != nil {
+		log.Warn("Was not able to read json data from socket because", err)
+	}
+
+	return message.Msg
+
 }
 
 func NewInternalClient(connection *ws.Conn) *Client {
@@ -39,7 +51,7 @@ func StartClient() map[string]*Client {
 	mapDomainConnection := make(map[string]*Client)
 	for hostname, fullUrl := range domainToUrl {
 		mapDomainConnection[fullUrl] = NewInternalClient(ConnectServer(fullUrl))
-		if hostname == "beverly_hills" {
+		if hostname == "beverly_hills" || hostname == "main_data_consumer" {
 			StartInit(mapDomainConnection[fullUrl])
 		}
 	}
@@ -73,6 +85,31 @@ func StartInit(bevConn *Client) {
 	if err != nil {
 		log.Panic("Was not able to send init message to beverly hills", err)
 	}
+}
+
+func GetPrediction(bevConn *Client, coin string, timestamp int) bool {
+	msg := SocketMessage{
+		Msg:         "[" + coin + "," + strconv.Itoa(timestamp) + "]",
+		Type:        "predict",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["beverly_hills"],
+	}
+	err := bevConn.conn.WriteJSON(msg)
+	if err != nil {
+		log.Warn("Error sending predict message to Beverly Hills")
+	}
+	response := SocketMessage{}
+
+	err = bevConn.conn.ReadJSON(&response)
+	if err == nil {
+		if response.Type == "prediction" {
+			result, _ := strconv.ParseBool(response.Msg)
+			return result
+		} else {
+			log.Warn("Error: BH sent incorrect message type when asked for prediction!")
+		}
+	}
+	return false
 }
 
 func (client *Client) GetCoins(dest string) *[]string {
