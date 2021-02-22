@@ -48,6 +48,7 @@ type PortfolioManager struct {
 	PortfolioValue    float64
 	CoinbaseClient    *coinbasepro.Client
 	TradesToCalibrate int
+	CandleDict        map[string]*CandlestickData
 }
 
 type EnterSignal struct {
@@ -57,6 +58,7 @@ type EnterSignal struct {
 
 func initPM() *PortfolioManager {
 	mapDomainConnection := StartClient()
+	log.Println(mapDomainConnection)
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
 
@@ -65,7 +67,7 @@ func initPM() *PortfolioManager {
 	if err != nil {
 		println(err.Error())
 	}
-
+	candleDict := make(map[string]*CandlestickData)
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
 		coinInfoDict[coin] = &CoinInfo{
@@ -99,6 +101,7 @@ func initPM() *PortfolioManager {
 		Strat:             strategy,
 		MakerFee:          0.5,
 		TakerFee:          0.5,
+		CandleDict:        candleDict,
 	}
 	for _, a := range accounts {
 		// is account USD
@@ -132,34 +135,41 @@ func initPM() *PortfolioManager {
 	// log.Println(pm.CoinDict["BTC"])
 
 	mapDomainConnection[domainToUrl["beverly_hills"]].StartRemoteServer("beverly_hills")
+	mapDomainConnection[domainToUrl["main_data_consumer"]].StartRemoteServer("main_data_consumer")
+
 	pm.ClientConnections = mapDomainConnection
 	return pm
 }
 
 func (pm *PortfolioManager) StartTrading() {
+
 	for {
-		// wait for coins from main data consumer
-		// return as dict mapping coin -> Candlestick
-		// pass dict to PMProcess func to process the data
-		// pm.PMProcess()
+		log.Println(pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData())
+		// newCandleData := pm.ClientConnections["main_data_consumer"].ReceiveCandleData()
+		// if len(newCandleData) > 0 {
+		// 	pm.CandleDict = newCandleData
+		// 	pm.PMProcess()
+		// }
+
 	}
 
 }
 
-func (pm *PortfolioManager) PMProcess(data map[string]*CandlestickData) {
+func (pm *PortfolioManager) PMProcess() {
 	// calculate current (unrealized) portfolio value
-	pm.PortfolioValue = pm.CalcPortfolioValue(data)
+	pm.PortfolioValue = pm.CalcPortfolioValue()
+
 	// check for buy/sell signals from strategy
 	enter_coins := []string{}
 	for _, coin := range *pm.Coins {
-		candle := data[coin]
+		candle := pm.CandleDict[coin]
 		pm.Strat.Process(candle, coin)
 		if pm.CoinDict[coin].InPosition {
 			if pm.Strat.CalcExit(candle, coin) {
 				pm.PortfolioValue += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
 			}
 		} else {
-			if pm.Strat.CalcEnter(candle, coin) {
+			if pm.Strat.CalcEnter(candle, coin, pm.ClientConnections["beverly_hills"]) {
 				enter_coins = append(enter_coins, coin)
 			}
 		}
@@ -176,7 +186,7 @@ func (pm *PortfolioManager) PMProcess(data map[string]*CandlestickData) {
 		} else {
 			// all coins in positions sorted by EV
 			pmCoins := pm.Coins
-			evMap := pm.SortByEV(pm.GetCoinsInPosition(*pmCoins), data)
+			evMap := pm.SortByEV(pm.GetCoinsInPosition(*pmCoins))
 			for _, coinIn := range *pmCoins {
 				if !(ExistsInSlice(coinIn, &enter_coins)) {
 
@@ -186,7 +196,7 @@ func (pm *PortfolioManager) PMProcess(data map[string]*CandlestickData) {
 
 					amntOwnedStr := pm.CoinDict[coinIn].AmntOwned.String()
 					amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
-					curCashValue := data[coinIn].Close * amntOwnedFlt
+					curCashValue := pm.CandleDict[coinIn].Close * amntOwnedFlt
 					cashNeeded := curCashValue - pm.FreeCash
 
 					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
@@ -228,12 +238,12 @@ func (pm *PortfolioManager) GetCoinsInPosition(coins []string) *[]string {
 	return &coinsInPosition
 }
 
-func (pm *PortfolioManager) CalcPortfolioValue(data map[string]*CandlestickData) float64 {
+func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 	total_value := pm.FreeCash
 	for _, coin := range *pm.Coins {
 		if pm.CoinDict[coin].InPosition {
 			amntOwnedFlt, _ := strconv.ParseFloat(pm.CoinDict[coin].AmntOwned.String(), 64)
-			total_value += amntOwnedFlt * data[coin].Close
+			total_value += amntOwnedFlt * pm.CandleDict[coin].Close
 		}
 	}
 	return total_value
@@ -245,12 +255,12 @@ func (pm *PortfolioManager) SortByProfit(coins *[]string) {
 	})
 }
 
-func (pm *PortfolioManager) SortByEV(coins *[]string, data map[string]*CandlestickData) *map[string]float64 {
+func (pm *PortfolioManager) SortByEV(coins *[]string) *map[string]float64 {
 	evMap := make(map[string]float64)
 	for _, coin := range *coins {
 
 		enterPrice := pm.CoinDict[coin].EnterPriceFl
-		expectedValue := pm.CoinDict[coin].AvgProfit - ((data[coin].Close - enterPrice) / enterPrice)
+		expectedValue := pm.CoinDict[coin].AvgProfit - ((pm.CandleDict[coin].Close - enterPrice) / enterPrice)
 		evMap[coin] = expectedValue
 
 	}
