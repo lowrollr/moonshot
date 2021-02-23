@@ -3,10 +3,14 @@ import pickle
 import os
 import importlib
 import inspect
+from threading import Lock
+from numpy import array
 from indicators.indicator import Indicator
 
 class ComputeEngine:
     def __init__(self, coins):
+        self.lock = Lock()
+        self.data = dict()
         self.coins = coins
         mod_obj = importModel('strawmaker')
         self.features = mod_obj['features']
@@ -14,6 +18,11 @@ class ComputeEngine:
         self.indicator_dict = mod_obj['indicators']
         self.indicators = []
         self.model = mod_obj['model']
+        self.last_updated = 0
+        self.ready = False
+        self.windowSize = 15000
+        self.createIndicators()
+        
 
     def createIndicators(self):
         temp_indicators = []
@@ -22,7 +31,7 @@ class ComputeEngine:
             temp_indicators.append(indicatorClass(
                 params=self.indicator_dict[ind]['params'],
                 name=ind,
-                scalingWindowSize=15000,
+                scalingWindowSize=self.windowSize,
                 value=self.indicator_dict[ind]['value']))
 
         # order indicators so that indicators that depend on other indicators are comptued last
@@ -38,6 +47,43 @@ class ComputeEngine:
                         found_any = True
             if not found_any:
                 print('Error importing indicators!')
+
+    def prepare(self, newData):
+        
+        self.data = dict()
+        with self.lock:
+            for ind in self.indicators:
+                self.data.update(ind.compute(newData))
+            self.last_updated = newData[0]['time']
+            if not self.ready:
+                ready = True
+                for f in features:
+                    if f not in self.data:
+                        ready = False
+                        break
+
+                self.ready = ready
+
+
+    def predict(self, coin, time):
+        while True:
+            if self.last_updated == time:
+                with self.lock:
+                    if not self.ready:
+                        return False
+                    model_input = array([])
+                    for f in features:
+                        model_input.append(self.data[f])
+                    if self.probability_threshold:
+                        return self.probability_threshold <= self.model.predict_proba(model_input)
+                    else:
+                        return 1 == self.model.predict(model_input)
+            elif self.last_updated > time:
+                print('Warning: trying to fetch old predictions, this should never happen')
+                break
+            else:
+                time.sleep(0.01)
+        return False
 
 def importModel(mod_name, version="latest"):
     #get the correct model
@@ -66,11 +112,12 @@ def importModel(mod_name, version="latest"):
     return mod_obj
 
 def importIndicator(name):
-    module = importlib.import_module(f'indicators.{name}')
+    module = importlib.import_module(f'indicators.{name.lower()}')
     for mod in dir(module):
         obj = getattr(module, mod)
         if inspect.isclass(obj) and issubclass(obj, Indicator) and obj != Indicator:
             return obj
 
     return None
+    
     

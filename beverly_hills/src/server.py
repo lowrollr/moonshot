@@ -1,5 +1,6 @@
 import socket
 import os
+import json
 from threading import Thread
 from autobahn.asyncio.websocket import WebSocketServerProtocol
 
@@ -13,11 +14,14 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
 
     def onMessage(self, payload, isBinary):
         if isBinary:
-            print("Binary message received: {} bytes".format(len(payload)))
+            print("Invalid Binary Message (should be text)...")
         else:
-            print("Text message received: {}".format(payload.decode('utf8')))
-        
-        
+            msg = json.loads(payload.decode('utf8'))
+            # if msg['type'] == 'predict':
+            #     print(msg['msg'])
+            #     prediction_result = self.factory.computeEngine.predict(*msg['msg'])
+            #     self.sendMessage()
+
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {}".format(reason))

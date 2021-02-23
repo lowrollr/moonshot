@@ -5,8 +5,8 @@ from sys import maxsize
 class DataQueue:
     def __init__(self, maxlen=15000):
         self.queue = deque(maxlen=maxlen)
-        self.curMin = maxsize()
-        self.curMax = -1 * maxsize()
+        self.curMin = maxsize
+        self.curMax = -1 * maxsize
         self.full = False
 
 
