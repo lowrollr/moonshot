@@ -1,6 +1,7 @@
 from indicators.indicator import Indicator
 from talib import CCI as talib_CCI
 from data.data_queue import DataQueue
+import numpy as np
 
 
 class CCI(Indicator):
@@ -15,14 +16,14 @@ class CCI(Indicator):
     def compute(self, data):
         self.high_values.queue.append(data['high'])
         self.low_values.queue.append(data['low'])
-        self.close_values.queue.append(data['up'])
+        self.close_values.queue.append(data['close'])
         
         if len(self.high_values.queue) == self.params['period']:
-            result = talib_CCI(self.high_values.queue, self.low_values.queue, self.close_values.queue, timeperiod=self.params['period'])[-1]
-            results.addData(result)
+            result = talib_CCI(np.asarray(self.high_values.queue, dtype=np.float64), np.asarray(self.low_values.queue, dtype=np.float64), np.asarray(self.close_values.queue, dtype=np.float64), timeperiod=self.params['period'])[-1]
+            self.results.addData(result)
             scaled_result = 0.5
-            if results.curMax != results.curMin:
-                scaled_result = (result - results.curMin) / (results.curMax - results.curMin)
+            if self.results.curMax != self.results.curMin:
+                scaled_result = (result - self.results.curMin) / (self.results.curMax - self.results.curMin)
             return {self.name: scaled_result}
         else:
             return {}

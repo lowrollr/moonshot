@@ -3,6 +3,7 @@ import pickle
 import os
 import importlib
 import inspect
+from time import sleep
 from threading import Lock
 from numpy import array
 from indicators.indicator import Indicator
@@ -12,6 +13,8 @@ class ComputeEngine:
         self.lock = Lock()
         self.data = dict()
         self.coins = coins
+        for coin in self.coins:
+            self.data[coin] = dict()
         mod_obj = importModel('strawmaker')
         self.features = mod_obj['features']
         self.probability_threshold = mod_obj['proba_threshold']
@@ -49,16 +52,18 @@ class ComputeEngine:
                 print('Error importing indicators!')
 
     def prepare(self, newData):
+        first_coin = self.coins[0]
         
-        self.data = dict()
         with self.lock:
-            for ind in self.indicators:
-                self.data.update(ind.compute(newData))
-            self.last_updated = newData[0]['time']
+            for coin in self.coins:
+                self.data[coin] = dict()
+                for ind in self.indicators:
+                    self.data[coin].update(ind.compute(newData[coin]))
+            self.last_updated = newData[first_coin]['time']
             if not self.ready:
                 ready = True
-                for f in features:
-                    if f not in self.data:
+                for f in self.features:
+                    if f not in self.data[first_coin]:
                         ready = False
                         break
 
@@ -82,7 +87,7 @@ class ComputeEngine:
                 print('Warning: trying to fetch old predictions, this should never happen')
                 break
             else:
-                time.sleep(0.01)
+                sleep(0.01)
         return False
 
 def importModel(mod_name, version="latest"):

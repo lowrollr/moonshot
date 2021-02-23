@@ -67,7 +67,8 @@ class BeverlyHills():
     
     def compute(self):
         while True:
-            data = readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"])
+            data = json.loads(readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"]))
+            
             self.computeEngine.prepare(data["msg"])
             
 

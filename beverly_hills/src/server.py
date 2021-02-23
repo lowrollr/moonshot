@@ -3,6 +3,11 @@ import os
 import json
 from threading import Thread
 from autobahn.asyncio.websocket import WebSocketServerProtocol
+from vars import (
+    containersToId,
+    idToContainer
+)
+
 
 class BeverlyWebSocketProtocol(WebSocketServerProtocol):
 
@@ -17,10 +22,13 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
             print("Invalid Binary Message (should be text)...")
         else:
             msg = json.loads(payload.decode('utf8'))
-            # if msg['type'] == 'predict':
-            #     print(msg['msg'])
-            #     prediction_result = self.factory.computeEngine.predict(*msg['msg'])
-            #     self.sendMessage()
+            if msg['src'] == containersToId['portfolio_manager'] and msg['type'] == 'predict':
+                print(f'Received prediction request: {msg["msg"]}')
+                coin, timestamp = msg['msg'].split(',')
+                prediction_result = self.factory.computeEngine.predict(coin, int(timestamp))
+                rawMsg = {'type': 'prediction', 'msg':str(prediction_result), 'src':containersToId['beverly_hills'], 'dest':containersToId['portfolio_manager']}
+                self.sendMessage(json.dumps(rawMsg).encode('utf-8'))
+                print(f'Sent prediction  message: {rawMsg}')
 
 
     def onClose(self, wasClean, code, reason):

@@ -3,6 +3,7 @@
 from indicators.indicator import Indicator
 from talib import RSI as talib_RSI
 from data.data_queue import DataQueue
+import numpy as np
 
 
 class RSI(Indicator):
@@ -17,11 +18,11 @@ class RSI(Indicator):
         
         
         if len(self.values.queue) == self.params['period']:
-            result = talibRSI(self.values.queue, timeperiod=self.params['period'])[-1]
-            results.addData(result)
+            result = talib_RSI(np.asarray(self.values.queue, dtype=np.float64), timeperiod=self.params['period'])[-1]
+            self.results.addData(result)
             scaled_result = 0.5
-            if results.curMax != results.curMin:
-                scaled_result = (result - results.curMin) / (results.curMax - results.curMin)
+            if self.results.curMax != self.results.curMin:
+                scaled_result = (result - self.results.curMin) / (self.results.curMax - self.results.curMin)
             return {self.name: scaled_result}
         else:
             return {}
