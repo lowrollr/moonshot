@@ -90,7 +90,7 @@ func StartInit(bevConn *Client) {
 
 func GetPrediction(bevConn *Client, coin string, timestamp int) bool {
 	msg := SocketMessage{
-		Msg:         "[" + coin + "," + strconv.Itoa(timestamp) + "]",
+		Msg:         coin + "," + strconv.Itoa(timestamp),
 		Type:        "predict",
 		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId["beverly_hills"],
