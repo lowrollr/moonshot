@@ -69,7 +69,7 @@ class ComputeEngine:
                     
                     model_input = []
                     for f in self.features:
-                        if f not in data:
+                        if f not in self.data:
                             return False
                         model_input.append(self.data[f])
                     model_input = np.array(model_input)
