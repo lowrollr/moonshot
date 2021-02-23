@@ -22,7 +22,6 @@ class ComputeEngine:
         self.indicators = []
         self.model = mod_obj['model']
         self.last_updated = 0
-        self.ready = False
         self.windowSize = 15000
         self.createIndicators()
         
@@ -60,24 +59,18 @@ class ComputeEngine:
                 for ind in self.indicators:
                     self.data[coin].update(ind.compute(newData[coin]))
             self.last_updated = newData[first_coin]['time']
-            if not self.ready:
-                ready = True
-                for f in self.features:
-                    if f not in self.data[first_coin]:
-                        ready = False
-                        break
-
-                self.ready = ready
+            
 
 
     def predict(self, coin, time):
         while True:
             if self.last_updated == time:
                 with self.lock:
-                    if not self.ready:
-                        return False
+                    
                     model_input = []
                     for f in self.features:
+                        if f not in data:
+                            return False
                         model_input.append(self.data[f])
                     model_input = np.array(model_input)
                     if self.probability_threshold:
