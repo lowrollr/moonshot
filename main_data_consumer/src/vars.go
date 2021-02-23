@@ -54,13 +54,13 @@ type Client struct {
 
 type Candlestick struct {
 	*sync.Mutex `json:"-"`
-	StartTime   int64   `json:"t"`
-	Open        float64 `json:"o"`
-	High        float64 `json:"h"`
-	Low         float64 `json:"l"`
-	Close       float64 `json:"c"`
-	Volume      float64 `json:"v"`
-	NumTrades   int     `json:"n"`
+	StartTime   int64   `json:"time"`
+	Open        float64 `json:"open"`
+	High        float64 `json:"high"`
+	Low         float64 `json:"low"`
+	Close       float64 `json:"close"`
+	Volume      float64 `json:"volume"`
+	NumTrades   int     `json:"trades"`
 }
 
 type SocketCandleMessage struct {
