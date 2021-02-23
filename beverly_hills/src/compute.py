@@ -77,7 +77,7 @@ class ComputeEngine:
                     if not self.ready:
                         return False
                     model_input = array([])
-                    for f in features:
+                    for f in self.features:
                         model_input.append(self.data[f])
                     if self.probability_threshold:
                         return self.probability_threshold <= self.model.predict_proba(model_input)
