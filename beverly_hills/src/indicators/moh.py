@@ -11,8 +11,8 @@ class MOH(Indicator):
     
     def compute(self, data):
         result = datetime.fromtimestamp().minute
-        results.addData(result)
+        self.results.addData(result)
         scaled_result = 0.5
-        if results.curMax != results.curMin:
-            scaled_result = (result - results.curMin) / (results.curMax - results.curMin)
+        if self.results.curMax != self.results.curMin:
+            scaled_result = (result - self.results.curMin) / (self.results.curMax - self.results.curMin)
         return {self.name: scaled_result}
