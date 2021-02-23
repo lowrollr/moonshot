@@ -38,7 +38,7 @@ func (client *Client) WaitStart() {
 		if err != nil {
 			log.Panic("Not able to parse start msg correctly. Error: " + err.Error())
 		}
-		if message.Msg == "start" {
+		if message.Type == "start" {
 			break
 		}
 	}

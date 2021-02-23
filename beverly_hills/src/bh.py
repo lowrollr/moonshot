@@ -45,18 +45,7 @@ class BeverlyHills():
                 time.sleep(5)
 
         self.connections['main_data_consumer'] = conn
-        print('sending init message')
-        # send init message
-        rawMsg = {'type': 'init', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
-        conn.send(json.dumps(rawMsg).encode('utf-8'))
-        time.sleep(1)
-        print('sending start message')
-        # send start message
-        rawMsg = {'type': 'start', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
-        conn.send(json.dumps(rawMsg).encode('utf-8'))
-        time.sleep(1)
-        # request coins
-        print('sending coins')
+        print('requesting coins')
         coins = ""
         while True:
             #change this to something else 
@@ -72,6 +61,11 @@ class BeverlyHills():
         print("Received coins from data consumer")
         coin_msg = json.loads(coins)
         self.coins = coin_msg["msg"]
+
+        print('sending start message')
+        rawMsg = {'type': 'start', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+        conn.send(json.dumps(rawMsg).encode('utf-8'))
+
     
     def compute(self):
         while True:

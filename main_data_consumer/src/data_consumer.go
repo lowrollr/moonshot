@@ -44,6 +44,7 @@ func (data *DataConsumer) WsHTTPListen() {
 }
 
 func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Request) {
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Warn("error %v", err)
@@ -59,7 +60,7 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 	}
 
 	if message.Type == "coins" {
-		(*data.Clients[idToContainer[message.Source]]).SetClient(ws)
+		data.Clients[idToContainer[message.Source]].SetClient(ws)
 		coinMessage := SocketCoinMessageConstruct(
 			data.Coins,
 			containerToId["main_data_consumer"],
