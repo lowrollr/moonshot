@@ -11,7 +11,7 @@ TODO:
 package main
 
 import (
-	"sync"
+	// "sync"
 
 	"github.com/jinzhu/gorm"
 )
@@ -27,7 +27,7 @@ type OrderBook struct {
 }
 
 type Candlestick struct {
-	*sync.Mutex `gorm:"-" json:"-"`
+	// *sync.Mutex `gorm:"-" json:"-"`
 	Open        float64 `gorm:"Type:real;not null;" json:"open"`
 	High        float64 `gorm:"Type:real;not null;" json:"high"`
 	Low         float64 `gorm:"Type:real;not null;" json:"low"`
