@@ -11,6 +11,8 @@ TODO:
 package main
 
 import (
+	// "sync"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -24,17 +26,16 @@ type OrderBook struct {
 	coinName    string  `gorm:"-"`
 }
 
-type MinuteKline struct {
-	StartTime int64   `gorm:"Type:bigint;not null;"`
-	EndTime   int64   `gorm:"Type:bigint;not null;"`
-	Open      float32 `gorm:"Type:real;not null;"`
-	High      float32 `gorm:"Type:real;not null;"`
-	Low       float32 `gorm:"Type:real;not null;"`
-	Close     float32 `gorm:"Type:real;not null;"`
-	Volume    float32 `gorm:"Type:real;not null;"`
-	Trades    uint32  `gorm:"not null;"`
-	coinName  string  `gorm:"-"`
-	Time      int64   `gorm:"type:bigint;not null"`
+type Candlestick struct {
+	// *sync.Mutex `gorm:"-" json:"-"`
+	Open        float64 `gorm:"Type:real;not null;" json:"open"`
+	High        float64 `gorm:"Type:real;not null;" json:"high"`
+	Low         float64 `gorm:"Type:real;not null;" json:"low"`
+	Close       float64 `gorm:"Type:real;not null;" json:"close"`
+	Volume      float64 `gorm:"Type:real;not null;" json:"volume"`
+	NumTrades   int     `gorm:"not null;" json:"trades"`
+	coinName    string  `gorm:"-"`
+	StartTime   int64   `gorm:"type:bigint;not null" json:"time"`
 }
 
 type OHCLData struct {

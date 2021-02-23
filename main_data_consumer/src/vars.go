@@ -52,16 +52,6 @@ type Client struct {
 	conn *ws.Conn
 }
 
-type Candlestick struct {
-	StartTime int64   `json:"time"`
-	Open      float64 `json:"open"`
-	High      float64 `json:"high"`
-	Low       float64 `json:"low"`
-	Close     float64 `json:"close"`
-	Volume    float64 `json:"volume"`
-	NumTrades int     `json:"trades"`
-}
-
 type SocketCandleMessage struct {
 	Type        string      `json:"type"`
 	Msg         Candlestick `json:"msg"`

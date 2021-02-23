@@ -10,16 +10,17 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ross-hugo/go-binance/v2"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	log "github.com/sirupsen/logrus"
 )
 
 type dumbo struct {
@@ -89,7 +90,7 @@ func (Dumbo *dumbo) AutoMigrate() error {
 	coins := Dumbo.SelectCoins(-1)
 	for _, coin := range *coins {
 		temp_order := OrderBook{coinName: strings.ToLower(coin) + "_order_book"}
-		temp_min_kline := MinuteKline{coinName: strings.ToLower(coin) + "_minute_kline"}
+		temp_min_kline := Candlestick{coinName: strings.ToLower(coin) + "_minute_kline"}
 		temp_custom_kline := OHCLData{coinName: strings.ToLower(coin) + "_custom_kline"}
 		err := Dumbo.DBInterface.AutoMigrate(&temp_order, &temp_min_kline, &temp_custom_kline).Error
 		if err != nil {
@@ -107,7 +108,7 @@ func (Dumbo *dumbo) AutoMigrate() error {
     WHAT:
 		-> Returns the name of the coin so that it is a dynamic table names
 */
-func (m MinuteKline) TableName() string {
+func (m Candlestick) TableName() string {
 	// double check here, make sure the table does exist!!
 	if m.coinName != "" {
 		return strings.ToLower(m.coinName)
@@ -192,27 +193,16 @@ func (Dumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error 
     WHAT:
 		-> Inserts volume and trade coin data into database
 */
-func (Dumbo *dumbo) StoreCryptoKline(event *binance.WsKlineEvent) error {
-	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
+func (Dumbo *dumbo) StoreAllCandles(event *map[string]*Candlestick, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for coin, candleData := range *event {
+		err := Dumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
+			Create(candleData).Error
 
-	kline_time := event.Time
-
-	kline := event.Kline
-
-	open, _ := strconv.ParseFloat(kline.Open, 32)
-	high, _ := strconv.ParseFloat(kline.High, 32)
-	low, _ := strconv.ParseFloat(kline.Low, 32)
-	close, _ := strconv.ParseFloat(kline.Close, 32)
-
-	base_vol, _ := strconv.ParseFloat(kline.Volume, 32)
-
-	// num_trades, err := strconv.ParseInt(event.Kline.TradeNum, 10, 16 )
-
-	temp_kline := MinuteKline{StartTime: kline.StartTime, EndTime: kline.EndTime,
-		Open: float32(open), High: float32(high), Low: float32(low), Close: float32(close),
-		Volume: float32(base_vol), Trades: uint32(event.Kline.TradeNum), Time: kline_time}
-
-	return Dumbo.DBInterface.Table(strings.ToLower(coin_abb) + "_minute_kline").Create(&temp_kline).Error
+		if err != nil {
+			log.Warn("Was not able to store candle for coin: " + coin)
+		}
+	}
 }
 
 /*
