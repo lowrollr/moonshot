@@ -1,18 +1,24 @@
 from indicators.indicator import Indicator
-from talipp.indicators import CCI
+from talib import CCI as talib_CCI
 from data.data_queue import DataQueue
 
 
 class CCI(Indicator):
     def __init__(self, params, name, scalingWindowSize, value):
         super().__init__(params, name, scalingWindowSize, value)
-        self.cci = CCI(period=self.params['period'])
-        self.results = DataQueue()
+        period = self.params['period']
+        self.high_values = DataQueue(maxlen=period)
+        self.low_values = DataQueue(maxlen=period)
+        self.close_values = DataQueue(maxlen=period)
+        self.results = DataQueue(maxlen=self.windowSize)
     
     def compute(self, data):
-        self.cci.add_input_value(data[self.input])
-        if cci:
-            result = cci[0]
+        self.high_values.queue.append(data['high'])
+        self.low_values.queue.append(data['low'])
+        self.close_values.queue.append(data['up'])
+        
+        if len(self.high_values.queue) == self.params['period']:
+            result = talib_CCI(self.high_values.queue, self.low_values.queue, self.close_values.queue, timeperiod=self.params['period'])[-1]
             results.addData(result)
             scaled_result = 0.5
             if results.curMax != results.curMin:

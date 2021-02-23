@@ -28,14 +28,14 @@ type OrderBook struct {
 
 type Candlestick struct {
 	*sync.Mutex `gorm:"-" json:"-"`
-	Open        float64 `gorm:"Type:real;not null;" json:"o"`
-	High        float64 `gorm:"Type:real;not null;" json:"h"`
-	Low         float64 `gorm:"Type:real;not null;" json:"l"`
-	Close       float64 `gorm:"Type:real;not null;" json:"c"`
-	Volume      float64 `gorm:"Type:real;not null;" json:"v"`
-	NumTrades   int     `gorm:"not null;" json:"n"`
+	Open        float64 `gorm:"Type:real;not null;" json:"open"`
+	High        float64 `gorm:"Type:real;not null;" json:"high"`
+	Low         float64 `gorm:"Type:real;not null;" json:"low"`
+	Close       float64 `gorm:"Type:real;not null;" json:"close"`
+	Volume      float64 `gorm:"Type:real;not null;" json:"volume"`
+	NumTrades   int     `gorm:"not null;" json:"trades"`
 	coinName    string  `gorm:"-"`
-	StartTime   int64   `gorm:"type:bigint;not null" json:"t"`
+	StartTime   int64   `gorm:"type:bigint;not null" json:"time"`
 }
 
 type OHCLData struct {

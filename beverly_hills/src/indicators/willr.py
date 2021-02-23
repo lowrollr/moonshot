@@ -10,7 +10,7 @@ class WILLR(Indicator):
         self.high_values = DataQueue(maxlen=period)
         self.low_values = DataQueue(maxlen=period)
         self.close_values = DataQueue(maxlen=period)
-        self.results = DataQueue()
+        self.results = DataQueue(maxlen=self.windowSize)
     
     def compute(self, data):
         self.high_values.queue.append(data['high'])

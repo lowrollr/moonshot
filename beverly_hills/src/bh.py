@@ -2,7 +2,7 @@ import time
 import json
 import socket
 import os
-from threading import Thread
+from threading import Thread, Lock
 import asyncio
 from autobahn.asyncio.websocket import WebSocketServerFactory
 from server import BeverlyWebSocketProtocol
@@ -16,6 +16,7 @@ from vars import (
     containersToId,
     idToContainer
 )
+
 
 
 class BeverlyHills():
@@ -67,7 +68,7 @@ class BeverlyHills():
     def compute(self):
         while True:
             data = readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"])
-            print(data)
+            self.computeEngine.prepare(data["msg"])
             
 
     def startServer(self):
@@ -75,7 +76,7 @@ class BeverlyHills():
         asyncio.set_event_loop(loop)
         socketServer = WebSocketServerFactory()
         socketServer.protocol = BeverlyWebSocketProtocol
-        socketServer.candlestickData = self.candles
+        socketServer.computeEngine = self.computeEngine
         
         coro = loop.create_server(socketServer, '0.0.0.0', int(os.environ["SERVERPORT"]))
         server = loop.run_until_complete(coro)
