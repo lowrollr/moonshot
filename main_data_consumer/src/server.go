@@ -1,12 +1,16 @@
 package main
 
 import (
+	"sync"
+
 	ws "github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
 func (client *Client) WriteSocketPriceJSON(msg *SocketPriceMessage) {
-	err := client.GetClient().WriteJSON(msg)
+	client.Lock()
+	defer client.Unlock()
+	err := client.conn.WriteJSON(msg)
 	if err != nil {
 		log.Warn(err)
 	}
@@ -21,7 +25,8 @@ func (client *Client) WriteSocketCandleJSON(msg *SocketCandleMessage) {
 	return
 }
 
-func (client *Client) WriteAllSocketCandleJSON (msg *SocketAllCandleMessage) {
+func (client *Client) WriteAllSocketCandleJSON(msg *SocketAllCandleMessage, wg *sync.WaitGroup) {
+	defer wg.Done()
 	err := client.GetClient().WriteJSON(msg)
 	if err != nil {
 		log.Warn(err)
@@ -70,5 +75,11 @@ func (client *Client) SetClient(conn *ws.Conn) {
 func (client *Client) GetClient() *ws.Conn {
 	client.RLock()
 	defer client.RUnlock()
+	return client.conn
+}
+
+func (client *Client) GetWriteClient() *ws.Conn {
+	client.Lock()
+	defer client.Unlock()
 	return client.conn
 }

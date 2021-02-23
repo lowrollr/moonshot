@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	ws "github.com/gorilla/websocket"
@@ -88,7 +89,6 @@ func (data *DataConsumer) ServerListen() {
 		}
 		time.Sleep(1 * time.Second)
 	}
-
 	data.Clients["beverly_hills"].WaitStart()
 }
 
@@ -150,7 +150,7 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 	// log.Println(messageToFrontend)
 
 	frontendClient := data.Clients["frontend"]
-	frontendClient.WriteSocketPriceJSON(messageToFrontend)
+	go frontendClient.WriteSocketPriceJSON(messageToFrontend)
 	candle := data.Candlesticks[trade_coin]
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
@@ -160,8 +160,12 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 			Low:       tradePrice,
 			Close:     tradePrice,
 			Volume:    volume,
+			NumTrades: 1,
 		}
 	} else if candle.StartTime != now {
+		wg := new(sync.WaitGroup)
+		//two containers + storing in db
+		wg.Add(3)
 		for destinationStr, client := range data.Clients {
 			if destinationStr != "frontend" {
 				// log.Println(destinationStr, client)
@@ -171,16 +175,22 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 					Msg:         *packageToSend(&data.Candlesticks),
 				}
 				log.Println(candleMessage)
-				client.WriteAllSocketCandleJSON(&candleMessage)
+				go client.WriteAllSocketCandleJSON(&candleMessage, wg)
 			}
 		}
+		//store in db
+		go Dumbo.StoreAllCandles(&data.Candlesticks, wg)
+
+		wg.Wait()
+
 		data.Candlesticks[trade_coin] = &Candlestick{
 			StartTime: now,
 			Open:      tradePrice,
 			High:      tradePrice,
 			Low:       tradePrice,
 			Close:     tradePrice,
-			Volume:    0,
+			Volume:    volume,
+			NumTrades: 1,
 		}
 		for _, coin := range *data.Coins {
 			data.Candlesticks[coin] = &Candlestick{
@@ -189,14 +199,16 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 				High:      data.Candlesticks[coin].Close,
 				Low:       data.Candlesticks[coin].Close,
 				Close:     data.Candlesticks[coin].Close,
-				Volume:    0,
+				Volume:    volume,
+				NumTrades: 1,
 			}
 		}
-
 	} else {
 		candle.Close = tradePrice
 		candle.High = math.Max(candle.High, tradePrice)
 		candle.Low = math.Min(candle.Low, tradePrice)
+		candle.NumTrades++
+		candle.Volume += volume
 	}
 	return
 }
