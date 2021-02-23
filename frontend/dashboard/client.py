@@ -91,14 +91,15 @@ def BHSocket(bh_status):
 
 def DCSocket(dc_conn, dc_status, coin_datastreams):
     while True:
-        data, = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
-        data = json.loads(data)
-        if data_msg_type == 'curPrice' and data:
-            dc_status.ping()
-            coin_name = data['msg']['coin'].upper()
-            close_price = float(data['msg']['price'])
-            for coin in data:
-                coin_datastreams[coin_name].update(close_price)
+        data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
+        if data:
+            data = json.loads(data)
+            if data['type'] == 'curPrice' and data:
+                dc_status.ping()
+                coin_name = data['msg']['coin'].upper()
+                close_price = float(data['msg']['price'])
+                for coin in data:
+                    coin_datastreams[coin_name].update(close_price)
 
 def getCoins():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
