@@ -148,7 +148,7 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 
 	frontendClient := data.Clients["frontend"]
 	go frontendClient.WriteSocketPriceJSON(messageToFrontend)
-	data.Candlesticks[trade_coin].Lock()
+
 	candle := data.Candlesticks[trade_coin]
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
@@ -160,7 +160,9 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 			Close:     tradePrice,
 			Volume:    volume,
 		}
+
 	} else if candle.StartTime != now {
+		candle.Lock()
 		for destinationStr, client := range data.Clients {
 			if destinationStr != "frontend" {
 				candleMessage := SocketCandleMessage{
@@ -179,12 +181,15 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 			Low:       tradePrice,
 			Close:     tradePrice,
 		}
+		candle.Unlock()
 	} else {
+		candle.Lock()
 		candle.Close = tradePrice
 		candle.High = Float32Max(candle.High, tradePrice)
 		candle.Low = Float32Min(candle.Low, tradePrice)
+		candle.Unlock()
 	}
-	data.Candlesticks[trade_coin].Unlock()
+
 	return
 }
 
