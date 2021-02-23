@@ -5,7 +5,7 @@ import importlib
 import inspect
 from time import sleep
 from threading import Lock
-from numpy import array
+import numpy as np
 from indicators.indicator import Indicator
 
 class ComputeEngine:
@@ -76,9 +76,10 @@ class ComputeEngine:
                 with self.lock:
                     if not self.ready:
                         return False
-                    model_input = array([])
+                    model_input = []
                     for f in self.features:
                         model_input.append(self.data[f])
+                    model_input = np.array(model_input)
                     if self.probability_threshold:
                         return self.probability_threshold <= self.model.predict_proba(model_input)
                     else:
