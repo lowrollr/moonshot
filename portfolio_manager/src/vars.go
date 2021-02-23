@@ -73,18 +73,18 @@ type SocketCoinsMessage struct {
 }
 
 type CandlestickData struct {
-	Time   int     `json:"time"`
-	Close  float64 `json:"close"`
-	Open   float64 `json:"open"`
-	High   float64 `json:"high"`
-	Low    float64 `json:"low"`
-	Volume float64 `json:"volume"`
-	Trades int     `json:"trades"`
+	Time   int     `json:"t"`
+	Open        float64 `json:"o"`
+	High        float64 `json:"h"`
+	Low         float64 `json:"l"`
+	Close       float64 `json:"c"`
+	Volume      float64 `json:"v"`
+	NumTrades   int     `json:"n"`
 }
 
 type SocketCandleMessage struct {
 	Type        string                      `json:"type"`
-	Msg         map[string]*CandlestickData `json:"msg"`
+	Msg         map[string]CandlestickData `json:"msg"`
 	Source      int                         `json:"src"`
 	Destination int                         `json:"dest"`
 }

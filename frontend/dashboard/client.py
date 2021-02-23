@@ -9,13 +9,16 @@ from vars import (
     idToContainer
 )
 
-def startClient(name, port):
+def startClient(name, port, reconnect=False):
     uri = "ws://" + name + ":" + port
     while True:
         try:
             ws = create_connection(uri)
             if not ws is None:
                 print(f"Connected to {name}:{port}\n")
+                if reconnect:
+                    rawMessage = {'type':'reconnect', 'msg':'', 'src':containersToId["frontend"], 'dest':containersToId[name]}
+                    ws.send(json.dumps(rawMessage).encode('utf-8'))
                 return ws
             else:
                 print(f"Could not connect to {name}:{port}. Retrying...")
@@ -32,7 +35,7 @@ def startInit(conn, dest, port):
             conn.send(json.dumps(rawMessage).encode('utf-8'))
             return
         except ConnectionResetError:
-            conn = startClient(dest, port)
+            conn = startClient(dest, port, True)
 
 def readData(conn, name, port):
     while True:
@@ -41,7 +44,8 @@ def readData(conn, name, port):
             return data
             
         except ConnectionResetError:
-            conn = startClient(name, port)
+            #make sure its reconnect insteaad of normal
+            conn = startClient(name, port, True)
             continue
 
 def retrieveCoinData(dc_socket):
@@ -94,6 +98,7 @@ def DCSocket(dc_conn, dc_status, coin_datastreams):
         data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
             data = json.loads(data)
+            # print(data)
             if data['type'] == 'curPrice' and data:
                 dc_status.ping()
                 coin_name = data['msg']['coin'].upper()

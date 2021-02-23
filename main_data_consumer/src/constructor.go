@@ -20,7 +20,7 @@ func SocketMessageConstruct(msg string, src, dest int) (*SocketMessage) {
 
 func SocketPriceMessageConstruct(price *CoinPrice, src, dest int) (*SocketPriceMessage) {
 	return &SocketPriceMessage {
-		Type: "price",
+		Type: "curPrice",
 		Msg: *price,
 		Source: src,
 		Destination: dest,

@@ -53,14 +53,14 @@ type Client struct {
 }
 
 type Candlestick struct {
-	sync.Mutex `json:"-"`
-	Coin       string  `json:"s"`
-	StartTime  int     `json:"t"`
-	Open       float32 `json:"o"`
-	High       float32 `json:"h"`
-	Low        float32 `json:"l"`
-	Close      float32 `json:"c"`
-	Volume     float32 `json:"v"`
+	*sync.Mutex `json:"-"`
+	StartTime   int     `json:"t"`
+	Open        float64 `json:"o"`
+	High        float64 `json:"h"`
+	Low         float64 `json:"l"`
+	Close       float64 `json:"c"`
+	Volume      float64 `json:"v"`
+	NumTrades   int     `json:"n"`
 }
 
 type SocketCandleMessage struct {
@@ -70,9 +70,16 @@ type SocketCandleMessage struct {
 	Destination int         `json:"dest"`
 }
 
+type SocketAllCandleMessage struct {
+	Type        string                 `json:"type"`
+	Msg         map[string]Candlestick `json:"msg"`
+	Source      int                    `json:"src"`
+	Destination int                    `json:"dest"`
+}
+
 type CoinPrice struct {
 	Coin  string  `json:"coin"`
-	Price float32 `json:"price"`
+	Price float64 `json:"price"`
 }
 
 type SocketPriceMessage struct {

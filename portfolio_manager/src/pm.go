@@ -58,7 +58,6 @@ type EnterSignal struct {
 
 func initPM() *PortfolioManager {
 	mapDomainConnection := StartClient()
-	log.Println(mapDomainConnection)
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
 

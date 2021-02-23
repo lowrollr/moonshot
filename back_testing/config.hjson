@@ -28,7 +28,7 @@
     // fees: 0.001,
     fees: "coinbase",
     #maker or taker fees
-    makerTaker: "taker",
+    makerTaker: "maker",
     # Strategoes to execute (file name sans version no.)
     scale: true,
 

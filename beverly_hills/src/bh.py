@@ -21,7 +21,6 @@ from vars import (
 class BeverlyHills():
     def __init__(self):
         #initialize all data structures
-        
         self.coins = []
         self.connections = dict()
         self.numClients = 0
@@ -29,8 +28,6 @@ class BeverlyHills():
         self.consumerConnect()
         self.computeEngine = ComputeEngine(coins=self.coins)
         
-
-
 
     def consumerConnect(self):
         conn = None
@@ -70,6 +67,7 @@ class BeverlyHills():
     def compute(self):
         while True:
             data = readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"])
+            print(data)
             
 
     def startServer(self):

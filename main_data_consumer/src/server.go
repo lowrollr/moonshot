@@ -21,6 +21,14 @@ func (client *Client) WriteSocketCandleJSON(msg *SocketCandleMessage) {
 	return
 }
 
+func (client *Client) WriteAllSocketCandleJSON (msg *SocketAllCandleMessage) {
+	err := client.GetClient().WriteJSON(msg)
+	if err != nil {
+		log.Warn(err)
+	}
+	return
+}
+
 func (client *Client) WriteSocketCoinsJSON(msg *SocketCoinMessage) {
 	err := client.GetClient().WriteJSON(msg)
 	if err != nil {

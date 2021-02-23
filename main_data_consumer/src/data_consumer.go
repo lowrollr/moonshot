@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,7 +16,7 @@ import (
 type DataConsumer struct {
 	Clients        map[string]*Client
 	Coins          *[]string
-	Candlesticks   map[string]*Candlestick
+	Candlesticks   map[string]Candlestick
 	NumConnections int
 }
 
@@ -46,7 +47,6 @@ func (data *DataConsumer) WsHTTPListen() {
 }
 
 func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Request) {
-
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Warn("error %v", err)
@@ -71,7 +71,7 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 		data.Clients[idToContainer[message.Source]].
 			WriteSocketCoinsJSON(coinMessage)
 		data.NumConnections++
-	} else if message.Type == "init" {
+	} else if message.Type == "reconnect" {
 		data.Clients[idToContainer[message.Source]].SetClient(ws)
 		log.Println("Reconnected to ", idToContainer[message.Source], ws.RemoteAddr())
 	} else {
@@ -86,7 +86,7 @@ func (data *DataConsumer) ServerListen() {
 		if data.NumConnections > 2 {
 			break
 		}
-		time.Sleep(1)
+		time.Sleep(1 * time.Second)
 	}
 
 	data.Clients["beverly_hills"].WaitStart()
@@ -98,7 +98,7 @@ func (data *DataConsumer) StartConsume() {
 }
 
 func (data *DataConsumer) Consume() {
-	data.Candlesticks = make(map[string]*Candlestick)
+	data.Candlesticks = make(map[string]Candlestick)
 	log.Println("Start Consuming")
 
 	symbolsUSD := []string{}
@@ -125,16 +125,16 @@ func (data *DataConsumer) ConsumerData(conn *ws.Conn) {
 		if err := conn.ReadJSON(&message); err != nil {
 			log.Warn("Was not able to retrieve message with error: " + err.Error())
 		}
-		data.ProcessTick(&message)
+		if message.Type != "subscriptions" {
+			data.ProcessTick(&message)
+		}
 	}
 }
 
 //TODO seperate into functions
 func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
-	price, _ := strconv.ParseFloat(msg.Price, 32)
-	tradePrice := float32(price)
-	vol, _ := strconv.ParseFloat(msg.LastSize, 32)
-	volume := float32(vol)
+	tradePrice, _ := strconv.ParseFloat(msg.Price, 64)
+	volume, _ := strconv.ParseFloat(msg.LastSize, 64)
 	//send data to the frontend
 	trade_coin := strings.Split(msg.ProductID, "-")[0]
 	now := msg.Time.Minute()
@@ -147,14 +147,14 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 		containerToId["main_data_consumer"],
 		containerToId["frontend"],
 	)
-	log.Println(messageToFrontend)
+	// log.Println(messageToFrontend)
+
 	frontendClient := data.Clients["frontend"]
 	frontendClient.WriteSocketPriceJSON(messageToFrontend)
 
 	candle := data.Candlesticks[trade_coin]
-	if candle == nil {
-		data.Candlesticks[trade_coin] = &Candlestick{
-			Coin:      trade_coin,
+	if (candle == Candlestick{}) {
+		data.Candlesticks[trade_coin] = Candlestick{
 			StartTime: now,
 			Open:      tradePrice,
 			High:      tradePrice,
@@ -162,37 +162,27 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 			Close:     tradePrice,
 			Volume:    volume,
 		}
-
 	} else if candle.StartTime != now {
-
 		for destinationStr, client := range data.Clients {
 			if destinationStr != "frontend" {
-				log.Println(destinationStr, client)
-				candleMessage := SocketCandleMessage{
+				// log.Println(destinationStr, client)
+				candleMessage := SocketAllCandleMessage{
 					Source:      containerToId["main_data_consumer"],
 					Destination: containerToId[destinationStr],
-					Msg:         *data.Candlesticks[trade_coin],
+					Msg:         data.Candlesticks,
 				}
-				client.WriteSocketCandleJSON(&candleMessage)
+				log.Println(candleMessage)
+				client.WriteAllSocketCandleJSON(&candleMessage)
 			}
 		}
-		data.Candlesticks[trade_coin] = &Candlestick{
-			Coin:      trade_coin,
-			StartTime: now,
-			Open:      tradePrice,
-			High:      tradePrice,
-			Low:       tradePrice,
-			Close:     tradePrice,
+		for _, coin := range *data.Coins {
+			data.Candlesticks[coin] = Candlestick{}
 		}
-
 	} else {
-
 		candle.Close = tradePrice
-		candle.High = Float32Max(candle.High, tradePrice)
-		candle.Low = Float32Min(candle.Low, tradePrice)
-
+		candle.High = math.Max(candle.High, tradePrice)
+		candle.Low = math.Min(candle.Low, tradePrice)
 	}
-
 	return
 }
 
