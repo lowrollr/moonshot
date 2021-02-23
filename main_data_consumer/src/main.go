@@ -16,8 +16,6 @@ package main
     WHAT:
 		-> Connects to DB, creates tables if there aren't
 		-> Consumes data and stores in the DB
-    TODO:
-        -> General review of this code since it is pretty critical
 */
 func main() {
 	Dumbo = &dumbo{}

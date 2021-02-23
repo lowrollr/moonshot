@@ -49,15 +49,6 @@ type OHCLData struct {
 	coinName  string  `gorm:"-"`
 }
 
-// type AllCoinData struct {
-// 	gorm.Model
-// 	CoinAbv   string  `gorm:"Type:varchar(7);not null;"`
-// 	Price     float32 `gorm:"Type:real;not null;"`
-// 	Time      int64   `gorm:"Type:bigint;not null;"`
-// 	Tradetime int64   `gorm:"Type:bigint;not null;"`
-// 	Volume    float32 `gorm:"not null"`
-// }
-
 type CurrentCryptoPrice struct {
 	gorm.Model
 	CoinAbv   string  `gorm:"Type:varchar(7);not null;unique;primary key;"`

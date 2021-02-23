@@ -187,11 +187,12 @@ func (Dumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error 
 
 /*
 	ARGS:
-        -> event (*binance.WsKlineEvent): pointer to object that has all kline information
+		-> event (*map[string]*Candlestick): pointer to object that has all kline information for all coins
+		-> wg (*sync.WaitGroup): used to sync different goroutines
     RETURN:
-        -> (error): returns if there is one, an error in inserting coin data in the database
+        -> N/A
     WHAT:
-		-> Inserts volume and trade coin data into database
+		-> Inserts ohcl data into db
 */
 func (Dumbo *dumbo) StoreAllCandles(event *map[string]*Candlestick, wg *sync.WaitGroup) {
 	defer wg.Done()

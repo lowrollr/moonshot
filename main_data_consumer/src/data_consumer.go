@@ -1,3 +1,11 @@
+/*
+FILE: data_consumer.go
+AUTHORS:
+	-> Ross Copeland <rhcopeland101@gmail.com>
+	-> Jacob Marshall <marshingjay@gmail.com>
+WHAT:
+	-> This containers most main functions for the data consumer
+*/
 package main
 
 import (
@@ -14,6 +22,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+/*
+	ARGS:
+        -> Clients: the clients connected to the data consumer socket server
+		-> Coins: names of coins we are trading
+		-> Candlesticks: place to store candlestick data we are computing
+		-> NumConnecitons: for initializtion of how many containers connect
+    WHAT:
+		-> struct for most "global" thigs in data consumer
+*/
 type DataConsumer struct {
 	Clients        map[string]*Client
 	Coins          *[]string
@@ -21,6 +38,15 @@ type DataConsumer struct {
 	NumConnections int
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> a DataConsumer pointer
+    WHAT:
+		-> Creates a dataconsumer object
+		-> Initializes the clinet objects and NumConnections
+*/
 func initDC() *DataConsumer {
 	emptyClients := map[string]*Client{}
 	for con, _ := range containerToId {
@@ -34,11 +60,28 @@ func initDC() *DataConsumer {
 	}
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Does all the DB setup needed, getting the coins and initializing tables
+*/
 func (data *DataConsumer) DBSetUp() {
 	data.Coins = Dumbo.SelectCoins(-1)
 	Dumbo.InitializeDB()
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Function that starts web server that handles any WS connections
+		-> Run in goroutine because we're alwayas listening (reconnects)
+*/
 func (data *DataConsumer) WsHTTPListen() {
 	http.HandleFunc("/", data.handleConnections)
 	err := http.ListenAndServe(":"+string(os.Getenv("SERVERPORT")), nil)
@@ -47,6 +90,14 @@ func (data *DataConsumer) WsHTTPListen() {
 	}
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Handling of the connection, whether it be coins, reconnect etc.
+*/
 func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -82,6 +133,14 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 	return
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Waits until it has 3 connections and gets a start message from beverly hills so it can start consuming
+*/
 func (data *DataConsumer) ServerListen() {
 	for {
 		if data.NumConnections > 2 {
@@ -92,11 +151,27 @@ func (data *DataConsumer) ServerListen() {
 	data.Clients["beverly_hills"].WaitStart()
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Wrapper for consuming the data
+*/
 func (data *DataConsumer) StartConsume() {
 	InitConsume()
 	data.Consume()
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Main function for consuming the data from exchange. Adds -USD to the end
+*/
 func (data *DataConsumer) Consume() {
 	data.Candlesticks = make(map[string]*Candlestick)
 	log.Println("Start Consuming")
@@ -108,6 +183,14 @@ func (data *DataConsumer) Consume() {
 	data.SymbolWebSocket(&symbolsUSD)
 }
 
+/*
+	ARGS:
+        -> symbols (*[]string): pointer to slice of the symbols we are using in coinbase
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Uses symbols to start the consumption
+*/
 func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 	for {
 		log.Println("Starting initialization for coins: " + strings.Join(*symbols, ", "))
@@ -119,6 +202,14 @@ func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 	}
 }
 
+/*
+	ARGS:
+        -> conn (*ws.Conn): pointer to the exchange websocket connection
+    RETURN:
+        -> N/A
+    WHAT:
+		-> The loop that consumes the data from the websocket
+*/
 func (data *DataConsumer) ConsumerData(conn *ws.Conn) {
 	for {
 		message := CoinBaseMessage{}
@@ -131,7 +222,17 @@ func (data *DataConsumer) ConsumerData(conn *ws.Conn) {
 	}
 }
 
-//TODO seperate into functions
+/*
+	ARGS:
+        -> msg (*CoinBaseMessage): message from coin base
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Function to process each tick. Sending to containers and also saving in db
+		-> Also computing the caandles for each coin each minute
+	TODO:
+		-> Seperate into more functions
+*/
 func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 	tradePrice, _ := strconv.ParseFloat(msg.Price, 64)
 	volume, _ := strconv.ParseFloat(msg.LastSize, 64)
@@ -147,7 +248,6 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 		containerToId["main_data_consumer"],
 		containerToId["frontend"],
 	)
-	// log.Println(messageToFrontend)
 
 	frontendClient := data.Clients["frontend"]
 	go frontendClient.WriteSocketPriceJSON(messageToFrontend)
@@ -168,7 +268,6 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 		wg.Add(3)
 		for destinationStr, client := range data.Clients {
 			if destinationStr != "frontend" {
-				// log.Println(destinationStr, client)
 				candleMessage := SocketAllCandleMessage{
 					Source:      containerToId["main_data_consumer"],
 					Destination: containerToId[destinationStr],
@@ -213,6 +312,15 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 	return
 }
 
+/*
+	ARGS:
+        -> symbols (*[]string): pointer to slice of symbols we are subbing to
+    RETURN:
+		-> (*ws.Conn): a pointer to the exchange websocket connection
+		-> (error): error if we can't write to the 
+    WHAT:
+		-> Initializes the coinbase socket by subscribing to the correct channels
+*/
 func InitializeSymbolSocket(symbols *[]string) (*ws.Conn, error) {
 	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
 	if err != nil {
@@ -233,6 +341,15 @@ func InitializeSymbolSocket(symbols *[]string) (*ws.Conn, error) {
 	return wsConn, nil
 }
 
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Things to run right before consuming
+		-> Setting up the logging config
+*/
 func InitConsume() {
 	log.SetFormatter(&log.TextFormatter{ForceColors: true, FullTimestamp: true})
 }
