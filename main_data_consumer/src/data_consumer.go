@@ -22,7 +22,9 @@ type DataConsumer struct {
 func initDC() *DataConsumer {
 	emptyClients := map[string]*Client{}
 	for con, _ := range containerToId {
-		emptyClients[con] = &Client{}
+		if con != "main_data_consumer" {
+			emptyClients[con] = &Client{}
+		}
 	}
 	return &DataConsumer{
 		Clients:        emptyClients,
@@ -123,7 +125,7 @@ func (data *DataConsumer) ConsumerData(conn *ws.Conn) {
 		if err := conn.ReadJSON(&message); err != nil {
 			log.Warn("Was not able to retrieve message with error: " + err.Error())
 		}
-		go data.ProcessTick(&message)
+		data.ProcessTick(&message)
 	}
 }
 
@@ -145,9 +147,9 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 		containerToId["main_data_consumer"],
 		containerToId["frontend"],
 	)
-
+	log.Println(messageToFrontend)
 	frontendClient := data.Clients["frontend"]
-	go frontendClient.WriteSocketPriceJSON(messageToFrontend)
+	frontendClient.WriteSocketPriceJSON(messageToFrontend)
 
 	candle := data.Candlesticks[trade_coin]
 	if candle == nil {
@@ -162,15 +164,16 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 		}
 
 	} else if candle.StartTime != now {
-		candle.Lock()
+
 		for destinationStr, client := range data.Clients {
 			if destinationStr != "frontend" {
+				log.Println(destinationStr, client)
 				candleMessage := SocketCandleMessage{
 					Source:      containerToId["main_data_consumer"],
 					Destination: containerToId[destinationStr],
 					Msg:         *data.Candlesticks[trade_coin],
 				}
-				go client.WriteSocketCandleJSON(&candleMessage)
+				client.WriteSocketCandleJSON(&candleMessage)
 			}
 		}
 		data.Candlesticks[trade_coin] = &Candlestick{
@@ -181,13 +184,13 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 			Low:       tradePrice,
 			Close:     tradePrice,
 		}
-		candle.Unlock()
+
 	} else {
-		candle.Lock()
+
 		candle.Close = tradePrice
 		candle.High = Float32Max(candle.High, tradePrice)
 		candle.Low = Float32Min(candle.Low, tradePrice)
-		candle.Unlock()
+
 	}
 
 	return
