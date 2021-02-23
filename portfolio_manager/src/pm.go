@@ -48,7 +48,7 @@ type PortfolioManager struct {
 	PortfolioValue    float64
 	CoinbaseClient    *coinbasepro.Client
 	TradesToCalibrate int
-	CandleDict        map[string]*CandlestickData
+	CandleDict        map[string]CandlestickData
 }
 
 type EnterSignal struct {
@@ -66,7 +66,7 @@ func initPM() *PortfolioManager {
 	if err != nil {
 		println(err.Error())
 	}
-	candleDict := make(map[string]*CandlestickData)
+	candleDict := make(map[string]CandlestickData)
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
 		coinInfoDict[coin] = &CoinInfo{
@@ -143,12 +143,12 @@ func initPM() *PortfolioManager {
 func (pm *PortfolioManager) StartTrading() {
 
 	for {
-		log.Println(pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData())
-		// newCandleData := pm.ClientConnections["main_data_consumer"].ReceiveCandleData()
-		// if len(newCandleData) > 0 {
-		// 	pm.CandleDict = newCandleData
-		// 	pm.PMProcess()
-		// }
+
+		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+		if len(newCandleData) > 0 {
+			pm.CandleDict = newCandleData
+			pm.PMProcess()
+		}
 
 	}
 
@@ -168,7 +168,7 @@ func (pm *PortfolioManager) PMProcess() {
 				pm.PortfolioValue += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
 			}
 		} else {
-			if pm.Strat.CalcEnter(candle, coin, pm.ClientConnections["beverly_hills"]) {
+			if pm.Strat.CalcEnter(candle, coin, pm.ClientConnections[domainToUrl["beverly_hills"]]) {
 				enter_coins = append(enter_coins, coin)
 			}
 		}

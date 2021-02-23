@@ -53,7 +53,7 @@ func initAtlas(_coins *[]string) *Atlas {
 	return &atlas
 }
 
-func (atlas *Atlas) Process(data *CandlestickData, coinName string) {
+func (atlas *Atlas) Process(data CandlestickData, coinName string) {
 
 	atlas.SMAShort[coinName].Update(data.Close)
 	atlas.SMAGoal[coinName].Update(data.Close)
@@ -64,7 +64,7 @@ func (atlas *Atlas) Process(data *CandlestickData, coinName string) {
 	return
 }
 
-func (atlas *Atlas) CalcEnter(data *CandlestickData, coinName string, bhconn *Client) bool {
+func (atlas *Atlas) CalcEnter(data CandlestickData, coinName string, bhconn *Client) bool {
 
 	prediction := GetPrediction(bhconn, coinName, data.Time)
 
@@ -74,7 +74,7 @@ func (atlas *Atlas) CalcEnter(data *CandlestickData, coinName string, bhconn *Cl
 	return false
 }
 
-func (atlas *Atlas) CalcExit(data *CandlestickData, coinName string) bool {
+func (atlas *Atlas) CalcExit(data CandlestickData, coinName string) bool {
 	amntAbove := math.Max(-0.01, atlas.RateOfChangeShort[coinName].GetVal())
 	if data.Close > atlas.SMAGoal[coinName].GetVal()*(1+amntAbove) {
 		atlas.StopLoss[coinName] = math.Max(atlas.StopLoss[coinName], data.Close*0.995)
