@@ -16,7 +16,7 @@ import (
 type DataConsumer struct {
 	Clients        map[string]*Client
 	Coins          *[]string
-	Candlesticks   map[string]Candlestick
+	Candlesticks   map[string]*Candlestick
 	NumConnections int
 }
 
@@ -98,7 +98,7 @@ func (data *DataConsumer) StartConsume() {
 }
 
 func (data *DataConsumer) Consume() {
-	data.Candlesticks = make(map[string]Candlestick)
+	data.Candlesticks = make(map[string]*Candlestick)
 	log.Println("Start Consuming")
 
 	symbolsUSD := []string{}
@@ -151,10 +151,9 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 
 	frontendClient := data.Clients["frontend"]
 	frontendClient.WriteSocketPriceJSON(messageToFrontend)
-
 	candle := data.Candlesticks[trade_coin]
-	if (candle == Candlestick{}) {
-		data.Candlesticks[trade_coin] = Candlestick{
+	if candle == nil {
+		data.Candlesticks[trade_coin] = &Candlestick{
 			StartTime: now,
 			Open:      tradePrice,
 			High:      tradePrice,
@@ -169,15 +168,31 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 				candleMessage := SocketAllCandleMessage{
 					Source:      containerToId["main_data_consumer"],
 					Destination: containerToId[destinationStr],
-					Msg:         data.Candlesticks,
+					Msg:         *packageToSend(&data.Candlesticks),
 				}
 				log.Println(candleMessage)
 				client.WriteAllSocketCandleJSON(&candleMessage)
 			}
 		}
-		for _, coin := range *data.Coins {
-			data.Candlesticks[coin] = Candlestick{}
+		data.Candlesticks[trade_coin] = &Candlestick{
+			StartTime: now,
+			Open:      tradePrice,
+			High:      tradePrice,
+			Low:       tradePrice,
+			Close:     tradePrice,
+			Volume:    0,
 		}
+		for _, coin := range *data.Coins {
+			data.Candlesticks[coin] = &Candlestick{
+				StartTime: now,
+				Open:      data.Candlesticks[coin].Close,
+				High:      data.Candlesticks[coin].Close,
+				Low:       data.Candlesticks[coin].Close,
+				Close:     data.Candlesticks[coin].Close,
+				Volume:    0,
+			}
+		}
+
 	} else {
 		candle.Close = tradePrice
 		candle.High = math.Max(candle.High, tradePrice)

@@ -20,3 +20,11 @@ func Float32Min(x, y float32) float32 {
 	}
 	return y
 }
+
+func packageToSend(candlesticks *map[string]*Candlestick) *map[string]Candlestick {
+	packagedCandles := make(map[string]Candlestick)
+	for coin, candle := range *candlesticks {
+		packagedCandles[coin] = *candle
+	}
+	return &packagedCandles
+}
