@@ -1,20 +1,23 @@
 
 
 from indicators.indicator import Indicator
-from talipp.indicators import SMA
+from talib import SMA as talib_SMA
 from data.data_queue import DataQueue
 
 
 class SMA(Indicator):
     def __init__(self, params, name, scalingWindowSize, value):
         super().__init__(params, name, scalingWindowSize, value)
-        self.sma = SMA(period=self.params['period'])
-        self.results = DataQueue()
+        period = self.params['period']
+        self.values = DataQueue(maxlen=period)
+        self.results = DataQueue(maxlen=self.windowSize)
     
     def compute(self, data):
-        self.sma.add_input_value(data[self.input])
-        if sma:
-            result = sma[0]
+        self.values.queue.append(data[self.value])
+        
+        
+        if len(self.values.queue) == self.params['period']:
+            result = talib_SMA(self.values.queue, timeperiod=self.params['period'])[-1]
             results.addData(result)
             scaled_result = 0.5
             if results.curMax != results.curMin:

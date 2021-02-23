@@ -8,7 +8,7 @@ class CMO(Indicator):
         super().__init__(params, name, scalingWindowSize, value)
         period = self.params['period']
         self.values = DataQueue(maxlen=period)
-        self.results = DataQueue()
+        self.results = DataQueue(maxlen=self.windowSize)
     
     
     def compute(self, data):
@@ -16,7 +16,7 @@ class CMO(Indicator):
         
         
         if len(self.values.queue) == self.params['period']:
-            result = talib_CMO(self.high_values.queue, self.low_values.queue, self.close_values.queue, timeperiod=self.params['period'])[-1]
+            result = talib_CMO(self.values.queue, timeperiod=self.params['period'])[-1]
             results.addData(result)
             scaled_result = 0.5
             if results.curMax != results.curMin:

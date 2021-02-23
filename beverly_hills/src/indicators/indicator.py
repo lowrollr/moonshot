@@ -6,7 +6,6 @@ class Indicator:
         self.params = params
         self.windowSize = scalingWindowSize
         self.value = value
-        self.resultQueues = dict()
 
     
 
