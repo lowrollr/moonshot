@@ -7,6 +7,10 @@
 // */
 package main
 
+import (
+	"time"
+)
+
 func Float32Max(x, y float32) float32 {
 	if x > y {
 		return x
@@ -22,8 +26,10 @@ func Float32Min(x, y float32) float32 {
 }
 
 func packageToSend(candlesticks *map[string]*Candlestick) *map[string]Candlestick {
+	time_now := time.Now().Unix()
 	packagedCandles := make(map[string]Candlestick)
 	for coin, candle := range *candlesticks {
+		candle.StartTime = time_now
 		packagedCandles[coin] = *candle
 	}
 	return &packagedCandles

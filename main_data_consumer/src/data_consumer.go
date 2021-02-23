@@ -137,7 +137,7 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 	volume, _ := strconv.ParseFloat(msg.LastSize, 64)
 	//send data to the frontend
 	trade_coin := strings.Split(msg.ProductID, "-")[0]
-	now := msg.Time.Minute()
+	now := int64(msg.Time.Minute())
 
 	messageToFrontend := SocketPriceMessageConstruct(
 		&CoinPrice{

@@ -54,7 +54,7 @@ type Client struct {
 
 type Candlestick struct {
 	*sync.Mutex `json:"-"`
-	StartTime   int     `json:"t"`
+	StartTime   int64   `json:"t"`
 	Open        float64 `json:"o"`
 	High        float64 `json:"h"`
 	Low         float64 `json:"l"`
