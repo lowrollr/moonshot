@@ -115,15 +115,28 @@ func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 		if err != nil {
 			log.Panic("Was not able to open websocket with error: " + err.Error())
 		}
-		data.ConsumerData(symbolConn)
+		data.ConsumeData(symbolConn, symbols)
 	}
 }
 
-func (data *DataConsumer) ConsumerData(conn *ws.Conn) {
+func (data *DataConsumer) ConsumeData(conn *ws.Conn, symbols *[]string) {
 	for {
 		message := CoinBaseMessage{}
 		if err := conn.ReadJSON(&message); err != nil {
 			log.Warn("Was not able to retrieve message with error: " + err.Error())
+			conn.Close()
+			log.Warn("Attempting to restart connection...")
+			for {
+				symbolConn, err := InitializeSymbolSocket(symbols)
+				if err != nil {
+					log.Warn("Failed to reconnect, trying again...")
+					time.Sleep(1 * time.Second)
+				} else {
+					conn = symbolConn
+					log.Warn("Reconnected!")
+					break
+				}
+			}
 		}
 		if message.Type != "subscriptions" {
 			data.ProcessTick(&message)
