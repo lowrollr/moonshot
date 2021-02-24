@@ -205,7 +205,6 @@ func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 	}
 }
 
-
 /*
 	ARGS:
         -> conn (*ws.Conn): pointer to the exchange websocket connection
@@ -215,7 +214,7 @@ func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
     WHAT:
 		-> The loop that consumes the data from the websocket
 */
-func (data *DataConsumer) ConsumeData(conn *ws.Conn, symbols *[]string) {{
+func (data *DataConsumer) ConsumeData(conn *ws.Conn, symbols *[]string) {
 	for {
 		message := CoinBaseMessage{}
 		if err := conn.ReadJSON(&message); err != nil {
@@ -335,7 +334,7 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
         -> symbols (*[]string): pointer to slice of symbols we are subbing to
     RETURN:
 		-> (*ws.Conn): a pointer to the exchange websocket connection
-		-> (error): error if we can't write to the 
+		-> (error): error if we can't write to the
     WHAT:
 		-> Initializes the coinbase socket by subscribing to the correct channels
 */
