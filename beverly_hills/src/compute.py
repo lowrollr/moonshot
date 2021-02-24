@@ -19,59 +19,69 @@ class ComputeEngine:
         self.features = mod_obj['features']
         self.probability_threshold = mod_obj['proba_threshold']
         self.indicator_dict = mod_obj['indicators']
-        self.indicators = []
+        self.indicators = dict()
+        for coin in self.coins:
+            self.indicators[coin] = []
         self.model = mod_obj['model']
         self.last_updated = 0
         self.windowSize = 15000
         self.createIndicators()
+        print(self.features, self.indicator_dict)
         
 
     def createIndicators(self):
-        temp_indicators = []
-        for ind in self.indicator_dict:
-            indicatorClass = importIndicator(self.indicator_dict[ind]['type'])
-            temp_indicators.append(indicatorClass(
-                params=self.indicator_dict[ind]['params'],
-                name=ind,
-                scalingWindowSize=self.windowSize,
-                value=self.indicator_dict[ind]['value']))
-
-        # order indicators so that indicators that depend on other indicators are comptued last
         base_values = {'open', 'high', 'low', 'close', 'volume', 'trades'}
-        names_so_far = set()
-        while len(temp_indicators) > len(self.indicators):
-            found_any = False
-            for ind in temp_indicators:
-                if ind not in self.indicators:
-                    if ind.value in base_values or ind.value in names_so_far:
-                        names_so_far.add(ind.name)
-                        self.indicators.append(ind)
-                        found_any = True
-            if not found_any:
-                print('Error importing indicators!')
+        for coin in self.coins:
+            temp_indicators = []
+            for ind in self.indicator_dict:
+                indicatorClass = importIndicator(self.indicator_dict[ind]['type'])
+                temp_indicators.append(indicatorClass(
+                    params=self.indicator_dict[ind]['params'],
+                    name=ind,
+                    scalingWindowSize=self.windowSize,
+                    value=self.indicator_dict[ind]['value']))
+
+            # order indicators so that indicators that depend on other indicators are comptued last
+            
+            names_so_far = set()
+            
+            while len(temp_indicators) > len(self.indicators[coin]):
+                found_any = False
+                for ind in temp_indicators:
+                    if ind not in self.indicators[coin]:
+                        if ind.value in base_values or ind.value in names_so_far:
+                            names_so_far.add(ind.name)
+                            self.indicators[coin].append(ind)
+                            found_any = True
+                if not found_any:
+                    print('Error importing indicators!')
 
     def prepare(self, newData):
+        
         first_coin = self.coins[0]
         
         with self.lock:
             for coin in self.coins:
                 self.data[coin] = dict()
-                for ind in self.indicators:
+                for ind in self.indicators[coin]:
                     self.data[coin].update(ind.compute(newData[coin]))
             self.last_updated = newData[first_coin]['time']
             
 
 
     def predict(self, coin, time):
+        
         while True:
             if self.last_updated == time:
                 with self.lock:
-                    
+                    print(f'Data Cols: {self.data[coin].keys()}')
                     model_input = []
                     for f in self.features:
-                        if f not in self.data:
+                        if f not in self.data[coin]:
+                            print('Not all features present, cannot predict!')
                             return False
-                        model_input.append(self.data[f])
+                        model_input.append(self.data[coin][f])
+                    print(f'Model Input: {model_input}')
                     model_input = np.array(model_input)
                     if self.probability_threshold:
                         return self.probability_threshold <= self.model.predict_proba(model_input)
