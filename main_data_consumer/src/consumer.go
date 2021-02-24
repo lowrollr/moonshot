@@ -3,6 +3,7 @@ FILE: consumer.go
 AUTHORS:
     -> Ross Copeland <rhcopeland101@gmail.com>
 WHAT:
+	-> unused now
 	-> Code for actual consumption of data from bianance
 	-> This will collect all information on coins (price, volume, time)
 */
@@ -73,8 +74,6 @@ func ErrorTradeHandler(err error) {
     WHAT:
 		-> Needs some goroutine to constantly be doing something, hence the busy loop here
 */
-
-
 func ContinuouslyPrintSockets() {
 	for {
 		time.Sleep(10 * time.Second)
