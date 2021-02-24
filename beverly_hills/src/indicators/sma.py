@@ -16,7 +16,7 @@ class SMA(Indicator):
         self.values.queue.append(data[self.value])
         
         
-        if len(self.values.queue) == self.params['period']:
+        if len(self.values.queue) > self.params['period']:
             result = talib_SMA(np.asarray(self.values.queue, dtype=np.float64), timeperiod=self.params['period'])[-1]
             self.results.addData(result)
             scaled_result = 0.5
