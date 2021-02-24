@@ -18,7 +18,7 @@ class NATR(Indicator):
         self.low_values.queue.append(data['low'])
         self.close_values.queue.append(data['close'])
         
-        if len(self.high_values.queue) == self.params['period']:
+        if len(self.high_values.queue) > self.params['period']:
             result = talib_NATR(np.asarray(self.high_values.queue, dtype=np.float64), np.asarray(self.low_values.queue, dtype=np.float64), np.asarray(self.close_values.queue, dtype=np.float64), timeperiod=self.params['period'])[-1]
             self.results.addData(result)
             scaled_result = 0.5
