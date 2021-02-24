@@ -258,6 +258,5 @@ func (*dumbo) SelectCoins(n int) *[]string {
 
 		}
 	}
-
 	return &coin_abr
 }

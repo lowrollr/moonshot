@@ -192,6 +192,9 @@ func (data *DataConsumer) Consume() {
 		-> Uses symbols to start the consumption
 */
 func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
+	sec := 60 - time.Now().Second()
+	log.Println("Waiting", sec, "second(s) to top of minute...")
+	time.Sleep(time.Duration(sec) * time.Second)
 	for {
 		log.Println("Starting initialization for coins: " + strings.Join(*symbols, ", "))
 		symbolConn, err := InitializeSymbolSocket(symbols)

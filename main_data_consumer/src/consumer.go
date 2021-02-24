@@ -3,6 +3,7 @@ FILE: consumer.go
 AUTHORS:
     -> Ross Copeland <rhcopeland101@gmail.com>
 WHAT:
+	-> unused now
 	-> Code for actual consumption of data from bianance
 	-> This will collect all information on coins (price, volume, time)
 */
