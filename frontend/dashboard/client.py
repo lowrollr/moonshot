@@ -111,7 +111,7 @@ def DCSocket(dc_conn, dc_status, coin_datastreams, current_positions):
                 close_price = float(data['msg']['price'])
                 
                 coin_datastreams[coin_name].update(close_price)
-                current_positions.updatePosition(coin_name, close_price,)
+                current_positions.updatePosition(coin_name, close_price)
 
 
 def getCoins():
