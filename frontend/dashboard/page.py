@@ -54,7 +54,7 @@ def getTopText(data, asset):
         cur_value = data[-1]
         first_value = data[0]
         delta = cur_value - first_value
-        perc_change = (cur_value - first_value) / first_value
+        perc_change = ((cur_value - first_value) / first_value) * 100
         cur_value = round(cur_value, 2)
         delta = round(delta, 2)
         perc_change = round(perc_change, 2)
