@@ -10,7 +10,7 @@ class TOD(Indicator):
         self.results = DataQueue(maxlen=self.windowSize)
     
     def compute(self, data):
-        result = datetime.fromtimestamp().hour
+        result = datetime.fromtimestamp(data['time']).hour
         self.results.addData(result)
         scaled_result = 0.5
         if self.results.curMax != self.results.curMin:
