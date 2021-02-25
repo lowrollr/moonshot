@@ -135,7 +135,7 @@ class ComputeEngine:
                             return False
                         model_input.append(self.data[coin][f])
                     print(f'Model Input: {model_input}')
-                    model_input = np.array(model_input)
+                    model_input = np.array(model_input).reshape(1, -1)
                     if self.probability_threshold:
                         return self.probability_threshold <= self.model.predict_proba(model_input)
                     else:
