@@ -4,12 +4,12 @@ from data.data_queue import DataQueue
 import numpy as np
 
 class NATR(Indicator):
-    def __init__(self, params, name, scalingWindowSize, value):
-        super().__init__(params, name, scalingWindowSize, value)
+    def __init__(self, params, name, scalingWindowSize, unstablePeriod, value):
+        super().__init__(params, name, scalingWindowSize, unstablePeriod, value)
         period = self.params['period']
-        self.high_values = DataQueue(maxlen=period)
-        self.low_values = DataQueue(maxlen=period)
-        self.close_values = DataQueue(maxlen=period)
+        self.high_values = DataQueue(maxlen=max(self.minUnstablePeriod, period + 1))
+        self.low_values = DataQueue(maxlen=max(self.minUnstablePeriod, period + 1))
+        self.close_values = DataQueue(maxlen=max(self.minUnstablePeriod, period + 1))
         self.results = DataQueue(maxlen=self.windowSize)
     
     
@@ -18,7 +18,7 @@ class NATR(Indicator):
         self.low_values.queue.append(data['low'])
         self.close_values.queue.append(data['close'])
         
-        if len(self.high_values.queue) > self.params['period']:
+        if len(self.high_values.queue) >= self.params['period'] + 1:
             result = talib_NATR(np.asarray(self.high_values.queue, dtype=np.float64), np.asarray(self.low_values.queue, dtype=np.float64), np.asarray(self.close_values.queue, dtype=np.float64), timeperiod=self.params['period'])[-1]
             self.results.addData(result)
             scaled_result = 0.5

@@ -1,10 +1,11 @@
 
 
 class Indicator:
-    def __init__(self, params, name, scalingWindowSize, value):
+    def __init__(self, params, name, scalingWindowSize, unstablePeriod, value):
         self.name = name
         self.params = params
         self.windowSize = scalingWindowSize
+        self.minUnstablePeriod = unstablePeriod
         self.value = value
 
     
