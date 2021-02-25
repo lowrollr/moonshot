@@ -86,6 +86,7 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
             elif data['type'] == 'portfolio_value':
                 p_value = float(data['msg'])
                 portfolio_datastream.update(p_value)
+                current_positions.p_value = p_value
 
 def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
@@ -98,7 +99,7 @@ def BHSocket(bh_status):
             bh_status.ping()
         time.sleep(2)
 
-def DCSocket(dc_conn, dc_status, coin_datastreams):
+def DCSocket(dc_conn, dc_status, coin_datastreams, current_positions):
     while True:
         data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
@@ -108,8 +109,10 @@ def DCSocket(dc_conn, dc_status, coin_datastreams):
                 dc_status.ping()
                 coin_name = data['msg']['coin'].upper()
                 close_price = float(data['msg']['price'])
-                for coin in data:
-                    coin_datastreams[coin_name].update(close_price)
+                
+                coin_datastreams[coin_name].update(close_price)
+                current_positions.updatePosition(coin_name, close_price,)
+
 
 def getCoins():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])

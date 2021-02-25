@@ -53,9 +53,11 @@ position_history = PositionStream(coins)
 
 
 dc_socket_thread = threading.Thread(target=DCSocket, args=(
-        dc_conn,
-        container_statuses['Data Consumer'], 
-        coin_datastreams,))
+    dc_conn,
+    container_statuses['Data Consumer'], 
+    coin_datastreams,
+    cur_positions,
+    ))
 
 bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
 
@@ -64,7 +66,7 @@ pm_socket_thread = threading.Thread(target=PMSocket, args=(
     porfolio_datastream,
     position_history.all_positions,
     position_history.coin_positions,
-    cur_positions.positions,
+    cur_positions,
     ))
 
 dc_socket_thread.start() 
