@@ -55,8 +55,8 @@ def getTopText(data, asset):
         first_value = data[0]
         delta = cur_value - first_value
         perc_change = ((cur_value - first_value) / first_value) * 100
-        cur_value = round(cur_value, 2)
-        delta = round(delta, 2)
+        precision = max(len(str(first_value).split('.')[1]), len(str(cur_value).split('.')[1]))
+        delta = round(delta, precision)
         perc_change = round(perc_change, 2)
         if delta >= 0:
             delta = f'+${delta}'
