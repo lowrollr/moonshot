@@ -60,7 +60,7 @@ dc_socket_thread = threading.Thread(target=DCSocket, args=(
 bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
 
 psm_socket_thread = threading.Thread(target=PMSocket, args=(
-    container_statuses['PSM'], 
+    container_statuses['PM'], 
     porfolio_datastream,
     position_history.all_positions,
     position_history.coin_positions,
