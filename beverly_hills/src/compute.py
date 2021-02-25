@@ -1,3 +1,12 @@
+'''
+FILE: compute.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This file contains functionality that implements the following:
+        -> Per tick computation for indicators and model output
+        -> Importing models, indicators, and features
+'''
 
 import pickle
 import os
@@ -8,7 +17,25 @@ from threading import Lock
 import numpy as np
 from indicators.indicator import Indicator
 
+
+'''
+CLASS: ComputeEngine
+WHAT:
+    -> Implements tick by tick computing of indicators and model predictions
+    -> Maps coins to sets of indicators with data & results queues
+'''
 class ComputeEngine:
+    '''
+    ARGS:
+        -> coins ([String]): list of coins that we'll be trading
+    RETURN:
+        -> None
+    WHAT: 
+        -> Initializes the ComputEngine mechanics, such as threading lock, indicators, and features
+        -> self.data & self.indicators are dicts mapping coins to data values and indicator objects
+        -> imports model used to make predictions
+        -> Initializes indicator objects as specified by model
+    '''
     def __init__(self, coins):
         self.lock = Lock()
         self.data = dict()
@@ -19,58 +46,94 @@ class ComputeEngine:
         self.features = mod_obj['features']
         self.probability_threshold = mod_obj['proba_threshold']
         self.indicator_dict = mod_obj['indicators']
-        self.indicators = []
+        self.indicators = dict()
+        for coin in self.coins:
+            self.indicators[coin] = []
         self.model = mod_obj['model']
         self.last_updated = 0
         self.windowSize = 15000
+        self.minUnstablePeriod = 200
+        print(self.features, self.indicator_dict)
         self.createIndicators()
         
-
+        
+    '''
+    ARGS:
+        -> None
+    RETURN:
+        -> None
+    WHAT: 
+        -> Populates self.indicators dict with lists of instantiated indicator objects for each coin in self.coins
+        -> orders indicators by dependancy (so indicators that don't depend on values from other indicators are calculated first)
+    '''
     def createIndicators(self):
-        temp_indicators = []
-        for ind in self.indicator_dict:
-            indicatorClass = importIndicator(self.indicator_dict[ind]['type'])
-            temp_indicators.append(indicatorClass(
-                params=self.indicator_dict[ind]['params'],
-                name=ind,
-                scalingWindowSize=self.windowSize,
-                value=self.indicator_dict[ind]['value']))
+        base_values = {'open', 'high', 'low', 'close', 'volume', 'trades', 'time'}
+        for coin in self.coins:
+            temp_indicators = []
+            for ind in self.indicator_dict:
+                indicatorClass = importIndicator(self.indicator_dict[ind]['type'])
+                temp_indicators.append(indicatorClass(
+                    params=self.indicator_dict[ind]['params'],
+                    name=ind,
+                    scalingWindowSize=self.windowSize,
+                    unstablePeriod=self.minUnstablePeriod,
+                    value=self.indicator_dict[ind]['value']))
 
-        # order indicators so that indicators that depend on other indicators are comptued last
-        base_values = {'open', 'high', 'low', 'close', 'volume', 'trades'}
-        names_so_far = set()
-        while len(temp_indicators) > len(self.indicators):
-            found_any = False
-            for ind in temp_indicators:
-                if ind not in self.indicators:
-                    if ind.value in base_values or ind.value in names_so_far:
-                        names_so_far.add(ind.name)
-                        self.indicators.append(ind)
-                        found_any = True
-            if not found_any:
-                print('Error importing indicators!')
-
+            # order indicators so that indicators that depend on other indicators are comptued last
+            
+            names_so_far = set()
+            # this is mega inefficient
+            while len(temp_indicators) > len(self.indicators[coin]):
+                found_any = False
+                for ind in temp_indicators:
+                    if ind not in self.indicators[coin]:
+                        if ind.value in base_values or ind.value in names_so_far:
+                            names_so_far.add(ind.name)
+                            self.indicators[coin].append(ind)
+                            found_any = True
+                if not found_any:
+                    print('Error importing indicators!')
+    '''
+    ARGS:
+        -> newData ({string: {string: float}}): single tick of new data, maps coin to dict of OHCLVT data
+    RETURN:
+        -> None
+    WHAT: 
+        -> computes indicators for each coin with the new tick of data
+    '''
     def prepare(self, newData):
         first_coin = self.coins[0]
-        
         with self.lock:
             for coin in self.coins:
                 self.data[coin] = dict()
-                for ind in self.indicators:
+                for ind in self.indicators[coin]:
                     self.data[coin].update(ind.compute(newData[coin]))
             self.last_updated = newData[first_coin]['time']
 
-
+    '''
+    ARGS:
+        -> coin (string): coin to generate a prediction for
+        -> time (int): unix timestamp that prediction is needed for (for syncing purposes)
+    RETURN:
+        -> (bool): whether or not the model predicted a signal
+    WHAT: 
+        -> returns the model's prediction for a specified coin at a given timestamp (this should always be the current time)
+        -> ensures that needed features are present in ComputeEngine's current data prior to making a prediction
+        -> makes sure that data is ready for the given timestamp (it's possible it could still be being computed in another thread)
+    '''
     def predict(self, coin, time):
+        
         while True:
             if self.last_updated == time:
                 with self.lock:
-                    
+                    print(f'Data Cols: {self.data[coin].keys()}')
                     model_input = []
                     for f in self.features:
-                        if f not in self.data:
+                        if f not in self.data[coin]:
+                            print('Not all features present, cannot predict!')
                             return False
-                        model_input.append(self.data[f])
+                        model_input.append(self.data[coin][f])
+                    print(f'Model Input: {model_input}')
                     model_input = np.array(model_input)
                     if self.probability_threshold:
                         return self.probability_threshold <= self.model.predict_proba(model_input)
@@ -82,7 +145,16 @@ class ComputeEngine:
             else:
                 sleep(0.01)
         return False
-
+'''
+ARGS:
+    -> mod_name (string): model name to import
+    -> version (string): model version to import (specifying 'latest' will grab the latest version)
+RETURN:
+    -> ({string: value}): dict with model information
+WHAT: 
+    -> unpickles model object and loads features needed (ordered), indicator specification, model type, and the model itself
+    -> loads the specified name and version
+'''
 def importModel(mod_name, version="latest"):
     #get the correct model
     base_dir = f'saved_models/{mod_name}/'
@@ -109,6 +181,14 @@ def importModel(mod_name, version="latest"):
 
     return mod_obj
 
+'''
+ARGS:
+    -> name (string): name of indicator to import
+RETURN:
+    -> obj (Indicator object): Uninstantiated indicator object with the specified name
+WHAT: 
+    -> finds the given indicator by name if it exists in a module, returns an uninstantiated object
+'''
 def importIndicator(name):
     module = importlib.import_module(f'indicators.{name.lower()}')
     for mod in dir(module):

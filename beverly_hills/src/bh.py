@@ -80,6 +80,7 @@ class BeverlyHills():
             
             self.computeEngine.prepare(data["msg"])
             
+            
 
     def startServer(self):
         loop = asyncio.new_event_loop()
@@ -100,9 +101,18 @@ class BeverlyHills():
 
         serverThread.start()
         dataThread.start()
+       
 
-def pingFrontend(conn):
-    while True:
-        conn.sendall(bytes(1,encoding='utf-8'))
-        time.sleep(2)
+    def initFrontEndConnection(self):
+        print("Connecting to Frontend")
+        while True:
+            print("Trying to connect", flush=True)
+            try:
+                conn = startClient('frontend', os.environ["DATAPORT"])
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(5)
+
+
 

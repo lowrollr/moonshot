@@ -5,8 +5,8 @@ import numpy as np
 
 
 class BOP(Indicator):
-    def __init__(self, params, name, scalingWindowSize, value):
-        super().__init__(params, name, scalingWindowSize, value)
+    def __init__(self, params, name, scalingWindowSize, unstablePeriod, value):
+        super().__init__(params, name, scalingWindowSize, unstablePeriod, value)
         
         self.results = DataQueue(maxlen=self.windowSize)
     

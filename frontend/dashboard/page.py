@@ -54,7 +54,7 @@ def getTopText(data, asset):
         cur_value = data[-1]
         first_value = data[0]
         delta = cur_value - first_value
-        perc_change = (cur_value - first_value) / first_value
+        perc_change = ((cur_value - first_value) / first_value) * 100
         cur_value = round(cur_value, 2)
         delta = round(delta, 2)
         perc_change = round(perc_change, 2)
@@ -131,7 +131,7 @@ def getStatusElems(container_statuses):
                 getStatusDiv(container_statuses['Data Consumer'])
             ], className = 'statuspair'),
             html.Li([
-                html.Div('PSM', className='statustext'),
+                html.Div('PM', className='statustext'),
                 getStatusDiv(container_statuses['PSM'])
             ], className = 'statuspair'),
             html.Li([
@@ -139,8 +139,8 @@ def getStatusElems(container_statuses):
                 getStatusDiv(container_statuses['Beverly Hills'])
             ], className = 'statuspair'),
             html.Li([
-                html.Div('Binance', className='statustext'),
-                getStatusDiv(container_statuses['Binance'])
+                html.Div('Coinbase', className='statustext'),
+                getStatusDiv(container_statuses['Coinbase'])
             ], className = 'statuspair'),
         ]
     )
@@ -148,7 +148,7 @@ def getStatusElems(container_statuses):
 def getStatusDiv(status):
     class_name = 'statusbubble'
     if status.isOk():
-        html.Div(className=class_name, style={'background': 'rgba(114,228,125,1)'})
+        return html.Div(className=class_name, style={'background': 'rgba(114,228,125,1)'})
     else:
         return html.Div(className=class_name, style={'background': 'rgba(239,102,102,1)'})
 

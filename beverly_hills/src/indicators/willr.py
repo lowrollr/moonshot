@@ -4,8 +4,8 @@ from data.data_queue import DataQueue
 import numpy as np
 
 class WILLR(Indicator):
-    def __init__(self, params, name, scalingWindowSize, value):
-        super().__init__(params, name, scalingWindowSize, value)
+    def __init__(self, params, name, scalingWindowSize, unstablePeriod, value):
+        super().__init__(params, name, scalingWindowSize, unstablePeriod, value)
         period = self.params['period']
         self.high_values = DataQueue(maxlen=period)
         self.low_values = DataQueue(maxlen=period)

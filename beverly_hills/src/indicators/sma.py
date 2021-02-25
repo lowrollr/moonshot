@@ -6,8 +6,8 @@ from data.data_queue import DataQueue
 import numpy as np
 
 class SMA(Indicator):
-    def __init__(self, params, name, scalingWindowSize, value):
-        super().__init__(params, name, scalingWindowSize, value)
+    def __init__(self, params, name, scalingWindowSize, unstablePeriod, value):
+        super().__init__(params, name, scalingWindowSize, unstablePeriod, value)
         period = self.params['period']
         self.values = DataQueue(maxlen=period)
         self.results = DataQueue(maxlen=self.windowSize)

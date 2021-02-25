@@ -7,17 +7,18 @@ import numpy as np
 
 
 class RSI(Indicator):
-    def __init__(self, params, name, scalingWindowSize, value):
-        super().__init__(params, name, scalingWindowSize, value)
+    def __init__(self, params, name, scalingWindowSize, unstablePeriod, value):
+        super().__init__(params, name, scalingWindowSize, unstablePeriod, value)
         period = self.params['period']
-        self.values = DataQueue(maxlen=period)
+        unstableperiod = 200
+        self.values = DataQueue(maxlen=max(self.minUnstablePeriod, period + 1))
         self.results = DataQueue(maxlen=self.windowSize)
     
     def compute(self, data):
         self.values.queue.append(data[self.value])
         
         
-        if len(self.values.queue) == self.params['period']:
+        if len(self.values.queue) >= self.params['period'] + 1:
             result = talib_RSI(np.asarray(self.values.queue, dtype=np.float64), timeperiod=self.params['period'])[-1]
             self.results.addData(result)
             scaled_result = 0.5

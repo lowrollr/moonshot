@@ -1,3 +1,14 @@
+'''
+FILE: server.py
+AUTHORS:
+    -> Ross Copeland (rhcopeland101@gmail.com)
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This file contains functionality that implements the following:
+        -> Per tick computation for indicators and model output
+        -> Importing models, indicators, and features
+'''
+
 import socket
 import os
 import json
@@ -29,11 +40,13 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
                 rawMsg = {'type': 'prediction', 'msg':str(prediction_result), 'src':containersToId['beverly_hills'], 'dest':containersToId['portfolio_manager']}
                 self.sendMessage(json.dumps(rawMsg).encode('utf-8'))
                 print(f'Sent prediction  message: {rawMsg}')
+            elif msg['src'] == containersToId['frontend'] and msg['type'] == 'ping':
+                rawMsg = {'type': 'ping', 'msg':'fuck you too', 'src':containersToId['beverly_hills'], 'dest':containersToId['frontend']}
+                self.sendMessage(json.dumps(rawMsg).encode('utf-8'))
+
 
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {}".format(reason))
 
 
-# def computeResult(model, data):
-    

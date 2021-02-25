@@ -4,13 +4,13 @@ from data.data_queue import DataQueue
 
 
 class TOD(Indicator):
-    def __init__(self, params, name, scalingWindowSize, value):
-        super().__init__(params, name, scalingWindowSize, value)
+    def __init__(self, params, name, scalingWindowSize, unstablePeriod, value):
+        super().__init__(params, name, scalingWindowSize, unstablePeriod, value)
         
         self.results = DataQueue(maxlen=self.windowSize)
     
     def compute(self, data):
-        result = datetime.fromtimestamp().hour
+        result = datetime.fromtimestamp(data['time']).hour
         self.results.addData(result)
         scaled_result = 0.5
         if self.results.curMax != self.results.curMin:
