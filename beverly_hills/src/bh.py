@@ -61,6 +61,7 @@ class BeverlyHills():
                     self.coins = [x for x in self.previous_data]
                 else:
                     raise Exception("Not sending coins back when it should")
+                break
 
 
     def loadPrevData(self):
