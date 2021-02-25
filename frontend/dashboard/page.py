@@ -131,7 +131,7 @@ def getStatusElems(container_statuses):
                 getStatusDiv(container_statuses['Data Consumer'])
             ], className = 'statuspair'),
             html.Li([
-                html.Div('PSM', className='statustext'),
+                html.Div('PM', className='statustext'),
                 getStatusDiv(container_statuses['PSM'])
             ], className = 'statuspair'),
             html.Li([
@@ -139,8 +139,8 @@ def getStatusElems(container_statuses):
                 getStatusDiv(container_statuses['Beverly Hills'])
             ], className = 'statuspair'),
             html.Li([
-                html.Div('Binance', className='statustext'),
-                getStatusDiv(container_statuses['Binance'])
+                html.Div('Coinbase', className='statustext'),
+                getStatusDiv(container_statuses['Coinbase'])
             ], className = 'statuspair'),
         ]
     )

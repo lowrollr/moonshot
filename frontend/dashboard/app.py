@@ -36,7 +36,7 @@ external_stylesheets = ["./assets/main.css"]
 
 # Initialize Data Structures
 container_statuses = dict()
-for c in {'PSM', 'Beverly Hills', 'Data Consumer', 'Binance'}:
+for c in {'PM', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
     container_statuses[c] = Status()
 #PRETEND WE GET THE COINS HERE
 #TODO actually get the coins
