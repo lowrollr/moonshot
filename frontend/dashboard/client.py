@@ -89,9 +89,12 @@ def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
     startInit(bh_conn, "beverly_hills", os.environ["BH_PORT"])
     while True:
+        rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
+        bh_conn.send(json.dumps(rawMsg).encode('utf-8'))
         data = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:
             bh_status.ping()
+        time.sleep(2)
 
 def DCSocket(dc_conn, dc_status, coin_datastreams):
     while True:
