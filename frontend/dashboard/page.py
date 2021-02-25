@@ -132,7 +132,7 @@ def getStatusElems(container_statuses):
             ], className = 'statuspair'),
             html.Li([
                 html.Div('PM', className='statustext'),
-                getStatusDiv(container_statuses['PSM'])
+                getStatusDiv(container_statuses['PM'])
             ], className = 'statuspair'),
             html.Li([
                 html.Div('Beverly Hills', className='statustext'),

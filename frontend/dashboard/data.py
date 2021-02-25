@@ -36,7 +36,7 @@ class Positions:
         for c in coins:
             self.positions[c] = dict()
     
-    def openPosition(self, coin, amnt, price, alloc, p_value):
+    def openPosition(self, coin, amnt, price, p_value):
         self.positions[coin]['original_amnt'] = amnt
         self.positions[coin]['amnt'] = amnt
         self.positions[coin]['original_price'] = price

@@ -71,18 +71,20 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
         data = readData(pm_conn, 'beverly_hills', os.environ['BH_PORT'])
         if data:
             pm_status.ping()
-            if 'enter' in data:
-                coin, amnt, price, allocation = data['enter']
-                current_positions.openPosition(coin, amnt, price, allocation, p_value)
+            if data['type'] == 'enter':
+                split_msg = data['msg'].split(',')
+                coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
+                current_positions.openPosition(coin, amnt, price, p_value)
 
-            elif 'exit' in data:
-                coin, amnt, price = data['exit']
+            elif data['type'] == 'exit':
+                split_msg = data['msg'].split(',')
+                coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
                 closed_position = current_positions.closePosition(coin, amnt, price)
                 if closed_position:
                     all_positions.append(closed_position)
                     coin_positions[coin].append(closed_position)
-            elif 'portfolio_value' in data:
-                p_value = data['portfolio_value']
+            elif data['type'] == 'portfolio_value':
+                p_value = float(data['msg'])
                 portfolio_datastream.update(p_value)
 
 def BHSocket(bh_status):
