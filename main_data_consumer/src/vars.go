@@ -59,6 +59,13 @@ type SocketCandleMessage struct {
 	Destination int         `json:"dest"`
 }
 
+type SocketByteMessage struct {
+	Type        string `json:"type"`
+	Msg         []byte `json:"msg"`
+	Source      int    `json:"src"`
+	Destination int    `json:"dest"`
+}
+
 type SocketAllCandleMessage struct {
 	Type        string                 `json:"type"`
 	Msg         map[string]Candlestick `json:"msg"`
@@ -90,6 +97,13 @@ type SocketCoinMessage struct {
 	Msg         []string `json:"msg"`
 	Source      int      `json:"src"`
 	Destination int      `json:"dest"`
+}
+
+type SocketAllDataMessage struct {
+	Type        string                   `json:"type"`
+	Msg         map[string][]Candlestick `json:"msg"`
+	Source      int                      `json:"src"`
+	Destination int                      `json:"dest"`
 }
 
 //coinbase vars

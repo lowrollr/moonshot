@@ -21,6 +21,25 @@ func SocketCoinMessageConstruct(coins *[]string, src, dest int) (*SocketCoinMess
 
 /*
 	ARGS:
+		-> msg ([]byte]): message being sent
+		-> src (int): id of the src of data consumer container (0)
+		-> dest (int): destinition id for container
+    RETURN:
+        -> (*SocketMessage): standard message JSON to be sent to other containers
+    WHAT:
+		-> Creates standard socket message
+*/
+func SocketByteConstruct(msg []byte, src, dest int) (*SocketByteMessage) {
+	return &SocketByteMessage {
+		Type: "byte",
+		Msg: msg,
+		Source: src,
+		Destination: dest,
+	}
+}
+
+/*
+	ARGS:
 		-> msg (string): message being sent
 		-> src (int): id of the src of data consumer container (0)
 		-> dest (int): destinition id for container
@@ -33,6 +52,25 @@ func SocketMessageConstruct(msg string, src, dest int) (*SocketMessage) {
 	return &SocketMessage {
 		Type: "msg",
 		Msg: msg,
+		Source: src,
+		Destination: dest,
+	}
+}
+
+/*
+	ARGS:
+		-> msg (string): message being sent
+		-> src (int): id of the src of data consumer container (0)
+		-> dest (int): destinition id for container
+    RETURN:
+        -> (*SocketMessage): standard message JSON to be sent to other containers
+    WHAT:
+		-> Creates standard socket message
+*/
+func SocketAllCandleConstruct(msg *map[string][]Candlestick, src, dest int) (*SocketAllDataMessage) {
+	return &SocketAllDataMessage {
+		Type: "all_data",
+		Msg: *msg,
 		Source: src,
 		Destination: dest,
 	}

@@ -35,6 +35,24 @@ func (client *Client) WriteSocketPriceJSON(msg *SocketPriceMessage) {
 
 /*
 	ARGS:
+		-> msg (*SocketPriceMessage): Pointer to Price message
+    RETURN:
+        -> N/A
+    WHAT:
+		-> Sends price info with lock so many goroutines can use it
+*/
+func (client *Client) WriteSocketAllDataJSON(msg *SocketAllDataMessage) {
+	client.Lock()
+	defer client.Unlock()
+	err := client.conn.WriteJSON(msg)
+	if err != nil {
+		log.Warn(err)
+	}
+	return
+}
+
+/*
+	ARGS:
 		-> msg (*SocketCandleMessage): candle object
     RETURN:
         -> N/A
@@ -42,6 +60,38 @@ func (client *Client) WriteSocketPriceJSON(msg *SocketPriceMessage) {
 		-> sends candle data
 */
 func (client *Client) WriteSocketCandleJSON(msg *SocketCandleMessage) {
+	err := client.GetClient().WriteJSON(msg)
+	if err != nil {
+		log.Warn(err)
+	}
+	return
+}
+
+/*
+	ARGS:
+		-> msg (*SocketByteMessage): byte message object
+    RETURN:
+        -> N/A
+    WHAT:
+		-> sends candle data
+*/
+func (client *Client) WriteSocketByteJSON(msg *SocketByteMessage) {
+	err := client.GetClient().WriteJSON(msg)
+	if err != nil {
+		log.Warn(err)
+	}
+	return
+}
+
+/*
+	ARGS:
+		-> msg (*SocketByteMessage): byte message object
+    RETURN:
+        -> N/A
+    WHAT:
+		-> sends candle data
+*/
+func (client *Client) WriteSocketJSON(msg *SocketMessage) {
 	err := client.GetClient().WriteJSON(msg)
 	if err != nil {
 		log.Warn(err)

@@ -109,7 +109,6 @@ class ComputeEngine:
                 for ind in self.indicators[coin]:
                     self.data[coin].update(ind.compute(newData[coin]))
             self.last_updated = newData[first_coin]['time']
-            
 
     '''
     ARGS:

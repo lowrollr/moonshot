@@ -2,6 +2,8 @@ import time
 import json
 import socket
 import os
+import zlib 
+import zlib
 from threading import Thread, Lock
 import asyncio
 from autobahn.asyncio.websocket import WebSocketServerFactory
@@ -17,17 +19,17 @@ from vars import (
     idToContainer
 )
 
-
-
 class BeverlyHills():
     def __init__(self):
         #initialize all data structures
         self.coins = []
+        self.previous_data = {}
         self.connections = dict()
         self.numClients = 0
         self.candles = dict()
         self.consumerConnect()
         self.computeEngine = ComputeEngine(coins=self.coins)
+        self.loadPrevData()
         
 
     def consumerConnect(self):
@@ -43,23 +45,30 @@ class BeverlyHills():
                 time.sleep(5)
 
         self.connections['main_data_consumer'] = conn
-        print('requesting coins')
+        print('Requesting coins and previous data...')
         coins = ""
         while True:
             #change this to something else 
-            rawMsg = {'type': 'coins', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+            rawMsg = {'type': 'data', 'msg':'10', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             conn.send(json.dumps(rawMsg).encode('utf-8'))
             coins = readData(conn, 'main_data_consumer', os.environ["DATAPORT"])
-            if len(coins) > 0:
-                break
-            if coins["type"] == "coins":
-                coins = json.loads(coins["msg"])
-            else:
-                raise Exception("Not sending coins back when it should")
-        print("Received coins from data consumer")
-        coin_msg = json.loads(coins)
-        self.coins = coin_msg["msg"]
+            coins = json.loads(coins)
+            if coins:
+                if coins["type"] == "coins":
+                    self.coins = coins["msg"]
+                elif coins["type"] == "all_data":
+                    self.previous_data = coins['msg']
+                    self.coins = [x for x in self.previous_data]
+                else:
+                    raise Exception("Not sending coins back when it should")
 
+
+    def loadPrevData(self):
+        if self.previous_data != {}:
+            for coin in self.previous_data:
+                # self.ComputeEngine.prepare
+                pass
+        
         print('sending start message')
         rawMsg = {'type': 'start', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
         conn.send(json.dumps(rawMsg).encode('utf-8'))
