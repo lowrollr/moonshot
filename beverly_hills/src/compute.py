@@ -53,8 +53,9 @@ class ComputeEngine:
         self.last_updated = 0
         self.windowSize = 15000
         self.minUnstablePeriod = 200
-        self.createIndicators()
         print(self.features, self.indicator_dict)
+        self.createIndicators()
+        
         
     '''
     ARGS:
@@ -66,7 +67,7 @@ class ComputeEngine:
         -> orders indicators by dependancy (so indicators that don't depend on values from other indicators are calculated first)
     '''
     def createIndicators(self):
-        base_values = {'open', 'high', 'low', 'close', 'volume', 'trades'}
+        base_values = {'open', 'high', 'low', 'close', 'volume', 'trades', 'time'}
         for coin in self.coins:
             temp_indicators = []
             for ind in self.indicator_dict:
