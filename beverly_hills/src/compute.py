@@ -52,6 +52,7 @@ class ComputeEngine:
         self.model = mod_obj['model']
         self.last_updated = 0
         self.windowSize = 15000
+        self.minUnstablePeriod = 200
         self.createIndicators()
         print(self.features, self.indicator_dict)
         
@@ -74,6 +75,7 @@ class ComputeEngine:
                     params=self.indicator_dict[ind]['params'],
                     name=ind,
                     scalingWindowSize=self.windowSize,
+                    unstablePeriod=self.minUnstablePeriod,
                     value=self.indicator_dict[ind]['value']))
 
             # order indicators so that indicators that depend on other indicators are comptued last
