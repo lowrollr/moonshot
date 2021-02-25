@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
 )
 
@@ -65,11 +66,12 @@ func (atlas *Atlas) Process(data CandlestickData, coinName string) {
 }
 
 func (atlas *Atlas) CalcEnter(data CandlestickData, coinName string, bhconn *Client) bool {
-
-	prediction := GetPrediction(bhconn, coinName, data.Time)
-
-	if prediction && data.Close < atlas.SMAGoal[coinName].GetVal()*0.97 {
-		return true
+	log.Println(data.Close, atlas.SMAGoal[coinName].GetVal()*0.97)
+	if data.Close < atlas.SMAGoal[coinName].GetVal()*0.97 {
+		prediction := GetPrediction(bhconn, coinName, data.Time)
+		if prediction {
+			return true
+		}
 	}
 	return false
 }
