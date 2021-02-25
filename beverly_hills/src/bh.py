@@ -29,7 +29,7 @@ class BeverlyHills():
         self.candles = dict()
         self.consumerConnect()
         self.computeEngine = ComputeEngine(coins=self.coins)
-        self.loadPrevData()
+        # self.loadPrevData()
         
 
     def consumerConnect(self):
@@ -49,20 +49,22 @@ class BeverlyHills():
         coins = ""
         while True:
             #change this to something else 
-            rawMsg = {'type': 'data', 'msg':'10', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+            rawMsg = {'type': 'coins', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             conn.send(json.dumps(rawMsg).encode('utf-8'))
             coins = readData(conn, 'main_data_consumer', os.environ["DATAPORT"])
-            coins = json.loads(coins)
-            if coins:
-                if coins["type"] == "coins":
-                    self.coins = coins["msg"]
-                elif coins["type"] == "all_data":
-                    self.previous_data = coins['msg']
-                    self.coins = [x for x in self.previous_data]
-                else:
-                    raise Exception("Not sending coins back when it should")
+            if len(coins) > 0:
                 break
+            if coins["type"] == "coins":
+                coins = json.loads(coins["msg"])
+            else:
+                raise Exception("Not sending coins back when it should")
+        print("Received coins from data consumer")
+        coin_msg = json.loads(coins)
+        self.coins = coin_msg["msg"]
 
+        print('sending start message')
+        rawMsg = {'type': 'start', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+        conn.send(json.dumps(rawMsg).encode('utf-8'))
 
     def loadPrevData(self):
         if self.previous_data != {}:
