@@ -136,9 +136,9 @@ class ComputeEngine:
                     print(f'Model Input: {model_input}')
                     model_input = np.array(model_input).reshape(1, -1)
                     if self.probability_threshold:
-                        return self.probability_threshold <= self.model.predict_proba(model_input)
+                        return self.probability_threshold <= self.model.predict_proba(model_input)[1]
                     else:
-                        return 1 == self.model.predict(model_input)
+                        return 1 == self.model.predict(model_input)[1]
             elif self.last_updated > time:
                 print('Warning: trying to fetch old predictions, this should never happen')
                 break
