@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -85,6 +86,42 @@ func StartInit(bevConn *Client) {
 
 	if err != nil {
 		log.Panic("Was not able to send init message to beverly hills", err)
+	}
+}
+
+func sendPortfolioValue(frontendConn *Client, portfolioValue float64) {
+	msg := SocketMessage{
+		Msg:         fmt.Sprintf("%f", portfolioValue),
+		Type:        "portfolio_value",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["frontend"]}
+	err := frontendConn.conn.WriteJSON(msg)
+	if err != nil {
+		log.Panic("Error sending portfolio value to Frontend")
+	}
+}
+
+func sendEnter(frontendConn *Client, coin string, amnt float64, price float64) {
+	msg := SocketMessage{
+		Msg:         coin + "," + fmt.Sprintf("%f", amnt) + "," + fmt.Sprintf("%f", price),
+		Type:        "enter",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["frontend"]}
+	err := frontendConn.conn.WriteJSON(msg)
+	if err != nil {
+		log.Panic("Error sending enter msg to Frontend")
+	}
+}
+
+func sendExit(frontendConn *Client, coin string, amnt float64, price float64) {
+	msg := SocketMessage{
+		Msg:         coin + "," + fmt.Sprintf("%f", amnt) + "," + fmt.Sprintf("%f", price),
+		Type:        "exit",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["frontend"]}
+	err := frontendConn.conn.WriteJSON(msg)
+	if err != nil {
+		log.Panic("Error sending exit msg to Frontend")
 	}
 }
 
