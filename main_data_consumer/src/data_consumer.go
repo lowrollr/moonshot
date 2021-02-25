@@ -97,18 +97,20 @@ func (data *DataConsumer) WsHTTPListen() {
         -> N/A
     WHAT:
 		-> Handling of the connection, whether it be coins, reconnect etc.
+	TODO:
+		-> change to switch statement with different functions
 */
 func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Warn("error %v", err)
+		log.Warn("error", err)
 	}
 	message := SocketMessage{}
-	_, bytes, err := ws.ReadMessage()
+	_, messagae_bytes, err := ws.ReadMessage()
 	if err != nil {
-		log.Warn("error %v", err)
+		log.Warn("error", err)
 	}
-	err = json.Unmarshal(bytes, &message)
+	err = json.Unmarshal(messagae_bytes, &message)
 	if err != nil {
 		log.Warn("Was not able to unmarshall", err)
 	}
@@ -126,6 +128,36 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 	} else if message.Type == "reconnect" {
 		data.Clients[idToContainer[message.Source]].SetClient(ws)
 		log.Println("Reconnected to ", idToContainer[message.Source], ws.RemoteAddr())
+	} else if message.Type == "data" {
+		data.Clients[idToContainer[message.Source]].SetClient(ws)
+		if message.Msg == "" {
+			log.Warn("Did not send number of max entries to retrieve. Error:", err)
+		} else {
+			entries, err := strconv.Atoi(message.Msg)
+			if err != nil {
+				log.Warn("Was not able to convert string to num. Send correct entry num. Error:", err)
+			} else {
+				all_coin_candle := Dumbo.GetAllPreviousCandles(data.Coins, entries)
+				// b, err := json.Marshal(all_coin_candle)
+				// if err != nil {
+				// 	log.Warn("Was not able to marshall data to json. Error:", err)
+				// }
+				// var z bytes.Buffer
+				// gz := zlib.NewWriter(&z)
+				// if _, err := gz.Write(b); err != nil {
+				// 	log.Warn(err)
+				// }
+				// if err := gz.Close(); err != nil {
+				// 	log.Warn(err)
+				// }
+				dataMessage := SocketAllCandleConstruct(
+					all_coin_candle,
+					containerToId["main_data_consumer"],
+					message.Source,
+				)
+				data.Clients[idToContainer[message.Source]].WriteSocketAllDataJSON(dataMessage)
+			}
+		}
 	} else {
 		log.Println(message)
 		log.Warn("Did not provide correct type")
@@ -320,7 +352,7 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
         -> symbols (*[]string): pointer to slice of symbols we are subbing to
     RETURN:
 		-> (*ws.Conn): a pointer to the exchange websocket connection
-		-> (error): error if we can't write to the 
+		-> (error): error if we can't write to the
     WHAT:
 		-> Initializes the coinbase socket by subscribing to the correct channels
 */

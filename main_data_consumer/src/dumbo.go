@@ -226,6 +226,28 @@ func (Dumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) er
 
 /*
 	ARGS:
+        -> coins (*[]string): pointer to coin strings we use
+    RETURN:
+        -> (*map[string][]Candlestick): pointer to map between coin name and slice of candles
+    WHAT:
+		-> Retrieves all historic data up to the number of entries
+*/
+func (Dumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *map[string][]Candlestick {
+	all_candles := map[string][]Candlestick{}
+	for _, coin := range *coins {
+		coin_candles := []Candlestick{}
+		err := Dumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
+			Limit(entries).Order("start_time desc").Find(&coin_candles).Error
+		if err != nil {
+			log.Warn("Could not retrieve coin candle data", err)
+		}
+		all_candles[coin] = coin_candles
+	}
+	return &all_candles
+}
+
+/*
+	ARGS:
 		-> n (int): Number of coins you want to select from indexed coins
 			-> use -1 if you want all coins in db
     RETURN:

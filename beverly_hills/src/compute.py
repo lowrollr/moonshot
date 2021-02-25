@@ -59,7 +59,6 @@ class ComputeEngine:
                 for ind in self.indicators:
                     self.data[coin].update(ind.compute(newData[coin]))
             self.last_updated = newData[first_coin]['time']
-            
 
 
     def predict(self, coin, time):
