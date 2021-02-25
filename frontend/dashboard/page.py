@@ -148,7 +148,7 @@ def getStatusElems(container_statuses):
 def getStatusDiv(status):
     class_name = 'statusbubble'
     if status.isOk():
-        html.Div(className=class_name, style={'background': 'rgba(114,228,125,1)'})
+        return html.Div(className=class_name, style={'background': 'rgba(114,228,125,1)'})
     else:
         return html.Div(className=class_name, style={'background': 'rgba(239,102,102,1)'})
 
