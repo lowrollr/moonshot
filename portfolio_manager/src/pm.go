@@ -143,7 +143,7 @@ func initPM() *PortfolioManager {
 }
 
 func (pm *PortfolioManager) StartTrading() {
-
+	pm.PortfolioValue = pm.CalcPortfolioValue()
 	for {
 
 		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
@@ -151,14 +151,13 @@ func (pm *PortfolioManager) StartTrading() {
 			pm.CandleDict = newCandleData
 			pm.PMProcess()
 		}
-
+		pm.PortfolioValue = pm.CalcPortfolioValue()
+		sendPortfolioValue(pm.FrontendSocket, pm.PortfolioValue)
 	}
 
 }
 
 func (pm *PortfolioManager) PMProcess() {
-	// calculate current (unrealized) portfolio value
-	pm.PortfolioValue = pm.CalcPortfolioValue()
 
 	// check for buy/sell signals from strategy
 	enter_coins := []string{}
