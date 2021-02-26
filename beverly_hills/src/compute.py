@@ -110,6 +110,13 @@ class ComputeEngine:
                     self.data[coin].update(ind.compute(newData[coin]))
             self.last_updated = newData[first_coin]['time']
 
+
+    def allDataPrepare(self, newData):
+        for coin in newData:
+            for candle in newData[coin]:
+                for ind in self.indicators[coin]:
+                    ind.compute(candle)
+
     '''
     ARGS:
         -> coin (string): coin to generate a prediction for

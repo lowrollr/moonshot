@@ -235,11 +235,41 @@ func (Dumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) er
 func (Dumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *map[string][]Candlestick {
 	all_candles := map[string][]Candlestick{}
 	for _, coin := range *coins {
-		coin_candles := []Candlestick{}
+		temp_coin_candles := []Candlestick{}
 		err := Dumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
-			Limit(entries).Order("start_time desc").Find(&coin_candles).Error
+			Limit(entries).Order("start_time asc").Find(&temp_coin_candles).Error
 		if err != nil {
 			log.Warn("Could not retrieve coin candle data", err)
+		}
+		coin_candles := temp_coin_candles
+		//smooth
+		i, gap_index :=  0, 0
+		for i < len(temp_coin_candles) - 1 {
+			if temp_coin_candles[i].StartTime + 60 < temp_coin_candles[i+1].StartTime {
+				num_gaps := int((temp_coin_candles[i+1].StartTime - temp_coin_candles[i].StartTime) / 60)
+
+				gap_slice := make([]Candlestick, num_gaps - 1)
+				for j := 1; j < num_gaps; j++ {
+					ratio := float64(j)/ float64(num_gaps)
+					gap_slice[i-1] = Candlestick {
+						Open: ratio * (temp_coin_candles[i+1].Open - temp_coin_candles[i].Open) + temp_coin_candles[i].Open,
+						High: ratio * (temp_coin_candles[i+1].High - temp_coin_candles[i].High) + temp_coin_candles[i].High,
+						Low: ratio * (temp_coin_candles[i+1].Low - temp_coin_candles[i].Low) + temp_coin_candles[i].Low,
+						Close: ratio * (temp_coin_candles[i+1].Close - temp_coin_candles[i].Close) + temp_coin_candles[i].Close,
+						StartTime: temp_coin_candles[i].StartTime + int64((j * 60)),
+						Volume: (temp_coin_candles[i+1].Volume + temp_coin_candles[i].Volume)/2,
+						NumTrades: (temp_coin_candles[i+1].NumTrades + temp_coin_candles[i].NumTrades)/2,
+						coinName: temp_coin_candles[i].coinName,
+					}
+				}
+				second_half := coin_candles[gap_index+1:]
+				coin_candles = append(coin_candles[:gap_index+1], gap_slice...)
+				coin_candles = append(coin_candles, second_half...)
+				gap_index += num_gaps
+			} else {
+				gap_index++
+			}
+			i++
 		}
 		all_candles[coin] = coin_candles
 	}
