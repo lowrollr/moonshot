@@ -114,9 +114,9 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		log.Warn("Was not able to unmarshall", err)
 	}
-
+	
 	if message.Type == "coins" {
-		data.Clients[idToContainer[message.Source]].SetClient(ws)
+		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
 		coinMessage := SocketCoinMessageConstruct(
 			data.Coins,
 			containerToId["main_data_consumer"],
@@ -126,10 +126,10 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 			WriteSocketCoinsJSON(coinMessage)
 		data.NumConnections++
 	} else if message.Type == "reconnect" {
-		data.Clients[idToContainer[message.Source]].SetClient(ws)
+		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
 		log.Println("Reconnected to ", idToContainer[message.Source], ws.RemoteAddr())
 	} else if message.Type == "data" {
-		data.Clients[idToContainer[message.Source]].SetClient(ws)
+		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
 		if message.Msg == "" {
 			log.Warn("Did not send number of max entries to retrieve. Error:", err)
 		} else {

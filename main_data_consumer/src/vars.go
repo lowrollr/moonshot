@@ -49,7 +49,8 @@ var (
 
 type Client struct {
 	sync.RWMutex
-	conn *ws.Conn
+	Conn     *ws.Conn
+	ClientId int
 }
 
 type SocketCandleMessage struct {

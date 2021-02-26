@@ -26,7 +26,7 @@ import (
 func (client *Client) WriteSocketPriceJSON(msg *SocketPriceMessage) {
 	client.Lock()
 	defer client.Unlock()
-	err := client.conn.WriteJSON(msg)
+	err := client.Conn.WriteJSON(msg)
 	if err != nil {
 		log.Warn(err)
 	}
@@ -44,7 +44,7 @@ func (client *Client) WriteSocketPriceJSON(msg *SocketPriceMessage) {
 func (client *Client) WriteSocketAllDataJSON(msg *SocketAllDataMessage) {
 	client.Lock()
 	defer client.Unlock()
-	err := client.conn.WriteJSON(msg)
+	err := client.Conn.WriteJSON(msg)
 	if err != nil {
 		log.Warn(err)
 	}
@@ -112,7 +112,7 @@ func (client *Client) WriteAllSocketCandleJSON(msg *SocketAllCandleMessage, wg *
 	defer wg.Done()
 	err := client.GetClient().WriteJSON(msg)
 	if err != nil {
-		log.Warn(err)
+		log.Warn("Was not able to write to client:", idToContainer[client.ClientId], "With error:", err)
 	}
 	return
 }
@@ -166,9 +166,10 @@ func (client *Client) WaitStart() {
     WHAT:
 		-> creates a client object
 */
-func NewClient(connection *ws.Conn) *Client {
+func NewClient(connection *ws.Conn, clientId int) *Client {
 	client := &Client{
-		conn: connection,
+		Conn: connection,
+		ClientId: clientId,
 	}
 	return client
 }
@@ -181,9 +182,10 @@ func NewClient(connection *ws.Conn) *Client {
     WHAT:
 		-> Hopefully on reconnect this sets up the client without a hitch because of locks
 */
-func (client *Client) SetClient(conn *ws.Conn) {
+func (client *Client) SetClient(conn *ws.Conn, clientId int) {
+	client.ClientId = clientId
 	client.Lock()
-	client.conn = conn
+	client.Conn = conn
 	client.Unlock()
 }
 
@@ -198,5 +200,5 @@ func (client *Client) SetClient(conn *ws.Conn) {
 func (client *Client) GetClient() *ws.Conn {
 	client.RLock()
 	defer client.RUnlock()
-	return client.conn
+	return client.Conn
 }
