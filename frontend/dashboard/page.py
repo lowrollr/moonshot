@@ -5,7 +5,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
-def createPage(toptext, plot, position_elems, status_elems, coins):
+def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin):
     return html.Div(children=[
         dcc.Interval(
             id='auto_update',
@@ -16,18 +16,18 @@ def createPage(toptext, plot, position_elems, status_elems, coins):
         dcc.Store(id='session_data', storage_type='session'),
         html.Div(
             id='page-content', 
-            children=createPageContent(toptext, plot, position_elems, status_elems, coins))
+            children=createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin))
     ])
         
 
-def createPageContent(toptext, plot, position_elems, status_elems, coins):
+def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin):
     return [
         
         html.Div(className='background'),
         html.Div(
             className='sidebar',
             children=[
-                getDropdown(coins),
+                getDropdown(coins, cur_coin),
                 position_elems,
                 status_elems
             ]
@@ -87,11 +87,11 @@ def getTopText(data, asset):
         ]
     )
 
-def getDropdown(coins):
-    options = [{'label': 'PORTFOLIO', 'value': 'PORTFOLIO'}]
+def getDropdown(coins, cur_coin):
+    options = [{'label': 'AD LUNAM CAPITAL', 'value': 'AD LUNAM CAPITAL'}]
     for x in coins:
         options.append({'label': x, 'value': x})
-    return dcc.Dropdown(id='dropdown', options=options, value='PORTFOLIO')
+    return dcc.Dropdown(id='dropdown', options=options, value=cur_coin)
 
 #TODO: plot volume on secondary axis
 #TODO: add timestamps to x axis & data points

@@ -78,11 +78,12 @@ pm_socket_thread.start()
 app = dash.Dash(__name__)
 
 app.layout = createPage(
-        toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
+        toptext = getTopText(porfolio_datastream.day_data, 'AD LUNAM CAPITAL'),
         status_elems = getStatusElems(container_statuses), 
         position_elems = getPortfolioPositions(cur_positions.positions),
         plot = getFig(porfolio_datastream.day_data),
-        coins = coins
+        coins = coins,
+        cur_coin='AD LUNAM CAPITAL',
     )
 
 @app.callback(Output('page-content', 'children'),
@@ -104,13 +105,14 @@ def intervalUpdate(n, value, data):
     asset = data['asset'].upper()
     timespan = data['timespan']
             
-    if asset == 'PORTFOLIO':
+    if asset == 'AD LUNAM CAPITAL':
         return createPageContent(
-            toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
+            toptext = getTopText(porfolio_datastream.day_data, asset),
             status_elems = getStatusElems(container_statuses), 
             position_elems = getPortfolioPositions(cur_positions.positions),
             plot = getFig(porfolio_datastream.day_data),
-            coins=coins
+            coins=coins,
+            cur_coin=asset,
         ), data
     else:
         return createPageContent(
@@ -118,7 +120,8 @@ def intervalUpdate(n, value, data):
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getCoinPositions(asset, cur_positions.positions[asset]),
                 plot = getFig(coin_datastreams[asset].day_data),
-                coins=coins
+                coins=coins,
+                cur_coin=asset,
             ), data
 
 

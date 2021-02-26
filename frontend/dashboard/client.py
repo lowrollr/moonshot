@@ -70,6 +70,7 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
     while True:
         data = readData(pm_conn, 'portfolio_manager', os.environ['PM_PORT'])
         if data:
+            data = json.loads(data)
             pm_status.ping()
             if data['type'] == 'enter':
                 split_msg = data['msg'].split(',')
