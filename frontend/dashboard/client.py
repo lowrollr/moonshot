@@ -68,7 +68,7 @@ def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, cur
     p_value = 0.0
     
     while True:
-        data = readData(pm_conn, 'beverly_hills', os.environ['BH_PORT'])
+        data = readData(pm_conn, 'portfolio_manager', os.environ['PM_PORT'])
         if data:
             pm_status.ping()
             if data['type'] == 'enter':
