@@ -224,9 +224,6 @@ func (data *DataConsumer) Consume() {
 		-> Uses symbols to start the consumption
 */
 func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
-	sec := 60 - time.Now().Second()
-	log.Println("Waiting", sec, "second(s) to top of minute...")
-	time.Sleep(time.Duration(sec) * time.Second)
 	for {
 		log.Println("Starting initialization for coins: " + strings.Join(*symbols, ", "))
 		symbolConn, err := InitializeSymbolSocket(symbols)
@@ -247,23 +244,20 @@ func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 		-> The loop that consumes the data from the websocket
 */
 func (data *DataConsumer) ConsumeData(conn *ws.Conn, symbols *[]string) {
+	sec := 60 - time.Now().Second()
+	if sec != 60 {
+		log.Println("Waiting", sec, "second(s) to top of minute...")
+		time.Sleep(time.Duration(sec) * time.Second)
+	}
+	log.Println("Let's Consume!!")
+	
 	for {
 		message := CoinBaseMessage{}
 		if err := conn.ReadJSON(&message); err != nil {
 			log.Warn("Was not able to retrieve message with error: " + err.Error())
 			conn.Close()
 			log.Warn("Attempting to restart connection...")
-			for {
-				symbolConn, err := InitializeSymbolSocket(symbols)
-				if err != nil {
-					log.Warn("Failed to reconnect, trying again...")
-					time.Sleep(1 * time.Second)
-				} else {
-					conn = symbolConn
-					log.Warn("Reconnected!")
-					break
-				}
-			}
+			return
 		}
 		if message.Type != "subscriptions" {
 			data.ProcessTick(&message)
