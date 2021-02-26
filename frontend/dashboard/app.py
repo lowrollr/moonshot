@@ -11,7 +11,8 @@ from client import (
     getCoins,
     startInit,
     PMConnect,
-    PMPing
+    PMPing,
+    CBSocket
 )
 from page import (
     createPage,
@@ -65,8 +66,7 @@ bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['B
 
 pm_socket_thread = threading.Thread(target=PMSocket, args=(
     pm_conn,
-    container_statuses['PM'], 
-    porfolio_datastream,
+    container_statuses['PM'],
     position_history.all_positions,
     position_history.coin_positions,
     cur_positions,
@@ -74,10 +74,18 @@ pm_socket_thread = threading.Thread(target=PMSocket, args=(
 
 pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
 
+cb_socket_thread = threading.Thread(target=CBSocket, args=(
+    porfolio_datastream, 
+    coin_datastreams,
+    cur_positions,
+    container_statuses['Coinbase'],
+    coins))
+
 dc_socket_thread.start() 
 bh_socket_thread.start()
 pm_socket_thread.start()
 pm_ping_thread.start()
+cb_socket_thread.start()
 
 
 # Initialize Dash App

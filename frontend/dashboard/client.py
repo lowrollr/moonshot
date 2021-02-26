@@ -2,6 +2,7 @@ import socket
 import time
 import os
 import json
+import cbpro
 from websocket import create_connection
 
 from vars import (
@@ -74,7 +75,7 @@ def PMPing(pm_conn):
         pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
         time.sleep(2)
 
-def PMSocket(pm_conn, pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
+def PMSocket(pm_conn, pm_status, all_positions, coin_positions, current_positions):
     
     p_value = 0.0
     
@@ -127,3 +128,21 @@ def getCoins():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
     coins = retrieveCoinData(dc_conn)
     return dc_conn, coins
+
+def CBSocket(porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
+    auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url="https://api-public.sandbox.pro.coinbase.com")
+    accounts = auth_client.get_accounts()
+    coins = set(coins)
+    while True:
+        
+        accounts = auth_client.get_accounts()
+        account_value = 0.0
+        for x in accounts:
+            if x['currency'] in coins:
+                account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1]
+            elif x['currency'] == 'USD':
+                account_value += float(x['balance'])
+
+        porfolio_datastream.update(account_value)
+        cb_status.ping()
+        time.sleep(0.2)
