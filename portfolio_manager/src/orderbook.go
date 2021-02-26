@@ -1,0 +1,141 @@
+package main
+
+import (
+	"strconv"
+)
+
+type OrderBook struct {
+	Bids *Book
+	Asks *Book
+}
+
+type Book struct {
+	IsBids    bool
+	OrderDict map[string]*Order
+	BestOrder *Order
+}
+
+type Order struct {
+	Next  *Order
+	Prev  *Order
+	Price float64
+	Amnt  float64
+}
+
+func initOrderBook(bids *[][]string, asks *[][]string) *OrderBook {
+	askBook := Book{
+		IsBids:    false,
+		OrderDict: make(map[string]*Order),
+		BestOrder: nil,
+	}
+	bidBook := Book{
+		IsBids:    true,
+		OrderDict: make(map[string]*Order),
+		BestOrder: nil,
+	}
+	newBook := OrderBook{
+		Bids: &bidBook,
+		Asks: &askBook,
+	}
+	for _, pair := range *bids {
+		price := pair[0]
+		amnt := pair[1]
+		bidBook.Update(price, amnt)
+	}
+	for _, pair := range *asks {
+		price := pair[0]
+		amnt := pair[1]
+		askBook.Update(price, amnt)
+	}
+
+	return &newBook
+}
+
+func (book *Book) Update(price string, amnt string) {
+	curOrder := book.BestOrder
+	priceFl, _ := strconv.ParseFloat(price, 64)
+	amntFl, _ := strconv.ParseFloat(amnt, 64)
+
+	if book.OrderDict[price] != nil {
+		if amntFl == 0.0 {
+			order := book.OrderDict[price]
+			if order.Prev == nil {
+				book.BestOrder = order.Next
+			} else {
+				order.Prev.Next = order.Next
+			}
+			if order.Next != nil {
+				order.Next.Prev = order.Prev
+			}
+			delete(book.OrderDict, price)
+
+		} else {
+			book.OrderDict[price].Amnt = amntFl
+		}
+		return
+	}
+
+	if curOrder == nil {
+		newOrder := Order{
+			Next:  nil,
+			Prev:  nil,
+			Price: priceFl,
+			Amnt:  amntFl,
+		}
+		book.BestOrder = &newOrder
+		book.OrderDict[price] = &newOrder
+		return
+	}
+
+	if book.IsBids {
+		for curOrder.Next != nil && curOrder.Price > priceFl {
+			curOrder = curOrder.Next
+		}
+		if curOrder.Price > priceFl {
+			newOrder := Order{
+				Next:  nil,
+				Prev:  curOrder,
+				Price: priceFl,
+				Amnt:  amntFl,
+			}
+			curOrder.Next = &newOrder
+			book.OrderDict[price] = &newOrder
+		} else {
+			newOrder := Order{
+				Next:  curOrder,
+				Prev:  curOrder.Prev,
+				Price: priceFl,
+				Amnt:  amntFl,
+			}
+			curOrder.Prev.Next = &newOrder
+			curOrder.Prev = &newOrder
+			book.OrderDict[price] = &newOrder
+		}
+
+	} else {
+		for curOrder.Next != nil && curOrder.Price < priceFl {
+			curOrder = curOrder.Next
+		}
+		if curOrder.Price < priceFl {
+			newOrder := Order{
+				Next:  nil,
+				Prev:  curOrder,
+				Price: priceFl,
+				Amnt:  amntFl,
+			}
+			curOrder.Next = &newOrder
+			book.OrderDict[price] = &newOrder
+		} else {
+			newOrder := Order{
+				Next:  curOrder,
+				Prev:  curOrder.Prev,
+				Price: priceFl,
+				Amnt:  amntFl,
+			}
+			curOrder.Prev.Next = &newOrder
+			curOrder.Prev = &newOrder
+			book.OrderDict[price] = &newOrder
+		}
+	}
+	return
+}
