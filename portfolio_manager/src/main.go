@@ -6,6 +6,7 @@ func main() {
 
 	pm := initPM()
 	go pm.StartServer()
+
 	pm.StartTrading()
 
 	// _ = initAtlas(&coins)

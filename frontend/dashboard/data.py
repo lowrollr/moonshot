@@ -1,6 +1,5 @@
 
 from collections import deque
-
 import time
 
 class Status:
@@ -32,21 +31,23 @@ class PositionStream:
 
 class Positions:
     def __init__(self, coins):
+        self.p_value = 1.0
         self.positions = dict()
         for c in coins:
             self.positions[c] = dict()
     
-    def openPosition(self, coin, amnt, price, alloc, p_value):
-        self.positions[coin]['original_amnt'] = amnt
-        self.positions[coin]['amnt'] = amnt
-        self.positions[coin]['original_price'] = price
-        self.positions[coin]['price'] = price
-        self.positions[coin]['original_alloc'] = amnt*price / p_value
-        self.positions[coin]['profit'] = 0.0
-        self.positions[coin]['alloc'] = self.positions[coin]['original_alloc']
-        self.positions[coin]['enter_time'] = time.time()
+    def openPosition(self, coin, amnt, price, p_value):
+            self.positions[coin]['original_amnt'] = amnt
+            self.positions[coin]['amnt'] = amnt
+            self.positions[coin]['original_price'] = price
+            self.positions[coin]['price'] = price
+            self.positions[coin]['original_alloc'] = amnt*price / p_value
+            self.positions[coin]['profit'] = 0.0
+            self.positions[coin]['alloc'] = self.positions[coin]['original_alloc']
+            self.positions[coin]['enter_time'] = time.time()
 
     def closePosition(self, coin, amnt, price):
+    
         if amnt == self.positions[coin]['amnt']:
             new_position_stream_position = Position(
                 coin=coin,
@@ -63,11 +64,12 @@ class Positions:
             self.positions[coin]['amnt'] -= amnt
             return None
 
-    def updatePositions(self, coin_prices, p_value):
-        for p in self.positions:
-            self.positions[p]['price'] = coin_prices[p]
-            self.positions[p]['alloc'] = (self.positions[p]['amnt']*coin_prices[p]) / p_value
-            self.positions[p]['profit'] = (coin_prices[p] / self.positions[p]['original_price'] - 1) * 100
+    def updatePosition(self, coin, coin_price):
+        
+        if self.positions[coin]:
+            self.positions[coin]['price'] = coin_price
+            self.positions[coin]['alloc'] = (self.positions[coin]['amnt']*coin_price) / self.p_value
+            self.positions[coin]['profit'] = (coin_price / self.positions[coin]['original_price'] - 1) * 100
 
 
 class DataStream:

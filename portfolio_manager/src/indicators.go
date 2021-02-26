@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math"
+
 	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
 )
 
@@ -40,5 +42,5 @@ func (sma *SMA) Update(newVal float64) {
 }
 
 func (sma *SMA) GetVal() float64 {
-	return sma.CurSum / float64(sma.MaxLen)
+	return sma.CurSum / math.Min(float64(sma.Values.Size()), float64(sma.MaxLen))
 }

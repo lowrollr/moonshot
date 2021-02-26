@@ -2,6 +2,7 @@ import socket
 import time
 import os
 import json
+import cbpro
 from websocket import create_connection
 
 from vars import (
@@ -62,28 +63,40 @@ def retrieveCoinData(dc_socket):
     print("Received coins from data consumer")
     return coins
 
-def PMSocket(pm_status, portfolio_datastream, all_positions, coin_positions, current_positions):
+def PMConnect():
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
     startInit(pm_conn, "portfolio_manager", os.environ["PM_PORT"])
+    return pm_conn
+
+def PMPing(pm_conn):
+    
+    while True:
+        ping_msg = {'type':'ping', 'msg':'fuck you lol', 'src':containersToId["frontend"], 'dest':containersToId['portfolio_manager']}
+        pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
+        time.sleep(2)
+
+def PMSocket(pm_conn, pm_status, all_positions, coin_positions, current_positions):
+    
     p_value = 0.0
     
     while True:
-        data = readData(pm_conn, 'beverly_hills', os.environ['BH_PORT'])
+        data = readData(pm_conn, 'portfolio_manager', os.environ['PM_PORT'])
         if data:
+            data = json.loads(data)
             pm_status.ping()
-            if 'enter' in data:
-                coin, amnt, price, allocation = data['enter']
-                current_positions.openPosition(coin, amnt, price, allocation, p_value)
+            if data['type'] == 'enter':
+                split_msg = data['msg'].split(',')
+                coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
+                current_positions.openPosition(coin, amnt, price, p_value)
 
-            elif 'exit' in data:
-                coin, amnt, price = data['exit']
+            elif data['type'] == 'exit':
+                split_msg = data['msg'].split(',')
+                coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
                 closed_position = current_positions.closePosition(coin, amnt, price)
                 if closed_position:
                     all_positions.append(closed_position)
                     coin_positions[coin].append(closed_position)
-            elif 'portfolio_value' in data:
-                p_value = data['portfolio_value']
-                portfolio_datastream.update(p_value)
+            
 
 def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
@@ -96,7 +109,7 @@ def BHSocket(bh_status):
             bh_status.ping()
         time.sleep(2)
 
-def DCSocket(dc_conn, dc_status, coin_datastreams):
+def DCSocket(dc_conn, dc_status, coin_datastreams, current_positions):
     while True:
         data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
@@ -106,10 +119,30 @@ def DCSocket(dc_conn, dc_status, coin_datastreams):
                 dc_status.ping()
                 coin_name = data['msg']['coin'].upper()
                 close_price = float(data['msg']['price'])
-                for coin in data:
-                    coin_datastreams[coin_name].update(close_price)
+                
+                coin_datastreams[coin_name].update(close_price)
+                current_positions.updatePosition(coin_name, close_price)
+
 
 def getCoins():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
     coins = retrieveCoinData(dc_conn)
     return dc_conn, coins
+
+def CBSocket(porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
+    auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url="https://api-public.sandbox.pro.coinbase.com")
+    accounts = auth_client.get_accounts()
+    coins = set(coins)
+    while True:
+        
+        accounts = auth_client.get_accounts()
+        account_value = 0.0
+        for x in accounts:
+            if x['currency'] in coins:
+                account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1]
+            elif x['currency'] == 'USD':
+                account_value += float(x['balance'])
+
+        porfolio_datastream.update(account_value)
+        cb_status.ping()
+        time.sleep(0.2)

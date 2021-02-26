@@ -9,7 +9,10 @@ from client import (
     BHSocket,
     DCSocket,
     getCoins,
-    startInit
+    startInit,
+    PMConnect,
+    PMPing,
+    CBSocket
 )
 from page import (
     createPage,
@@ -50,37 +53,51 @@ porfolio_datastream = DataStream(name='portfolio')
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
 
-
+pm_conn = PMConnect()
 
 dc_socket_thread = threading.Thread(target=DCSocket, args=(
-        dc_conn,
-        container_statuses['Data Consumer'], 
-        coin_datastreams,))
+    dc_conn,
+    container_statuses['Data Consumer'], 
+    coin_datastreams,
+    cur_positions,
+    ))
 
 bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
 
-psm_socket_thread = threading.Thread(target=PMSocket, args=(
-    container_statuses['PM'], 
-    porfolio_datastream,
+pm_socket_thread = threading.Thread(target=PMSocket, args=(
+    pm_conn,
+    container_statuses['PM'],
     position_history.all_positions,
     position_history.coin_positions,
-    cur_positions.positions,
+    cur_positions,
     ))
+
+pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
+
+cb_socket_thread = threading.Thread(target=CBSocket, args=(
+    porfolio_datastream, 
+    coin_datastreams,
+    cur_positions,
+    container_statuses['Coinbase'],
+    coins))
 
 dc_socket_thread.start() 
 bh_socket_thread.start()
-psm_socket_thread.start()
+pm_socket_thread.start()
+pm_ping_thread.start()
+cb_socket_thread.start()
 
 
 # Initialize Dash App
 app = dash.Dash(__name__)
 
 app.layout = createPage(
-        toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
+        toptext = getTopText(porfolio_datastream.day_data, 'AD LUNAM CAPITAL'),
         status_elems = getStatusElems(container_statuses), 
         position_elems = getPortfolioPositions(cur_positions.positions),
         plot = getFig(porfolio_datastream.day_data),
-        coins = coins
+        coins = coins,
+        cur_coin='AD LUNAM CAPITAL',
     )
 
 @app.callback(Output('page-content', 'children'),
@@ -102,13 +119,14 @@ def intervalUpdate(n, value, data):
     asset = data['asset'].upper()
     timespan = data['timespan']
             
-    if asset == 'PORTFOLIO':
+    if asset == 'AD LUNAM CAPITAL':
         return createPageContent(
-            toptext = getTopText(porfolio_datastream.day_data, 'FSC'),
+            toptext = getTopText(porfolio_datastream.day_data, asset),
             status_elems = getStatusElems(container_statuses), 
             position_elems = getPortfolioPositions(cur_positions.positions),
             plot = getFig(porfolio_datastream.day_data),
-            coins=coins
+            coins=coins,
+            cur_coin=asset,
         ), data
     else:
         return createPageContent(
@@ -116,7 +134,8 @@ def intervalUpdate(n, value, data):
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getCoinPositions(asset, cur_positions.positions[asset]),
                 plot = getFig(coin_datastreams[asset].day_data),
-                coins=coins
+                coins=coins,
+                cur_coin=asset,
             ), data
 
 

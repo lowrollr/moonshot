@@ -88,6 +88,34 @@ func StartInit(bevConn *Client) {
 	}
 }
 
+func sendEnter(frontendConn *ServerClient, coin string, amnt string, price string) {
+	frontendConn.RLock()
+	msg := SocketMessage{
+		Msg:         coin + "," + amnt + "," + price,
+		Type:        "enter",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["frontend"]}
+	err := frontendConn.conn.WriteJSON(msg)
+	if err != nil {
+		log.Panic("Error sending enter msg to Frontend")
+	}
+	frontendConn.RUnlock()
+}
+
+func sendExit(frontendConn *ServerClient, coin string, amnt string, price string) {
+	frontendConn.RLock()
+	msg := SocketMessage{
+		Msg:         coin + "," + amnt + "," + price,
+		Type:        "exit",
+		Source:      containerToId["portfolio_manager"],
+		Destination: containerToId["frontend"]}
+	err := frontendConn.conn.WriteJSON(msg)
+	if err != nil {
+		log.Panic("Error sending exit msg to Frontend")
+	}
+	frontendConn.RUnlock()
+}
+
 func GetPrediction(bevConn *Client, coin string, timestamp int) bool {
 	msg := SocketMessage{
 		Msg:         coin + "," + strconv.Itoa(timestamp),

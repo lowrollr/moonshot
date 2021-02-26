@@ -16,9 +16,8 @@
   overflow: hidden;
 }
 .asset_info {
-  width: 23.4vw;
   top: 1.527vh;
-  left: 10px;
+  left: 3vw;
   position: absolute;
   opacity: 1;
   font-family: Space Mono;
