@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -89,19 +88,8 @@ func StartInit(bevConn *Client) {
 	}
 }
 
-func sendPortfolioValue(frontendConn *ServerClient, portfolioValue float64) {
-	msg := SocketMessage{
-		Msg:         fmt.Sprintf("%f", portfolioValue),
-		Type:        "portfolio_value",
-		Source:      containerToId["portfolio_manager"],
-		Destination: containerToId["frontend"]}
-	err := frontendConn.conn.WriteJSON(msg)
-	if err != nil {
-		log.Panic("Error sending portfolio value to Frontend")
-	}
-}
-
 func sendEnter(frontendConn *ServerClient, coin string, amnt string, price string) {
+	frontendConn.RLock()
 	msg := SocketMessage{
 		Msg:         coin + "," + amnt + "," + price,
 		Type:        "enter",
@@ -111,9 +99,11 @@ func sendEnter(frontendConn *ServerClient, coin string, amnt string, price strin
 	if err != nil {
 		log.Panic("Error sending enter msg to Frontend")
 	}
+	frontendConn.RUnlock()
 }
 
 func sendExit(frontendConn *ServerClient, coin string, amnt string, price string) {
+	frontendConn.RLock()
 	msg := SocketMessage{
 		Msg:         coin + "," + amnt + "," + price,
 		Type:        "exit",
@@ -123,6 +113,7 @@ func sendExit(frontendConn *ServerClient, coin string, amnt string, price string
 	if err != nil {
 		log.Panic("Error sending exit msg to Frontend")
 	}
+	frontendConn.RUnlock()
 }
 
 func GetPrediction(bevConn *Client, coin string, timestamp int) bool {

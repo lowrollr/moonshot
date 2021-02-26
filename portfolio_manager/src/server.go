@@ -62,6 +62,30 @@ func (pm *PortfolioManager) StartServer() {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
+func (client *ServerClient) handleFrontendPing() {
+	for {
+		message := SocketMessage{}
+		err := client.conn.ReadJSON(&message)
+		if err == nil {
+			if message.Type == "ping" {
+				client.Lock()
+				pongMsg := SocketMessage{
+					Msg:         "fuck you too",
+					Type:        "pong",
+					Source:      containerToId["portfolio_manager"],
+					Destination: containerToId["frontend"]}
+
+				client.conn.WriteJSON(pongMsg)
+				client.Unlock()
+
+			} else {
+				log.Warn("Invalid message received from frontend")
+			}
+		} else {
+			log.Warn("Error reading frontend socket")
+		}
+	}
+}
 
 func (pm *PortfolioManager) HandleConnections(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -73,12 +97,14 @@ func (pm *PortfolioManager) HandleConnections(w http.ResponseWriter, r *http.Req
 	if message.Type == "start" {
 		if idToContainer[message.Source] == "frontend" {
 			pm.FrontendSocket = NewServerClient(ws)
+			go pm.FrontendSocket.handleFrontendPing()
 		} else {
 			log.Warn("Wrong source sent, source sent:", idToContainer[message.Source])
 		}
 	} else if message.Type == "init" {
 		if idToContainer[message.Source] == "frontend" {
 			pm.FrontendSocket.SetConn(ws)
+
 		} else {
 			log.Warn("Wrong source sent, source sent:", idToContainer[message.Source])
 		}

@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"time"
 
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
 	decimal "github.com/shopspring/decimal"
@@ -143,7 +144,9 @@ func initPM() *PortfolioManager {
 }
 
 func (pm *PortfolioManager) StartTrading() {
+	time.Sleep(1 * time.Second)
 	pm.PortfolioValue = pm.CalcPortfolioValue()
+
 	for {
 
 		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
@@ -152,7 +155,6 @@ func (pm *PortfolioManager) StartTrading() {
 			pm.PMProcess()
 		}
 		pm.PortfolioValue = pm.CalcPortfolioValue()
-		sendPortfolioValue(pm.FrontendSocket, pm.PortfolioValue)
 	}
 
 }

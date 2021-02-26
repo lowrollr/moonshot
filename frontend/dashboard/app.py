@@ -9,7 +9,9 @@ from client import (
     BHSocket,
     DCSocket,
     getCoins,
-    startInit
+    startInit,
+    PMConnect,
+    PMPing
 )
 from page import (
     createPage,
@@ -50,7 +52,7 @@ porfolio_datastream = DataStream(name='portfolio')
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
 
-
+pm_conn = PMConnect()
 
 dc_socket_thread = threading.Thread(target=DCSocket, args=(
     dc_conn,
@@ -62,6 +64,7 @@ dc_socket_thread = threading.Thread(target=DCSocket, args=(
 bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
 
 pm_socket_thread = threading.Thread(target=PMSocket, args=(
+    pm_conn,
     container_statuses['PM'], 
     porfolio_datastream,
     position_history.all_positions,
@@ -69,9 +72,12 @@ pm_socket_thread = threading.Thread(target=PMSocket, args=(
     cur_positions,
     ))
 
+pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
+
 dc_socket_thread.start() 
 bh_socket_thread.start()
 pm_socket_thread.start()
+pm_ping_thread.start()
 
 
 # Initialize Dash App
