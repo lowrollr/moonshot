@@ -89,7 +89,7 @@ func StartInit(bevConn *Client) {
 	}
 }
 
-func sendPortfolioValue(frontendConn *Client, portfolioValue float64) {
+func sendPortfolioValue(frontendConn *ServerClient, portfolioValue float64) {
 	msg := SocketMessage{
 		Msg:         fmt.Sprintf("%f", portfolioValue),
 		Type:        "portfolio_value",
@@ -101,9 +101,9 @@ func sendPortfolioValue(frontendConn *Client, portfolioValue float64) {
 	}
 }
 
-func sendEnter(frontendConn *Client, coin string, amnt float64, price float64) {
+func sendEnter(frontendConn *ServerClient, coin string, amnt string, price string) {
 	msg := SocketMessage{
-		Msg:         coin + "," + fmt.Sprintf("%f", amnt) + "," + fmt.Sprintf("%f", price),
+		Msg:         coin + "," + amnt + "," + price,
 		Type:        "enter",
 		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId["frontend"]}
@@ -113,9 +113,9 @@ func sendEnter(frontendConn *Client, coin string, amnt float64, price float64) {
 	}
 }
 
-func sendExit(frontendConn *Client, coin string, amnt float64, price float64) {
+func sendExit(frontendConn *ServerClient, coin string, amnt string, price string) {
 	msg := SocketMessage{
-		Msg:         coin + "," + fmt.Sprintf("%f", amnt) + "," + fmt.Sprintf("%f", price),
+		Msg:         coin + "," + amnt + "," + price,
 		Type:        "exit",
 		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId["frontend"]}

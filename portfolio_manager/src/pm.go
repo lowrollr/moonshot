@@ -24,16 +24,17 @@ type ProfitQueue struct {
 }
 
 type CoinInfo struct {
-	InPosition    bool
-	EnterPrice    decimal.Decimal
-	EnterPriceFl  float64
-	AmntOwned     decimal.Decimal
-	CashInvested  float64
-	ProfitHistory *ProfitQueue
-	AvgProfit     float64
-	WinRate       float64
-	AvgWin        float64
-	AvgLoss       float64
+	InPosition       bool
+	EnterPrice       decimal.Decimal
+	EnterPriceFl     float64
+	AmntOwned        decimal.Decimal
+	CashInvested     float64
+	ProfitHistory    *ProfitQueue
+	AvgProfit        float64
+	WinRate          float64
+	AvgWin           float64
+	AvgLoss          float64
+	IntermediateCash float64
 }
 
 type PortfolioManager struct {
@@ -83,10 +84,11 @@ func initPM() *PortfolioManager {
 				NumPos:  0,
 				NumNeg:  0,
 			},
-			AvgProfit: 0.0,
-			WinRate:   0.0,
-			AvgWin:    0.0,
-			AvgLoss:   0.0,
+			AvgProfit:        0.0,
+			WinRate:          0.0,
+			AvgWin:           0.0,
+			AvgLoss:          0.0,
+			IntermediateCash: 0.0,
 		}
 	}
 	pm := &PortfolioManager{
@@ -299,6 +301,7 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 		enterPriceFl, _ := strconv.ParseFloat(info.EnterPrice.String(), 64)
 		info.EnterPriceFl = enterPriceFl
 		info.AmntOwned = fillSize
+		sendEnter(pm.FrontendSocket, coin, filledOrder.FilledSize, info.EnterPrice.String())
 		return cashAllocated
 	} else {
 		return 0.0
@@ -310,13 +313,23 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 	log.Println(filledOrder)
 	info := pm.CoinDict[coin]
 	if filledOrder.Settled {
-		info.InPosition = false
+
 		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fees, _ := decimal.NewFromString(filledOrder.FillFees)
 		newCash, _ := strconv.ParseFloat(execValue.Sub(fees).String(), 64)
-		profitPercentage := (newCash / info.CashInvested) - 1.0
 
-		info.updateProfitInfo(profitPercentage)
+		if portionToSell != info.AmntOwned {
+			info.IntermediateCash += newCash
+		} else {
+			info.InPosition = false
+
+			profitPercentage := ((newCash + info.IntermediateCash) / info.CashInvested) - 1.0
+			info.IntermediateCash = 0.0
+
+			info.updateProfitInfo(profitPercentage)
+		}
+
+		sendExit(pm.FrontendSocket, coin, portionToSell.String(), filledOrder.ExecutedValue)
 		return newCash
 	} else {
 		return 0.0
