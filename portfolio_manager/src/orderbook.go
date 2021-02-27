@@ -2,6 +2,9 @@ package main
 
 import (
 	"strconv"
+
+	ws "github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 type OrderBook struct {
@@ -22,7 +25,7 @@ type Order struct {
 	Amnt  float64
 }
 
-func initOrderBook(bids *[][]string, asks *[][]string) *OrderBook {
+func InitOrderBook(bids *[][]string, asks *[][]string) *OrderBook {
 	askBook := Book{
 		IsBids:    false,
 		OrderDict: make(map[string]*Order),
@@ -107,7 +110,11 @@ func (book *Book) Update(price string, amnt string) {
 				Price: priceFl,
 				Amnt:  amntFl,
 			}
-			curOrder.Prev.Next = &newOrder
+			if curOrder.Prev != nil {
+				curOrder.Prev.Next = &newOrder
+			} else {
+				book.BestOrder = &newOrder
+			}
 			curOrder.Prev = &newOrder
 			book.OrderDict[price] = &newOrder
 		}
@@ -132,10 +139,42 @@ func (book *Book) Update(price string, amnt string) {
 				Price: priceFl,
 				Amnt:  amntFl,
 			}
-			curOrder.Prev.Next = &newOrder
+			if curOrder.Prev != nil {
+				curOrder.Prev.Next = &newOrder
+			} else {
+				book.BestOrder = &newOrder
+			}
+
 			curOrder.Prev = &newOrder
 			book.OrderDict[price] = &newOrder
 		}
 	}
 	return
+}
+
+func ConnectToCoinbaseOrderBookSocket(symbols *[]string) (*ws.Conn, error) {
+	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
+	if err != nil {
+		return nil, err
+	}
+	actual_symbols := []string{}
+	for _, sym := range *symbols {
+		actual_symbols = append(actual_symbols, sym+"-USD")
+	}
+
+	subscribe := CoinBaseMessage{
+		Type: "subscribe",
+		Channels: []MessageChannel{
+			MessageChannel{
+				Name:       "level2",
+				ProductIds: actual_symbols,
+			},
+		},
+	}
+	log.Println(subscribe)
+
+	if err := wsConn.WriteJSON(subscribe); err != nil {
+		return nil, err
+	}
+	return wsConn, nil
 }

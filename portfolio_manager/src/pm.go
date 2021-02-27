@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
@@ -36,6 +37,7 @@ type CoinInfo struct {
 	AvgWin           float64
 	AvgLoss          float64
 	IntermediateCash float64
+	CoinOrderBook    *OrderBook
 }
 
 type PortfolioManager struct {
@@ -90,6 +92,7 @@ func initPM() *PortfolioManager {
 			AvgWin:           0.0,
 			AvgLoss:          0.0,
 			IntermediateCash: 0.0,
+			CoinOrderBook:    nil,
 		}
 	}
 	pm := &PortfolioManager{
@@ -368,4 +371,53 @@ func (info *CoinInfo) updateProfitInfo(profitPercentage float64) {
 	info.AvgWin = profitQueue.SumPos / float64(profitQueue.NumPos)
 	info.AvgProfit = profitQueue.SumOvr / float64(profitQueue.NumOvr)
 	info.WinRate = float64(profitQueue.NumPos) / float64(profitQueue.NumOvr)
+}
+
+func (pm *PortfolioManager) ReadOrderBook(initialized chan bool) {
+	fullyInitialized := false
+	coinsInitalized := 0
+
+	for {
+		log.Println("Starting level2 order book socket initialization")
+		conn, err := ConnectToCoinbaseOrderBookSocket(pm.Coins)
+		if err != nil {
+			log.Panic("Was not able to open websocket with error: " + err.Error())
+		}
+		// get initial
+		for {
+			message := CoinBaseMessage{}
+			if err := conn.ReadJSON(&message); err != nil {
+				log.Warn("Was not able to retrieve message with error: " + err.Error())
+				conn.Close()
+				log.Warn("Attempting to restart connection...")
+				break
+			}
+			if message.Type == "snapshot" {
+				coin := strings.Split(message.ProductID, "-")[0]
+				if pm.CoinDict[coin].CoinOrderBook == nil {
+					pm.CoinDict[coin].CoinOrderBook = InitOrderBook(&message.Bids, &message.Asks)
+					coinsInitalized++
+					if coinsInitalized == len(*pm.Coins) && !fullyInitialized {
+						fullyInitialized = true
+						initialized <- true
+					}
+				}
+			} else if message.Type == "l2update" {
+				coin := strings.Split(message.ProductID, "-")[0]
+				for _, change := range message.Changes {
+					if change[0] == "buy" {
+						pm.CoinDict[coin].CoinOrderBook.Bids.Update(change[1], change[2])
+					} else {
+						pm.CoinDict[coin].CoinOrderBook.Asks.Update(change[1], change[2])
+					}
+				}
+			} else if message.Type != "subscriptions" {
+				log.Warn("Got wrong message type: " + message.Type)
+				conn.Close()
+				log.Warn("Attempting to restart connection...")
+				break
+			}
+		}
+
+	}
 }
