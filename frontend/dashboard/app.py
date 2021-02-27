@@ -110,7 +110,7 @@ def intervalUpdate(n, value, data):
     ctx = dash.callback_context
     if not data:
         data = dict()
-        data['asset'] = 'portfolio'
+        data['asset'] = 'AD LUNAM CAPITAL'
         data['timespan'] = 'd'
     for trig in ctx.triggered:
         if trig['prop_id'] == 'dropdown.value':
