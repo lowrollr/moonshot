@@ -2,8 +2,10 @@ package main
 
 import (
 	"math"
+	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
@@ -24,6 +26,12 @@ type ProfitQueue struct {
 	NumOvr  int
 }
 
+type PaperTradingInfo struct {
+	MakerFee float64
+	TakerFee float64
+	Volume   float64
+}
+
 type CoinInfo struct {
 	InPosition       bool
 	EnterPrice       decimal.Decimal
@@ -36,6 +44,7 @@ type CoinInfo struct {
 	AvgWin           float64
 	AvgLoss          float64
 	IntermediateCash float64
+	CoinOrderBook    *OrderBook
 }
 
 type PortfolioManager struct {
@@ -51,23 +60,15 @@ type PortfolioManager struct {
 	CoinbaseClient    *coinbasepro.Client
 	TradesToCalibrate int
 	CandleDict        map[string]CandlestickData
-}
-
-type EnterSignal struct {
-	Coin   string
-	Profit float64
+	IsPaperTrading    bool
+	PaperInfo         *PaperTradingInfo
 }
 
 func initPM() *PortfolioManager {
 	mapDomainConnection := StartClient()
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
-
 	client := coinbasepro.NewClient()
-	accounts, err := client.GetAccounts()
-	if err != nil {
-		println(err.Error())
-	}
 	candleDict := make(map[string]CandlestickData)
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
@@ -90,6 +91,7 @@ func initPM() *PortfolioManager {
 			AvgWin:           0.0,
 			AvgLoss:          0.0,
 			IntermediateCash: 0.0,
+			CoinOrderBook:    nil,
 		}
 	}
 	pm := &PortfolioManager{
@@ -104,30 +106,53 @@ func initPM() *PortfolioManager {
 		MakerFee:          0.5,
 		TakerFee:          0.5,
 		CandleDict:        candleDict,
+		IsPaperTrading:    false,
+		PaperInfo: &PaperTradingInfo{
+			MakerFee: 0.5,
+			TakerFee: 0.5,
+			Volume:   0.0,
+		},
 	}
-	for _, a := range accounts {
-		// is account USD
-		currency := a.Currency
-		if currency == "USD" {
-			cashAvailable, err := strconv.ParseFloat(a.Available, 64)
-			if err == nil {
-				pm.FreeCash = cashAvailable
-			}
-			portfolioValue, err := strconv.ParseFloat(a.Balance, 64)
-			if err == nil {
-				pm.PortfolioValue = portfolioValue
-			}
+	if os.Getenv("PAPERTRADING") == "1" {
+		log.Println("PM is paper trading!")
+		pm.IsPaperTrading = true
+	}
 
-			break
+	if !pm.IsPaperTrading {
+
+		accounts, err := client.GetAccounts()
+		if err != nil {
+			println(err.Error())
 		}
-	}
-	fees, err := client.GetFees()
-	if err != nil {
-		log.Println("Error fetching account fees!")
+		fees, err := client.GetFees()
+		if err != nil {
+			log.Println("Error fetching account fees!")
+		} else {
+			pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
+			pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
+		}
+		for _, a := range accounts {
+
+			// is account USD
+			currency := a.Currency
+			if currency == "USD" {
+				cashAvailable, err := strconv.ParseFloat(a.Available, 64)
+				if err == nil {
+					pm.FreeCash = cashAvailable
+				}
+				portfolioValue, err := strconv.ParseFloat(a.Balance, 64)
+				if err == nil {
+					pm.PortfolioValue = portfolioValue
+				}
+
+				break
+			}
+		}
 	} else {
-		pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
-		pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
+		pm.PortfolioValue = 30000.00
+		pm.FreeCash = 30000.00
 	}
+
 	// log.Println(pm.CoinDict["BTC"])
 	// pm.enterPosition("BTC", 20000)
 	// log.Println(pm.CoinDict["BTC"])
@@ -168,7 +193,12 @@ func (pm *PortfolioManager) PMProcess() {
 		pm.Strat.Process(candle, coin)
 		if pm.CoinDict[coin].InPosition {
 			if pm.Strat.CalcExit(candle, coin) {
-				pm.PortfolioValue += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+				if pm.IsPaperTrading {
+					pm.FreeCash += pm.paperExit(coin, pm.CoinDict[coin].AmntOwned)
+				} else {
+					pm.FreeCash += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+				}
+
 			}
 		} else {
 			if pm.Strat.CalcEnter(candle, coin, pm.ClientConnections[domainToUrl["beverly_hills"]]) {
@@ -183,8 +213,12 @@ func (pm *PortfolioManager) PMProcess() {
 		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
 		cashToAllocate := pm.PortfolioValue * allocation
 		if cashToAllocate < pm.FreeCash {
-			cashUsed := pm.enterPosition(coin, cashToAllocate)
-			pm.FreeCash -= cashUsed
+			if pm.IsPaperTrading {
+				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate)
+			} else {
+				pm.FreeCash -= pm.enterPosition(coin, cashToAllocate)
+			}
+
 		} else {
 			// all coins in positions sorted by EV
 			pmCoins := pm.Coins
@@ -202,19 +236,29 @@ func (pm *PortfolioManager) PMProcess() {
 					cashNeeded := curCashValue - pm.FreeCash
 
 					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
-						cashReceived := pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
-						pm.FreeCash += cashReceived
+						if pm.IsPaperTrading {
+							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned)
+						} else {
+							pm.FreeCash += pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
+						}
+
 					} else {
 						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
 						// partially exit position
-						cashReceived := pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
-						pm.FreeCash = cashReceived
+						if pm.IsPaperTrading {
+							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell))
+						} else {
+							pm.FreeCash += pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
+						}
 					}
 				}
 				if pm.FreeCash > 0 {
 					amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
-					cashUsed := pm.enterPosition(coin, amntToAllocate)
-					pm.FreeCash -= cashUsed
+					if pm.IsPaperTrading {
+						pm.FreeCash -= pm.paperEnter(coin, amntToAllocate)
+					} else {
+						pm.FreeCash -= pm.enterPosition(coin, amntToAllocate)
+					}
 				}
 			}
 		}
@@ -368,4 +412,53 @@ func (info *CoinInfo) updateProfitInfo(profitPercentage float64) {
 	info.AvgWin = profitQueue.SumPos / float64(profitQueue.NumPos)
 	info.AvgProfit = profitQueue.SumOvr / float64(profitQueue.NumOvr)
 	info.WinRate = float64(profitQueue.NumPos) / float64(profitQueue.NumOvr)
+}
+
+func (pm *PortfolioManager) ReadOrderBook(initialized chan bool) {
+	fullyInitialized := false
+	coinsInitalized := 0
+
+	for {
+		log.Println("Starting level2 order book socket initialization")
+		conn, err := ConnectToCoinbaseOrderBookSocket(pm.Coins)
+		if err != nil {
+			log.Panic("Was not able to open websocket with error: " + err.Error())
+		}
+		// get initial
+		for {
+			message := CoinBaseMessage{}
+			if err := conn.ReadJSON(&message); err != nil {
+				log.Warn("Was not able to retrieve message with error: " + err.Error())
+				conn.Close()
+				log.Warn("Attempting to restart connection...")
+				break
+			}
+			if message.Type == "snapshot" {
+				coin := strings.Split(message.ProductID, "-")[0]
+				if pm.CoinDict[coin].CoinOrderBook == nil {
+					pm.CoinDict[coin].CoinOrderBook = InitOrderBook(&message.Bids, &message.Asks)
+					coinsInitalized++
+					if coinsInitalized == len(*pm.Coins) && !fullyInitialized {
+						fullyInitialized = true
+						initialized <- true
+					}
+				}
+			} else if message.Type == "l2update" {
+				coin := strings.Split(message.ProductID, "-")[0]
+				for _, change := range message.Changes {
+					if change[0] == "buy" {
+						pm.CoinDict[coin].CoinOrderBook.Bids.Update(change[1], change[2])
+					} else {
+						pm.CoinDict[coin].CoinOrderBook.Asks.Update(change[1], change[2])
+					}
+				}
+			} else if message.Type != "subscriptions" {
+				log.Warn("Got wrong message type: " + message.Type)
+				conn.Close()
+				log.Warn("Attempting to restart connection...")
+				break
+			}
+		}
+
+	}
 }

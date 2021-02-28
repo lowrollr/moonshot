@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	ws "github.com/gorilla/websocket"
 )
@@ -47,6 +48,30 @@ var (
 	CONPORT = ":" + string(os.Getenv("SERVERPORT"))
 
 	stratSocket net.Conn
+
+	coinbaseTakerFees = map[float64]float64{
+		10000:     0.5,
+		50000:     0.35,
+		100000:    0.25,
+		1000000:   0.20,
+		10000000:  0.18,
+		50000000:  0.15,
+		100000000: 0.1,
+		300000000: 0.07,
+		500000000: 0.05,
+	}
+
+	coinbaseMakerFees = map[float64]float64{
+		10000:     0.5,
+		50000:     0.35,
+		100000:    0.15,
+		1000000:   0.10,
+		10000000:  0.08,
+		50000000:  0.05,
+		100000000: 0.0,
+		300000000: 0.0,
+		500000000: 0.0,
+	}
 )
 
 type ServerClient struct {
@@ -87,4 +112,56 @@ type SocketCandleMessage struct {
 	Msg         map[string]CandlestickData `json:"msg"`
 	Source      int                        `json:"src"`
 	Destination int                        `json:"dest"`
+}
+
+type MessageChannel struct {
+	Name       string   `json:"name"`
+	ProductIds []string `json:"product_ids"`
+}
+
+type SnapshotChange struct {
+	Side  string
+	Price string
+	Size  string
+}
+
+type SnapshotEntry struct {
+	Price string
+	Size  string
+}
+
+//coinbase vars
+type CoinBaseMessage struct {
+	Type          string           `json:"type"`
+	ProductID     string           `json:"product_id"`
+	ProductIds    []string         `json:"product_ids"`
+	TradeID       int              `json:"trade_id,number"`
+	OrderID       string           `json:"order_id"`
+	ClientOID     string           `json:"client_oid"`
+	Sequence      int64            `json:"sequence,number"`
+	MakerOrderID  string           `json:"maker_order_id"`
+	TakerOrderID  string           `json:"taker_order_id"`
+	Time          time.Time        `json:"time,string"`
+	RemainingSize string           `json:"remaining_size"`
+	NewSize       string           `json:"new_size"`
+	OldSize       string           `json:"old_size"`
+	Size          string           `json:"size"`
+	Price         string           `json:"price"`
+	Side          string           `json:"side"`
+	Reason        string           `json:"reason"`
+	OrderType     string           `json:"order_type"`
+	Funds         string           `json:"funds"`
+	NewFunds      string           `json:"new_funds"`
+	OldFunds      string           `json:"old_funds"`
+	Message       string           `json:"message"`
+	Bids          [][]string       `json:"bids,omitempty"`
+	Asks          [][]string       `json:"asks,omitempty"`
+	Changes       [][]string       `json:"changes,omitempty"`
+	LastSize      string           `json:"last_size"`
+	BestBid       string           `json:"best_bid"`
+	BestAsk       string           `json:"best_ask"`
+	Channels      []MessageChannel `json:"channels"`
+	UserID        string           `json:"user_id"`
+	ProfileID     string           `json:"profile_id"`
+	LastTradeID   int              `json:"last_trade_id"`
 }

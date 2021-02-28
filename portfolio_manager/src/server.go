@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -62,20 +63,32 @@ func (pm *PortfolioManager) StartServer() {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
-func (client *ServerClient) handleFrontendPing() {
+func (client *ServerClient) handleFrontendPing(pm *PortfolioManager) {
 	for {
 		message := SocketMessage{}
 		err := client.conn.ReadJSON(&message)
 		if err == nil {
 			if message.Type == "ping" {
 				client.Lock()
-				pongMsg := SocketMessage{
-					Msg:         "fuck you too",
-					Type:        "pong",
-					Source:      containerToId["portfolio_manager"],
-					Destination: containerToId["frontend"]}
+				if pm.IsPaperTrading {
 
-				client.conn.WriteJSON(pongMsg)
+					pongMsg := SocketMessage{
+						Msg:         fmt.Sprintf("%f", pm.PortfolioValue),
+						Type:        "portfolio_value",
+						Source:      containerToId["portfolio_manager"],
+						Destination: containerToId["frontend"]}
+
+					client.conn.WriteJSON(pongMsg)
+				} else {
+					pongMsg := SocketMessage{
+						Msg:         "fuck you too",
+						Type:        "pong",
+						Source:      containerToId["portfolio_manager"],
+						Destination: containerToId["frontend"]}
+
+					client.conn.WriteJSON(pongMsg)
+				}
+
 				client.Unlock()
 
 			} else {
@@ -97,7 +110,7 @@ func (pm *PortfolioManager) HandleConnections(w http.ResponseWriter, r *http.Req
 	if message.Type == "start" {
 		if idToContainer[message.Source] == "frontend" {
 			pm.FrontendSocket = NewServerClient(ws)
-			go pm.FrontendSocket.handleFrontendPing()
+			go pm.FrontendSocket.handleFrontendPing(pm)
 		} else {
 			log.Warn("Wrong source sent, source sent:", idToContainer[message.Source])
 		}
