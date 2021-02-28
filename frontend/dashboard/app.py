@@ -35,6 +35,12 @@ from dash.dependencies import Input, Output, State
 # Then, we'll initialize some socket-listening threads.
 # Finally, we'll initialize the Dash App.
 
+class GlobalStatus:
+    def __init__(self):
+        self.isPaperTrading = False
+
+
+glob_status = GlobalStatus()
 external_stylesheets = ["./assets/main.css"]
 
 # Initialize Data Structures
@@ -65,16 +71,19 @@ dc_socket_thread = threading.Thread(target=DCSocket, args=(
 bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
 
 pm_socket_thread = threading.Thread(target=PMSocket, args=(
+    glob_status,
     pm_conn,
     container_statuses['PM'],
     position_history.all_positions,
     position_history.coin_positions,
     cur_positions,
+    porfolio_datastream,
     ))
 
 pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
 
 cb_socket_thread = threading.Thread(target=CBSocket, args=(
+    glob_status,
     porfolio_datastream, 
     coin_datastreams,
     cur_positions,

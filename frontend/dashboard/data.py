@@ -36,12 +36,12 @@ class Positions:
         for c in coins:
             self.positions[c] = dict()
     
-    def openPosition(self, coin, amnt, price, p_value):
+    def openPosition(self, coin, amnt, price):
             self.positions[coin]['original_amnt'] = amnt
             self.positions[coin]['amnt'] = amnt
             self.positions[coin]['original_price'] = price
             self.positions[coin]['price'] = price
-            self.positions[coin]['original_alloc'] = amnt*price / p_value
+            self.positions[coin]['original_alloc'] = amnt*price / self.p_value
             self.positions[coin]['profit'] = 0.0
             self.positions[coin]['alloc'] = self.positions[coin]['original_alloc']
             self.positions[coin]['enter_time'] = time.time()

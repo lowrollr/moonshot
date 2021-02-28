@@ -114,6 +114,7 @@ func initPM() *PortfolioManager {
 		},
 	}
 	if os.Getenv("PAPERTRADING") == "1" {
+		log.Println("PM is paper trading!")
 		pm.IsPaperTrading = true
 	}
 
@@ -147,6 +148,9 @@ func initPM() *PortfolioManager {
 				break
 			}
 		}
+	} else {
+		pm.PortfolioValue = 30000.00
+		pm.FreeCash = 30000.00
 	}
 
 	// log.Println(pm.CoinDict["BTC"])
