@@ -2,12 +2,14 @@ package main
 
 import (
 	"strconv"
+	"sync"
 
 	ws "github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
 type OrderBook struct {
+	sync.Mutex
 	Bids *Book
 	Asks *Book
 }

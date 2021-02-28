@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +24,12 @@ type ProfitQueue struct {
 	NumPos  int
 	NumNeg  int
 	NumOvr  int
+}
+
+type PaperTradingInfo struct {
+	MakerFee float64
+	TakerFee float64
+	Volume   float64
 }
 
 type CoinInfo struct {
@@ -53,23 +60,15 @@ type PortfolioManager struct {
 	CoinbaseClient    *coinbasepro.Client
 	TradesToCalibrate int
 	CandleDict        map[string]CandlestickData
-}
-
-type EnterSignal struct {
-	Coin   string
-	Profit float64
+	IsPaperTrading    bool
+	PaperInfo         *PaperTradingInfo
 }
 
 func initPM() *PortfolioManager {
 	mapDomainConnection := StartClient()
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
-
 	client := coinbasepro.NewClient()
-	accounts, err := client.GetAccounts()
-	if err != nil {
-		println(err.Error())
-	}
 	candleDict := make(map[string]CandlestickData)
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
@@ -107,30 +106,49 @@ func initPM() *PortfolioManager {
 		MakerFee:          0.5,
 		TakerFee:          0.5,
 		CandleDict:        candleDict,
+		IsPaperTrading:    false,
+		PaperInfo: &PaperTradingInfo{
+			MakerFee: 0.5,
+			TakerFee: 0.5,
+			Volume:   0.0,
+		},
 	}
-	for _, a := range accounts {
-		// is account USD
-		currency := a.Currency
-		if currency == "USD" {
-			cashAvailable, err := strconv.ParseFloat(a.Available, 64)
-			if err == nil {
-				pm.FreeCash = cashAvailable
-			}
-			portfolioValue, err := strconv.ParseFloat(a.Balance, 64)
-			if err == nil {
-				pm.PortfolioValue = portfolioValue
-			}
+	if os.Getenv("PAPERTRADING") == "1" {
+		pm.IsPaperTrading = true
+	}
 
-			break
+	if !pm.IsPaperTrading {
+
+		accounts, err := client.GetAccounts()
+		if err != nil {
+			println(err.Error())
+		}
+		fees, err := client.GetFees()
+		if err != nil {
+			log.Println("Error fetching account fees!")
+		} else {
+			pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
+			pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
+		}
+		for _, a := range accounts {
+
+			// is account USD
+			currency := a.Currency
+			if currency == "USD" {
+				cashAvailable, err := strconv.ParseFloat(a.Available, 64)
+				if err == nil {
+					pm.FreeCash = cashAvailable
+				}
+				portfolioValue, err := strconv.ParseFloat(a.Balance, 64)
+				if err == nil {
+					pm.PortfolioValue = portfolioValue
+				}
+
+				break
+			}
 		}
 	}
-	fees, err := client.GetFees()
-	if err != nil {
-		log.Println("Error fetching account fees!")
-	} else {
-		pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
-		pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
-	}
+
 	// log.Println(pm.CoinDict["BTC"])
 	// pm.enterPosition("BTC", 20000)
 	// log.Println(pm.CoinDict["BTC"])
@@ -171,7 +189,12 @@ func (pm *PortfolioManager) PMProcess() {
 		pm.Strat.Process(candle, coin)
 		if pm.CoinDict[coin].InPosition {
 			if pm.Strat.CalcExit(candle, coin) {
-				pm.PortfolioValue += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+				if pm.IsPaperTrading {
+					pm.FreeCash += pm.paperExit(coin, pm.CoinDict[coin].AmntOwned)
+				} else {
+					pm.FreeCash += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+				}
+
 			}
 		} else {
 			if pm.Strat.CalcEnter(candle, coin, pm.ClientConnections[domainToUrl["beverly_hills"]]) {
@@ -186,8 +209,12 @@ func (pm *PortfolioManager) PMProcess() {
 		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
 		cashToAllocate := pm.PortfolioValue * allocation
 		if cashToAllocate < pm.FreeCash {
-			cashUsed := pm.enterPosition(coin, cashToAllocate)
-			pm.FreeCash -= cashUsed
+			if pm.IsPaperTrading {
+				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate)
+			} else {
+				pm.FreeCash -= pm.enterPosition(coin, cashToAllocate)
+			}
+
 		} else {
 			// all coins in positions sorted by EV
 			pmCoins := pm.Coins
@@ -205,19 +232,29 @@ func (pm *PortfolioManager) PMProcess() {
 					cashNeeded := curCashValue - pm.FreeCash
 
 					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
-						cashReceived := pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
-						pm.FreeCash += cashReceived
+						if pm.IsPaperTrading {
+							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned)
+						} else {
+							pm.FreeCash += pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
+						}
+
 					} else {
 						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
 						// partially exit position
-						cashReceived := pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
-						pm.FreeCash = cashReceived
+						if pm.IsPaperTrading {
+							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell))
+						} else {
+							pm.FreeCash += pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
+						}
 					}
 				}
 				if pm.FreeCash > 0 {
 					amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
-					cashUsed := pm.enterPosition(coin, amntToAllocate)
-					pm.FreeCash -= cashUsed
+					if pm.IsPaperTrading {
+						pm.FreeCash -= pm.paperEnter(coin, amntToAllocate)
+					} else {
+						pm.FreeCash -= pm.enterPosition(coin, amntToAllocate)
+					}
 				}
 			}
 		}

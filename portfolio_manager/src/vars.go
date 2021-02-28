@@ -48,6 +48,30 @@ var (
 	CONPORT = ":" + string(os.Getenv("SERVERPORT"))
 
 	stratSocket net.Conn
+
+	coinbaseTakerFees = map[float64]float64{
+		10000:     0.5,
+		50000:     0.35,
+		100000:    0.25,
+		1000000:   0.20,
+		10000000:  0.18,
+		50000000:  0.15,
+		100000000: 0.1,
+		300000000: 0.07,
+		500000000: 0.05,
+	}
+
+	coinbaseMakerFees = map[float64]float64{
+		10000:     0.5,
+		50000:     0.35,
+		100000:    0.15,
+		1000000:   0.10,
+		10000000:  0.08,
+		50000000:  0.05,
+		100000000: 0.0,
+		300000000: 0.0,
+		500000000: 0.0,
+	}
 )
 
 type ServerClient struct {
