@@ -2,7 +2,6 @@ FROM golang
 
 ENV GO111MODULE auto
 ENV GOPATH /go
-ENV GO111MODULE auto
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 # RUN apk update && apk add --no-cache git

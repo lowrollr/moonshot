@@ -3,7 +3,6 @@ FROM golang
 ENV GO111MODULE auto
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
-ENV GO111MODULE auto
 # RUN apk update && apk add --no-cache git
 WORKDIR /go/src
 COPY src .
