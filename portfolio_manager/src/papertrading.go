@@ -98,7 +98,7 @@ func (pm *PortfolioManager) calcFees() {
 		}
 	}
 	if !foundTier {
-		pm.PaperInfo.TakerFee = 0.04
+		pm.PaperInfo.TakerFee = 0.0004
 	}
 
 	return
