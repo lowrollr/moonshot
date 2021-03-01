@@ -228,6 +228,8 @@ func (pm *PortfolioManager) PMProcess() {
 	for _, coin := range enter_coins {
 		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
 		cashToAllocate := pm.PortfolioValue * allocation
+		expLiquidity := (pm.CoinDict[coin].AskLiquidity.GetVal() + pm.CoinDict[coin].BidLiquidity.GetVal()) / 2
+		cashToAllocate = math.Min(cashToAllocate, expLiquidity)
 		if cashToAllocate < pm.FreeCash {
 			if pm.IsPaperTrading {
 				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate, pm.CandleDict[coin].Close)
