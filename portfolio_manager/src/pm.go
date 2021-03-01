@@ -45,6 +45,8 @@ type CoinInfo struct {
 	AvgLoss          float64
 	IntermediateCash float64
 	CoinOrderBook    *OrderBook
+	BidLiquidity     *SMA
+	AskLiquidity     *SMA
 }
 
 type PortfolioManager struct {
@@ -62,6 +64,7 @@ type PortfolioManager struct {
 	CandleDict        map[string]CandlestickData
 	IsPaperTrading    bool
 	PaperInfo         *PaperTradingInfo
+	TargetSlippage    float64
 }
 
 func initPM() *PortfolioManager {
@@ -92,6 +95,16 @@ func initPM() *PortfolioManager {
 			AvgLoss:          0.0,
 			IntermediateCash: 0.0,
 			CoinOrderBook:    nil,
+			AskLiquidity: &SMA{
+				Values: deque.New(),
+				MaxLen: 60,
+				CurSum: 0,
+			},
+			BidLiquidity: &SMA{
+				Values: deque.New(),
+				MaxLen: 60,
+				CurSum: 0,
+			},
 		}
 	}
 	pm := &PortfolioManager{
@@ -112,6 +125,7 @@ func initPM() *PortfolioManager {
 			TakerFee: 0.005,
 			Volume:   0.0,
 		},
+		TargetSlippage: 0.0005,
 	}
 	if os.Getenv("PAPERTRADING") == "1" {
 		log.Println("PM is paper trading!")
@@ -181,6 +195,7 @@ func (pm *PortfolioManager) StartTrading() {
 			pm.PMProcess()
 		}
 		pm.PortfolioValue = pm.CalcPortfolioValue()
+		pm.UpdateLiquidity()
 	}
 
 }

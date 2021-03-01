@@ -181,6 +181,53 @@ func ConnectToCoinbaseOrderBookSocket(symbols *[]string) (*ws.Conn, error) {
 	return wsConn, nil
 }
 
-// func CalculateAmntAvailable(targetSlippage float64) float64 {
+func getCurrentLiquidity(isBid bool, book *Book, closePrice float64, targetSlippage float64) float64 {
+	totalLiquidity := 0.0
+	if isBid {
 
-// }
+		minPrice := closePrice * (1 - targetSlippage)
+		curOrder := book.BestOrder
+		for curOrder != nil {
+			curPrice := curOrder.Price
+			if curPrice < minPrice {
+				break
+			} else {
+				totalLiquidity += (curOrder.Amnt * curOrder.Price)
+				curOrder = curOrder.Next
+			}
+		}
+	} else {
+		maxPrice := closePrice * (1 + targetSlippage)
+		curOrder := book.BestOrder
+		for curOrder != nil {
+			curPrice := curOrder.Price
+			if curPrice > maxPrice {
+				break
+			} else {
+				totalLiquidity += (curOrder.Amnt * curOrder.Price)
+				curOrder = curOrder.Next
+			}
+		}
+	}
+	return totalLiquidity
+}
+
+func (pm *PortfolioManager) UpdateLiquidity() {
+	for _, coin := range *pm.Coins {
+		pm.CoinDict[coin].CoinOrderBook.Lock()
+		pm.CoinDict[coin].BidLiquidity.Update(getCurrentLiquidity(
+			true,
+			pm.CoinDict[coin].CoinOrderBook.Bids,
+			pm.CandleDict[coin].Close,
+			pm.TargetSlippage))
+
+		pm.CoinDict[coin].AskLiquidity.Update(getCurrentLiquidity(
+			false,
+			pm.CoinDict[coin].CoinOrderBook.Asks,
+			pm.CandleDict[coin].Close,
+			pm.TargetSlippage))
+
+		pm.CoinDict[coin].CoinOrderBook.Unlock()
+		// log.Println(coin, pm.CoinDict[coin].BidLiquidity.GetVal(), pm.CoinDict[coin].AskLiquidity.GetVal())
+	}
+}
