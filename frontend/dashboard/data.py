@@ -112,3 +112,64 @@ class DataStream:
             self.last_updated_year += 21900
         self.year_data[-1] = value
         
+class PlotPositions:
+    def __init__(self, coins):
+        self.positions_to_plot_day = dict()
+        self.positions_to_plot_week = dict()
+        self.positions_to_plot_month = dict()
+        self.positions_to_plot_year = dict()
+        for coin in coins:
+            self.positions_to_plot[coin] = deque([])
+
+    def addNewPosition(self, coin, value, positionType):
+        now = int(time.time())
+        new_position = {'time': now, 'value': value, 'type': positionType}
+        self.positions_to_plot_day[coin].append(new_position)
+        self.positions_to_plot_week[coin].append(new_position)
+        self.positions_to_plot_month[coin].append(new_position)
+        self.positions_to_plot_year[coin].append(new_position)
+        self.removeOldPositions()
+
+    def removeOldPositions(self, now):
+
+        while True:
+            if self.positions_to_plot_day:
+                position = self.positions_to_plot_day[0]
+                if position['time'] + (1440 * 60) <= now:
+                    self.positions_to_plot_day.popleft()
+                else:
+                    break
+            else:
+                break
+                
+        while True:
+            if self.positions_to_plot_week:
+                position = self.positions_to_plot_week[0]
+                if position['time'] + (1440 * 60 * 7) <= now:
+                    self.positions_to_plot_week.popleft()
+                else:
+                    break
+            else:
+                break
+
+        while True:
+            if self.positions_to_plot_month:
+                position = self.positions_to_plot_month[0]
+                if position['time'] + (1440 * 60 * 30) <= now:
+                    self.positions_to_plot_month.popleft()
+                else:
+                    break
+            else:
+                break
+        
+        while True:
+            if self.positions_to_plot_year:
+                position = self.positions_to_plot_year[0]
+                if position['time'] + (1440 * 60 * 365) <= now:
+                    self.positions_to_plot_year.popleft()
+                else:
+                    break
+            else:
+                break
+
+    
