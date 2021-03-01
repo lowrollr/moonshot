@@ -103,13 +103,13 @@ func initPM() *PortfolioManager {
 		CoinbaseClient:    client,
 		TradesToCalibrate: 20,
 		Strat:             strategy,
-		MakerFee:          0.5,
-		TakerFee:          0.5,
+		MakerFee:          0.005,
+		TakerFee:          0.005,
 		CandleDict:        candleDict,
 		IsPaperTrading:    false,
 		PaperInfo: &PaperTradingInfo{
-			MakerFee: 0.5,
-			TakerFee: 0.5,
+			MakerFee: 0.005,
+			TakerFee: 0.005,
 			Volume:   0.0,
 		},
 	}
@@ -151,6 +151,7 @@ func initPM() *PortfolioManager {
 	} else {
 		pm.PortfolioValue = 30000.00
 		pm.FreeCash = 30000.00
+		pm.calcFees()
 	}
 
 	// log.Println(pm.CoinDict["BTC"])
