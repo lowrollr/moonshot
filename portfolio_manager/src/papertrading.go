@@ -4,10 +4,11 @@ import (
 	"strconv"
 
 	decimal "github.com/shopspring/decimal"
+	log "github.com/sirupsen/logrus"
 )
 
-func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64) float64 {
-	fees := cashAllocated * pm.TakerFee
+func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targetPrice float64) float64 {
+	fees := cashAllocated * pm.PaperInfo.TakerFee
 	totalAmnt := 0.0
 	cashAvailable := cashAllocated - fees
 	cashRemaining := cashAvailable
@@ -37,18 +38,21 @@ func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64) float
 		info.AmntOwned = decimal.NewFromFloat(totalAmnt)
 		pm.PaperInfo.Volume += cashAvailable
 		pm.calcFees()
+		log.Println("Entered ", coin, ": ", totalAmnt, "@", info.EnterPriceFl)
+		slippage := -100.0 * ((info.EnterPriceFl / targetPrice) - 1.0)
+		log.Println("Slippage: ", slippage)
 		return cashAllocated
 	} else {
 		return 0.0
 	}
 }
 
-func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal) float64 {
+func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal, targetPrice float64) float64 {
 
 	amntStr := portionToSell.String()
 	amntFlt, _ := strconv.ParseFloat(amntStr, 64)
 
-	fees := amntFlt * pm.TakerFee
+	fees := amntFlt * pm.PaperInfo.TakerFee
 	cashReceived := 0.0
 	amntAvailable := amntFlt - fees
 	amntRemaining := amntAvailable
@@ -82,6 +86,10 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 		}
 		pm.PaperInfo.Volume += cashReceived
 		pm.calcFees()
+		averagePrice := cashReceived / amntFlt
+		log.Println("Exited ", coin, ": ", amntFlt, "@", averagePrice)
+		slippage := 100.0 * ((averagePrice / targetPrice) - 1.0)
+		log.Println("Slippage: ", slippage)
 		return cashReceived
 	} else {
 		return 0.0

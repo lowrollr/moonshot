@@ -194,7 +194,7 @@ func (pm *PortfolioManager) PMProcess() {
 		if pm.CoinDict[coin].InPosition {
 			if pm.Strat.CalcExit(candle, coin) {
 				if pm.IsPaperTrading {
-					pm.FreeCash += pm.paperExit(coin, pm.CoinDict[coin].AmntOwned)
+					pm.FreeCash += pm.paperExit(coin, pm.CoinDict[coin].AmntOwned, pm.CandleDict[coin].Close)
 				} else {
 					pm.FreeCash += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
 				}
@@ -214,7 +214,7 @@ func (pm *PortfolioManager) PMProcess() {
 		cashToAllocate := pm.PortfolioValue * allocation
 		if cashToAllocate < pm.FreeCash {
 			if pm.IsPaperTrading {
-				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate)
+				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate, pm.CandleDict[coin].Close)
 			} else {
 				pm.FreeCash -= pm.enterPosition(coin, cashToAllocate)
 			}
@@ -237,7 +237,7 @@ func (pm *PortfolioManager) PMProcess() {
 
 					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
 						if pm.IsPaperTrading {
-							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned)
+							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned, pm.CandleDict[coinIn].Close)
 						} else {
 							pm.FreeCash += pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
 						}
@@ -246,7 +246,7 @@ func (pm *PortfolioManager) PMProcess() {
 						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
 						// partially exit position
 						if pm.IsPaperTrading {
-							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell))
+							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell), pm.CandleDict[coinIn].Close)
 						} else {
 							pm.FreeCash += pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
 						}
@@ -255,7 +255,7 @@ func (pm *PortfolioManager) PMProcess() {
 				if pm.FreeCash > 0 {
 					amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
 					if pm.IsPaperTrading {
-						pm.FreeCash -= pm.paperEnter(coin, amntToAllocate)
+						pm.FreeCash -= pm.paperEnter(coin, amntToAllocate, pm.CandleDict[coin].Close)
 					} else {
 						pm.FreeCash -= pm.enterPosition(coin, amntToAllocate)
 					}

@@ -180,3 +180,7 @@ func ConnectToCoinbaseOrderBookSocket(symbols *[]string) (*ws.Conn, error) {
 	}
 	return wsConn, nil
 }
+
+// func CalculateAmntAvailable(targetSlippage float64) float64 {
+
+// }
