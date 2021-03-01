@@ -2,7 +2,8 @@ from data import (
     DataStream,
     Positions,
     PositionStream,
-    Status
+    Status, 
+    PlotPositions
 )
 from client import (
     PMSocket,
@@ -50,7 +51,6 @@ for c in {'PM', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
 #PRETEND WE GET THE COINS HERE
 #TODO actually get the coins
 dc_conn, coins = getCoins()
-print(coins)
 coin_datastreams = dict()
 for coin in coins:
     coin_datastreams[coin] = DataStream(name=coin)
@@ -58,6 +58,7 @@ for coin in coins:
 porfolio_datastream = DataStream(name='portfolio')
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
+plot_positions = PlotPositions(coins)
 
 pm_conn = PMConnect()
 
@@ -78,6 +79,7 @@ pm_socket_thread = threading.Thread(target=PMSocket, args=(
     position_history.coin_positions,
     cur_positions,
     porfolio_datastream,
+    plot_positions,
     ))
 
 pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
@@ -142,7 +144,7 @@ def intervalUpdate(n, value, data):
                 toptext = getTopText(coin_datastreams[asset].day_data, asset),
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getCoinPositions(asset, cur_positions.positions[asset]),
-                plot = getFig(coin_datastreams[asset].day_data),
+                plot = getFig(coin_datastreams[asset].day_data, plot_positions.positions_to_plot_day[asset]),
                 coins=coins,
                 cur_coin=asset,
             ), data

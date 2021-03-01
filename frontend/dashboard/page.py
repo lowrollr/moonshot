@@ -51,8 +51,8 @@ def getTopText(data, asset):
     delta = '+$0.00'
     perc_change = '+0.00%'
     if data:
-        cur_value = data[-1]
-        first_value = data[0]
+        cur_value = data[-1][0]
+        first_value = data[0][0]
         if asset == 'AD LUNAM CAPITAL':
             cur_value = round(cur_value, 2)
             first_value = round(first_value, 2)
@@ -99,14 +99,33 @@ def getDropdown(coins, cur_coin):
 
 #TODO: plot volume on secondary axis
 #TODO: add timestamps to x axis & data points
-def getFig(datastream):
+def getFig(datastream, positions=None):
     fig = make_subplots()
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)')
     if datastream:
-        indices, values = zip(*enumerate(list(datastream)))
+        values, indices = zip(*list(datastream))
         fig.add_trace(go.Scatter(x=indices, y=values))
-
+    if positions:
+        enter_indices = []
+        enter_values = []
+        partial_indices = []
+        partial_values = []
+        exit_indices = []
+        exit_values = []
+        for x in positions:
+            if x['type'] == 'enter':
+                enter_indices.append(x['time'])
+                enter_values.append(x['value'])
+            elif x['type'] == 'exit':
+                exit_indices.append(x['time'])
+                exit_values.append(x['value'])
+            else:
+                partial_indices.append(x['time'])
+                partial_values.append(x['value'])
+        fig.add_trace(go.Scatter(x=enter_indices, y=enter_values, mode="markers", marker_color="green"))
+        fig.add_trace(go.Scatter(x=exit_indices, y=exit_values, mode="markers", marker_color="red"))
+        fig.add_trace(go.Scatter(x=partial_indices, y=partial_values, mode="markers", marker_color="yellow"))
     return fig
 
 
@@ -188,7 +207,7 @@ def getCoinPositions(coin, cur_position):
     if cur_position:
         cur_amnt = cur_position['amnt']
         cur_price = cur_position['price']
-        profit = str(cur_position['profit'])
+        profit = cur_position['profit']
         if profit > 0:
             profit = '+' + str(profit) + '%'
         else:

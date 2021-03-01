@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	decimal "github.com/shopspring/decimal"
@@ -41,6 +42,7 @@ func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targe
 		log.Println("Entered ", coin, ": ", totalAmnt, "@", info.EnterPriceFl)
 		slippage := -100.0 * ((info.EnterPriceFl / targetPrice) - 1.0)
 		log.Println("Slippage: ", slippage)
+		sendEnter(pm.FrontendSocket, coin, info.AmntOwned.String(), fmt.Sprintf("%f", info.EnterPriceFl))
 		return cashAllocated
 	} else {
 		return 0.0
@@ -90,6 +92,7 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 		log.Println("Exited ", coin, ": ", amntFlt, "@", averagePrice)
 		slippage := 100.0 * ((averagePrice / targetPrice) - 1.0)
 		log.Println("Slippage: ", slippage)
+		sendExit(pm.FrontendSocket, coin, portionToSell.String(), fmt.Sprintf("%f", averagePrice))
 		return cashReceived
 	} else {
 		return 0.0

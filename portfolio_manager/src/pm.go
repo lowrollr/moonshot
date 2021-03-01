@@ -186,6 +186,16 @@ func initPM() *PortfolioManager {
 func (pm *PortfolioManager) StartTrading() {
 	time.Sleep(1 * time.Second)
 	pm.PortfolioValue = pm.CalcPortfolioValue()
+	newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+	pm.CandleDict = newCandleData
+	pm.UpdateLiquidity()
+	newCandleData = *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+	pm.CandleDict = newCandleData
+	pm.paperEnter("BTC", 1000, pm.CandleDict["BTC"].Close)
+	pm.UpdateLiquidity()
+	newCandleData = *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+	pm.CandleDict = newCandleData
+	pm.paperExit("BTC", pm.CoinDict["BTC"].AmntOwned, pm.CandleDict["BTC"].Close)
 
 	for {
 

@@ -75,7 +75,7 @@ def PMPing(pm_conn):
         pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
         time.sleep(2)
 
-def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, current_positions, portfolio_datastream):
+def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, current_positions, portfolio_datastream, plot_positions):
     
     p_value = 0.0
     
@@ -95,6 +95,7 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                 split_msg = data['msg'].split(',')
                 coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
                 current_positions.openPosition(coin, amnt, price)
+                plot_positions.addNewPosition(coin, price, 'enter')
 
             elif data['type'] == 'exit':
                 split_msg = data['msg'].split(',')
@@ -103,6 +104,9 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                 if closed_position:
                     all_positions.append(closed_position)
                     coin_positions[coin].append(closed_position)
+                    plot_positions.addNewPosition(coin, price, 'exit')
+                else:
+                    plot_positions.addNewPosition(coin, price, 'partial_exit')
             
 
 def BHSocket(bh_status):
@@ -146,7 +150,7 @@ def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, 
             account_value = 0.0
             for x in accounts:
                 if x['currency'] in coins:
-                    account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1]
+                    account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1][0]
                 elif x['currency'] == 'USD':
                     account_value += float(x['balance'])
 

@@ -52,7 +52,7 @@ class Positions:
             new_position_stream_position = Position(
                 coin=coin,
                 enter_time = self.positions[coin]['enter_time'],
-                enter_price = self.postions[coin]['orginal_price'],
+                enter_price = self.positions[coin]['original_price'],
                 exit_price = price,
                 amnt = self.positions[coin]['original_amnt'],
                 alloc = self.positions[coin]['original_alloc']
@@ -75,15 +75,16 @@ class Positions:
 class DataStream:
     def __init__(self, name):
         self.name = name
-        self.day_data = deque(maxlen=1440)
-        self.day_data.append(1.0)
-        self.week_data = deque(maxlen=1440)
-        self.week_data.append(1.0)
-        self.month_data = deque(maxlen=1440)
-        self.month_data.append(1.0)
-        self.year_data = deque(maxlen=1440)
-        self.year_data.append(1.0)
         now = int(time.time())
+        self.day_data = deque(maxlen=1440)
+        self.day_data.append((1.0, now))
+        self.week_data = deque(maxlen=1440)
+        self.week_data.append((1.0, now))
+        self.month_data = deque(maxlen=1440)
+        self.month_data.append((1.0, now))
+        self.year_data = deque(maxlen=1440)
+        self.year_data.append((1.0, now))
+        
         self.last_updated_day = now
         self.last_updated_week = now
         self.last_updated_month = now
@@ -95,22 +96,22 @@ class DataStream:
         while now >= self.last_updated_day + 60:
             self.day_data.append(self.day_data[-1])
             self.last_updated_day += 60
-        self.day_data[-1] = value
+        self.day_data[-1] = (value, now)
         
         while now >= self.last_updated_week + 420:
             self.week_data.append(self.week_data[-1])
             self.last_updated_week += 420
-        self.week_data[-1] = value
+        self.week_data[-1] = (value, now)
 
         while now >= self.last_updated_month + 1860:
             self.month_data.append(self.month_data[-1])
             self.last_updated_month += 1860
-        self.month_data[-1] = value
+        self.month_data[-1] =(value, now)
         
         while now >= self.last_updated_year + 21900:
             self.year_data.append(self.year_data[-1])
             self.last_updated_year += 21900
-        self.year_data[-1] = value
+        self.year_data[-1] = (value, now)
         
 class PlotPositions:
     def __init__(self, coins):
@@ -119,7 +120,11 @@ class PlotPositions:
         self.positions_to_plot_month = dict()
         self.positions_to_plot_year = dict()
         for coin in coins:
-            self.positions_to_plot[coin] = deque([])
+            self.positions_to_plot_day[coin] = deque([])
+            self.positions_to_plot_week[coin] = deque([])
+            self.positions_to_plot_month[coin] = deque([])
+            self.positions_to_plot_year[coin] = deque([])
+
 
     def addNewPosition(self, coin, value, positionType):
         now = int(time.time())
@@ -128,46 +133,51 @@ class PlotPositions:
         self.positions_to_plot_week[coin].append(new_position)
         self.positions_to_plot_month[coin].append(new_position)
         self.positions_to_plot_year[coin].append(new_position)
-        self.removeOldPositions()
+        self.removeOldPositions(now, coin)
 
-    def removeOldPositions(self, now):
+    def removeOldPositions(self, now, coin):
 
         while True:
-            if self.positions_to_plot_day:
-                position = self.positions_to_plot_day[0]
+            if len(self.positions_to_plot_day[coin]) > 0:
+                position = self.positions_to_plot_day[coin].popleft()
                 if position['time'] + (1440 * 60) <= now:
-                    self.positions_to_plot_day.popleft()
+                    continue
                 else:
+                    self.positions_to_plot_day[coin].appendleft(position)
                     break
             else:
                 break
                 
         while True:
-            if self.positions_to_plot_week:
-                position = self.positions_to_plot_week[0]
+            if len(self.positions_to_plot_week[coin]) > 0:
+                position = self.positions_to_plot_week[coin].popleft()
                 if position['time'] + (1440 * 60 * 7) <= now:
-                    self.positions_to_plot_week.popleft()
+                    continue
                 else:
+                    self.positions_to_plot_week[coin].appendleft(position)
                     break
             else:
                 break
 
         while True:
-            if self.positions_to_plot_month:
-                position = self.positions_to_plot_month[0]
+            if len(self.positions_to_plot_month[coin]) > 0:
+                position = self.positions_to_plot_month[coin].popleft()
                 if position['time'] + (1440 * 60 * 30) <= now:
-                    self.positions_to_plot_month.popleft()
+                    continue
                 else:
+                    self.positions_to_plot_month[coin].appendleft(position)
                     break
             else:
                 break
         
+        
         while True:
-            if self.positions_to_plot_year:
-                position = self.positions_to_plot_year[0]
+            if len(self.positions_to_plot_year[coin]) > 0:
+                position = self.positions_to_plot_year[coin].popleft()
                 if position['time'] + (1440 * 60 * 365) <= now:
-                    self.positions_to_plot_year.popleft()
+                    continue
                 else:
+                    self.positions_to_plot_year[coin].appendleft(position)
                     break
             else:
                 break
