@@ -1,7 +1,4 @@
-* {
-  padding: 0px !important;
-  margin: 0px !important;
-}
+
 .background {
   width: 100vw;
   height: 100vh;
@@ -42,13 +39,12 @@
   width: 20%;
   height: 100%;
   background: rgba(240,240,240,0.3);
-  z-index: 1;
-  opacity: 1;
   position: fixed;
+  z-index: 1;
   top: 0px;
   right: 0px;
   overflow-x: hidden;
-  align-items: center;
+
 }
 .asset_plot {
   width: 70%;
@@ -61,52 +57,59 @@
   left:2.5%
 }
 .status_group {
-  width:75%
-  
-  
+  position:absolute;
+  bottom:0;
+  flex-wrap: wrap;
+  list-style-type: none;
+  width:80%;
+  display:block;
+  margin: 0;
+  padding: 20px;
 }
 .overall_statustext {
+  position: relative;
+  width:80%;
   font-family: Space Mono;
   font-size: 3vh;
   font-weight: Bold;
-  width: 100%;
   color: rgba(0,0,0,1);
-  text-align: right;
-  position: relative;
-  right:3vh;
-  
+  text-align:right;
+  display:inline-block;
+  margin-right:1.75vh;
 }
 .statustext {
+  
+  position: relative;
+  width:80%;
   font-family: Space Mono;
   color: rgba(0,0,0,1);
-  position: relative;
-  right:3vh;
   font-weight: Bold;
   font-size: 2vh;
   opacity: 1;
-  text-align: right;
+  text-align:right;
+  display:inline-block;
+  margin-right:2vh;
 }
 .statuspair {
   opacity: 1;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
 }
 .statusbubble {
   width: 1.75vh;
   height: 1.75vh;
-  position: relative;
-  float:right;
-  top:-2.25vh;
   background: rgba(114,228,126,1);
   opacity: 1;
   border-radius: 50%;
+  display:inline-block;
 }
 .statusbubble_big {
   width: 2.25vh;
   height: 2.25vh;
-  position: relative;
-  float:right;
-  top:-3.25vh;
   background: rgba(114,228,126,1);
   opacity: 1;
   border-radius: 50%;
+  
+  display:inline-block;
+  
 }
