@@ -461,6 +461,8 @@ func (pm *PortfolioManager) ReadOrderBook(initialized chan bool) {
 						fullyInitialized = true
 						initialized <- true
 					}
+				} else {
+					pm.CoinDict[coin].CoinOrderBook = InitOrderBook(&message.Bids, &message.Asks)
 				}
 			} else if message.Type == "l2update" {
 				coin := strings.Split(message.ProductID, "-")[0]
