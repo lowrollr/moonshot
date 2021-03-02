@@ -80,6 +80,7 @@ func (book *Book) Update(price string, amnt string) {
 		return
 	} else if amntFl == 0.0 {
 		log.Warn("Order book descrepancy (tried to remove order that did not exist). This should never happen!")
+		return
 	}
 
 	if curOrder == nil {

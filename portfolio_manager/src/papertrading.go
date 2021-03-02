@@ -9,12 +9,12 @@ import (
 )
 
 func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targetPrice float64) float64 {
+
 	fees := cashAllocated * pm.PaperInfo.TakerFee
 	totalAmnt := 0.0
 	cashAvailable := cashAllocated - fees
 	cashRemaining := cashAvailable
 	pm.CoinDict[coin].CoinOrderBook.Lock()
-
 	curOrder := pm.CoinDict[coin].CoinOrderBook.Asks.BestOrder
 	for cashRemaining > 0.0 && curOrder != nil {
 		amntToSpend := curOrder.Price * curOrder.Amnt
@@ -61,8 +61,8 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 	pm.CoinDict[coin].CoinOrderBook.Lock()
 
 	curOrder := pm.CoinDict[coin].CoinOrderBook.Bids.BestOrder
-	for amntRemaining > 0.0 && curOrder != nil {
 
+	for amntRemaining > 0.0 && curOrder != nil {
 		if amntRemaining >= curOrder.Amnt {
 			amntRemaining -= curOrder.Amnt
 			cashReceived += curOrder.Price * curOrder.Amnt
@@ -88,7 +88,7 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 		}
 		pm.PaperInfo.Volume += cashReceived
 		pm.calcFees()
-		averagePrice := cashReceived / amntFlt
+		averagePrice := cashReceived / amntAvailable
 		log.Println("Exited ", coin, ": ", amntFlt, "@", averagePrice)
 		slippage := 100.0 * ((averagePrice / targetPrice) - 1.0)
 		log.Println("Slippage: ", slippage)
