@@ -77,6 +77,7 @@ type SocketAllCandleMessage struct {
 type CoinPrice struct {
 	Coin  string  `json:"coin"`
 	Price float64 `json:"price"`
+	Time  int64   `json:"time"`
 }
 
 type SocketPriceMessage struct {

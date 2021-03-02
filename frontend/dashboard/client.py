@@ -90,23 +90,23 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                 glob_status.isPaperTrading = True
                 account_value = float(data['msg'])
                 current_positions.p_value = account_value
-                portfolio_datastream.update(account_value)
+                portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
             elif data['type'] == 'enter':
                 split_msg = data['msg'].split(',')
                 coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
-                current_positions.openPosition(coin, amnt, price)
-                plot_positions.addNewPosition(coin, price, 'enter')
+                current_positions.openPosition(coin, amnt, price, glob_status.lastTimestampReceived)
+                plot_positions.addNewPosition(coin, price, 'enter', glob_status.lastTimestampReceived)
 
             elif data['type'] == 'exit':
                 split_msg = data['msg'].split(',')
                 coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
-                closed_position = current_positions.closePosition(coin, amnt, price)
+                closed_position = current_positions.closePosition(coin, amnt, price, glob_status.lastTimestampReceived)
                 if closed_position:
                     all_positions.append(closed_position)
                     coin_positions[coin].append(closed_position)
-                    plot_positions.addNewPosition(coin, price, 'exit')
+                    plot_positions.addNewPosition(coin, price, 'exit', glob_status.lastTimestampReceived)
                 else:
-                    plot_positions.addNewPosition(coin, price, 'partial_exit')
+                    plot_positions.addNewPosition(coin, price, 'partial_exit', glob_status.lastTimestampReceived)
             
 
 def BHSocket(bh_status):
@@ -120,7 +120,7 @@ def BHSocket(bh_status):
             bh_status.ping()
         time.sleep(2)
 
-def DCSocket(dc_conn, dc_status, coin_datastreams, current_positions):
+def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_positions):
     while True:
         data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
@@ -131,7 +131,12 @@ def DCSocket(dc_conn, dc_status, coin_datastreams, current_positions):
                 coin_name = data['msg']['coin'].upper()
                 close_price = float(data['msg']['price'])
                 
-                coin_datastreams[coin_name].update(close_price)
+                timestamp = int(data['msg']['time'])
+                glob_status.lastTimestampReceived = timestamp
+                if coin_datastreams[coin_name].initialized:
+                    coin_datastreams[coin_name].update(close_price, timestamp)
+                else:
+                    coin_datastreams[coin_name].initialize(close_price, timestamp)
                 current_positions.updatePosition(coin_name, close_price)
 
 
@@ -153,8 +158,10 @@ def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, 
                     account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1][0]
                 elif x['currency'] == 'USD':
                     account_value += float(x['balance'])
-
-            porfolio_datastream.update(account_value)
+            if porfolio_datastream.initialized:
+                porfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
+            else:
+                porfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
             cur_positions.p_value = account_value
         cb_status.ping()
         time.sleep(0.2)

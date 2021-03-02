@@ -39,6 +39,7 @@ from dash.dependencies import Input, Output, State
 class GlobalStatus:
     def __init__(self):
         self.isPaperTrading = False
+        self.lastTimestampReceived = 0
 
 
 glob_status = GlobalStatus()
@@ -63,6 +64,7 @@ plot_positions = PlotPositions(coins)
 pm_conn = PMConnect()
 
 dc_socket_thread = threading.Thread(target=DCSocket, args=(
+    glob_status,
     dc_conn,
     container_statuses['Data Consumer'], 
     coin_datastreams,
