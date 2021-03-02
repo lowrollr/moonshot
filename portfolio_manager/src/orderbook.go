@@ -78,6 +78,8 @@ func (book *Book) Update(price string, amnt string) {
 			book.OrderDict[price].Amnt = amntFl
 		}
 		return
+	} else if amntFl == 0.0 {
+		log.Warn("Order book descrepancy (tried to remove order that did not exist). This should never happen!")
 	}
 
 	if curOrder == nil {
