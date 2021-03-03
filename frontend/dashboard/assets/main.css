@@ -23,20 +23,20 @@
 }
 
 #react-select-2--value {
-  background-color:rgb(25, 25, 25); !important;
+  background-color:rgb(25, 25, 25) !important;
   border:0px !important;
   outline:0px !important;
 }
 
 #dropdown .Select-clear-zone {
-  background-color:rgb(25, 25, 25); !important;
+  background-color:rgb(25, 25, 25) !important;
   border:0px !important;
   outline:0px !important;
 
 }
 
 #dropdown .Select-arrow-zone {
-  background-color:rgb(25, 25, 25); !important;
+  background-color:rgb(25, 25, 25) !important;
   border:0px !important;
   outline:0px !important;
 }
