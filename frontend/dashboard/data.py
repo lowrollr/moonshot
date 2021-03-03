@@ -76,16 +76,17 @@ class Positions:
 
 class DataStream:
     def __init__(self, name):
+        now_str = datetime.fromtimestamp(0).strftime('%Y-%m-%d %H:%M:%S')
         self.name = name
         self.initialized = False
         self.day_data = deque(maxlen=1440)
-        self.day_data.append((1.0, 1))
+        self.day_data.append((1.0, 1, now_str))
         self.week_data = deque(maxlen=1440)
-        self.week_data.append((1.0, 1))
+        self.week_data.append((1.0, 1, now_str))
         self.month_data = deque(maxlen=1440)
-        self.month_data.append((1.0, 1))
+        self.month_data.append((1.0, 1, now_str))
         self.year_data = deque(maxlen=1440)
-        self.year_data.append((1.0, 1))
+        self.year_data.append((1.0, 1, now_str))
         
         self.last_updated_day = 0
         self.last_updated_week = 0
@@ -93,14 +94,15 @@ class DataStream:
         self.last_updated_year = 0
 
     def initialize(self, data, now):
+        now_str = datetime.fromtimestamp(now*60).strftime('%Y-%m-%d %H:%M:%S')
         self.day_data = deque(maxlen=1440)
-        self.day_data.append((data, now))
+        self.day_data.append((data, now, now_str))
         self.week_data = deque(maxlen=1440)
-        self.week_data.append((data, now))
+        self.week_data.append((data, now, now_str))
         self.month_data = deque(maxlen=1440)
-        self.month_data.append((data, now))
+        self.month_data.append((data, now, now_str))
         self.year_data = deque(maxlen=1440)
-        self.year_data.append((data, now))
+        self.year_data.append((data, now, now_str))
         self.last_updated_day = now
         self.last_updated_week = now
         self.last_updated_month = now
@@ -108,25 +110,26 @@ class DataStream:
         self.initialized = True
 
     def update(self, value, now):
+        now_str = datetime.fromtimestamp(now*60).strftime('%Y-%m-%d %H:%M:%S')
         while now >= self.last_updated_day:
             self.day_data.append(self.day_data[-1])
             self.last_updated_day += 1
-        self.day_data[-1] = (value, now)
+        self.day_data[-1] = (value, now, now_str)
         
         while now >= self.last_updated_week + 7:
             self.week_data.append(self.week_data[-1])
             self.last_updated_week += 7
-        self.week_data[-1] = (value, now)
+        self.week_data[-1] = (value, now, now_str)
 
         while now >= self.last_updated_month + 31:
             self.month_data.append(self.month_data[-1])
             self.last_updated_month += 31
-        self.month_data[-1] =(value, now)
+        self.month_data[-1] =(value, now, now_str)
         
         while now >= self.last_updated_year + 365:
             self.year_data.append(self.year_data[-1])
             self.last_updated_year += 365
-        self.year_data[-1] = (value, now)
+        self.year_data[-1] = (value, now, now_str)
         
 class PlotPositions:
     def __init__(self, coins):
@@ -143,7 +146,7 @@ class PlotPositions:
 
     def addNewPosition(self, coin, value, positionType, now):
         
-        new_position = {'time': now, 'value': value, 'type': positionType}
+        new_position = {'time': now, 'datetime':  datetime.fromtimestamp(now*60).strftime('%Y-%m-%d %H:%M:%S'), 'value': value, 'type': positionType}
         self.positions_to_plot_day[coin].append(new_position)
         self.positions_to_plot_week[coin].append(new_position)
         self.positions_to_plot_month[coin].append(new_position)

@@ -39,7 +39,11 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
                 dcc.Graph(
                     id='main_plot', 
                     className='asset_plot',
-                    figure=plot
+                    figure=plot,
+                    config={'showTips': False, 
+                            'displaylogo': False,
+                            'watermark': False,
+                            'staticPlot': True,}
                     )
             ]
         )
@@ -102,10 +106,38 @@ def getDropdown(coins, cur_coin):
 def getFig(datastream, positions=None):
     fig = make_subplots()
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)')
+            plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
+            xaxis=dict(
+                showgrid=False,  # Removes X-axis grid lines
+                zeroline=False,
+                showline=False,
+                tickfont = dict(
+                    family = 'Space Mono',
+                    size = 20,
+                    color = '#ebf5ff'
+                ),
+            ),
+            yaxis=dict(
+                showgrid=False,  # Removes Y-axis grid lines
+                zeroline=False,    
+                showline=False,
+                tickfont = dict(
+                    family = 'Space Mono',
+                    size = 20,
+                    color = '#ebf5ff'
+                ),
+            )
+            )
+
+    
     if datastream:
-        values, indices = zip(*list(datastream))
-        fig.add_trace(go.Scatter(x=indices, y=values))
+        values, _, indices = zip(*list(datastream))
+        going_up = values[0] <= values[-1]
+        linecolor = 'rgba(239,102,102,1)'
+        if going_up:
+            linecolor = 'rgba(114,228,126,1)'
+        fig.add_trace(go.Scatter(x=indices, y=values, line=dict(color=linecolor)) )
     if positions:
         enter_indices = []
         enter_values = []
@@ -115,13 +147,13 @@ def getFig(datastream, positions=None):
         exit_values = []
         for x in positions:
             if x['type'] == 'enter':
-                enter_indices.append(x['time'])
+                enter_indices.append(x['datetime'])
                 enter_values.append(x['value'])
             elif x['type'] == 'exit':
-                exit_indices.append(x['time'])
+                exit_indices.append(x['datetime'])
                 exit_values.append(x['value'])
             else:
-                partial_indices.append(x['time'])
+                partial_indices.append(x['datetime'])
                 partial_values.append(x['value'])
         fig.add_trace(go.Scatter(x=enter_indices, y=enter_values, mode="markers", marker_color="green"))
         fig.add_trace(go.Scatter(x=exit_indices, y=exit_values, mode="markers", marker_color="red"))

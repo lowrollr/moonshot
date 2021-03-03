@@ -103,7 +103,6 @@ cb_socket_thread.start()
 
 # Initialize Dash App
 app = dash.Dash(__name__)
-
 app.layout = createPage(
         toptext = getTopText(porfolio_datastream.day_data, 'AD LUNAM CAPITAL'),
         status_elems = getStatusElems(container_statuses), 
