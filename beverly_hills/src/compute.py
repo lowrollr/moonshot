@@ -53,7 +53,7 @@ class ComputeEngine:
         self.last_updated = 0
         self.windowSize = 15000
         self.minUnstablePeriod = 200
-        print(self.features, self.indicator_dict)
+        # print(self.features, self.indicator_dict)
         self.createIndicators()
         
         

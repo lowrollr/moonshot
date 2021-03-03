@@ -48,6 +48,7 @@ var (
 	CONPORT = ":" + string(os.Getenv("SERVERPORT"))
 
 	stratSocket net.Conn
+	Dumbo       *dumbo
 )
 
 type ServerClient struct {
@@ -71,6 +72,18 @@ type SocketCoinsMessage struct {
 	Msg         []string `json:"msg"`
 	Source      int      `json:"src"`
 	Destination int      `json:"dest"`
+}
+
+type Candlestick struct {
+	// *sync.Mutex `gorm:"-" json:"-"`
+	Open      float64 `gorm:"Type:real;not null;" json:"open"`
+	High      float64 `gorm:"Type:real;not null;" json:"high"`
+	Low       float64 `gorm:"Type:real;not null;" json:"low"`
+	Close     float64 `gorm:"Type:real;not null;" json:"close"`
+	Volume    float64 `gorm:"Type:real;not null;" json:"volume"`
+	NumTrades int     `gorm:"not null;" json:"trades"`
+	coinName  string  `gorm:"-"`
+	StartTime int64   `gorm:"type:bigint;not null" json:"time"`
 }
 
 type CandlestickData struct {

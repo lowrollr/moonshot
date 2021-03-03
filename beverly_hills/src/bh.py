@@ -49,7 +49,7 @@ class BeverlyHills():
         coins = ""
         while True:
             #change this to something else 
-            rawMsg = {'type': 'coins', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+            rawMsg = {'type': 'data', 'msg':'100', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             conn.send(json.dumps(rawMsg).encode('utf-8'))
             coins = readData(conn, 'main_data_consumer', os.environ["DATAPORT"])
             if len(coins) > 0:
@@ -80,9 +80,7 @@ class BeverlyHills():
     def compute(self):
         while True:
             data = json.loads(readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"]))
-            
             self.computeEngine.prepare(data["msg"])
-            
             
 
     def startServer(self):
@@ -95,6 +93,7 @@ class BeverlyHills():
         coro = loop.create_server(socketServer, '0.0.0.0', int(os.environ["SERVERPORT"]))
         server = loop.run_until_complete(coro)
         loop.run_forever()
+
 
     def loop(self):
         #split off two threads, one for starting server and handling connections.
