@@ -49,7 +49,7 @@ class BeverlyHills():
         coins = ""
         while True:
             #change this to something else 
-            rawMsg = {'type': 'data', 'msg':'100', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+            rawMsg = {'type': 'coins', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             conn.send(json.dumps(rawMsg).encode('utf-8'))
             coins = readData(conn, 'main_data_consumer', os.environ["DATAPORT"])
             if len(coins) > 0:
