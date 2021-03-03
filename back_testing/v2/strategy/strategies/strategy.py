@@ -6,7 +6,7 @@ WHAT:
     -> This file contains the Strategy superclass
 '''
 import os
-import pickle as pickle
+import pickle5 as pickle
 import multiprocessing as mp
 from itertools import chain, repeat
 import numpy as np
