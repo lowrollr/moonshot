@@ -111,22 +111,22 @@ class DataStream:
 
     def update(self, value, now):
         now_str = datetime.fromtimestamp(now*60).strftime('%Y-%m-%d %H:%M:%S')
-        while now >= self.last_updated_day:
+        while now > self.last_updated_day:
             self.day_data.append(self.day_data[-1])
             self.last_updated_day += 1
         self.day_data[-1] = (value, now, now_str)
         
-        while now >= self.last_updated_week + 7:
+        while now > self.last_updated_week + 7:
             self.week_data.append(self.week_data[-1])
             self.last_updated_week += 7
         self.week_data[-1] = (value, now, now_str)
 
-        while now >= self.last_updated_month + 31:
+        while now > self.last_updated_month + 31:
             self.month_data.append(self.month_data[-1])
             self.last_updated_month += 31
         self.month_data[-1] =(value, now, now_str)
         
-        while now >= self.last_updated_year + 365:
+        while now > self.last_updated_year + 365:
             self.year_data.append(self.year_data[-1])
             self.last_updated_year += 365
         self.year_data[-1] = (value, now, now_str)

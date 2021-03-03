@@ -90,7 +90,10 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                 glob_status.isPaperTrading = True
                 account_value = float(data['msg'])
                 current_positions.p_value = account_value
-                portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
+                if portfolio_datastream.initialized:
+                    portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
+                else:
+                    portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
             elif data['type'] == 'enter':
                 split_msg = data['msg'].split(',')
                 coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
@@ -134,6 +137,7 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
                 timestamp = int(data['msg']['time'])
                 glob_status.lastTimestampReceived = timestamp
                 if coin_datastreams[coin_name].initialized:
+                    print(coin_name, close_price, timestamp)
                     coin_datastreams[coin_name].update(close_price, timestamp)
                 else:
                     coin_datastreams[coin_name].initialize(close_price, timestamp)
