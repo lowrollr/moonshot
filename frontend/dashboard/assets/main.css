@@ -1,6 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
 
+.position_list {
+  padding-left: 0;
+  list-style: none;
+}
 
+.position{
+  color:#ebf5ff;;
+  list-style-type: none;
+  font-family: Space Mono;
+  font-size: 0.9vw;
+  text-align:center;
+  padding:10px;
+
+}
 
 #dropdown {
   font-family: Space Mono; 
