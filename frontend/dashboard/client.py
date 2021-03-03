@@ -137,7 +137,6 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
                 timestamp = int(data['msg']['time'])
                 glob_status.lastTimestampReceived = timestamp
                 if coin_datastreams[coin_name].initialized:
-                    print(coin_name, close_price, timestamp)
                     coin_datastreams[coin_name].update(close_price, timestamp)
                 else:
                     coin_datastreams[coin_name].initialize(close_price, timestamp)

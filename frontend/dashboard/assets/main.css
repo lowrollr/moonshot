@@ -1,9 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
 
+#dropdown {
+  font-family: Space Mono; 
+  border:0px;
+  outline:0px;
+
+}
+
+#dropdown .VirtualizedSelectFocusedOption{
+  background-color: #1a202c;
+  color:aliceblue;
+  font-weight:bolder;
+  border:0px;
+  outline:0px;
+
+}
+
+#dropdown .Select-value{
+  background-color: #ebf5ff;
+  font-weight:bolder;
+  border:0px;
+   outline:0px;
+
+}
+
 .background {
   width: 100vw;
   height: 100vh;
-  background: url("./images/v1_5.png");
+  background: url("./images/v1_6.png");
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover; 
@@ -39,7 +63,7 @@
 .sidebar {
   width: 20%;
   height: 100%;
-  background: rgba(240,240,240,0.3);
+  background: rgb(51 51 51 / 30%);
   position: fixed;
   z-index: 1;
   top: 0px;
@@ -74,7 +98,7 @@
   font-family: Space Mono;
   font-size: 3vh;
   font-weight: Bold;
-  color: rgba(0,0,0,1);
+  color: #ebf5ff;
   text-align:right;
   display:inline-block;
   margin-right:1.75vh;
@@ -84,7 +108,7 @@
   position: relative;
   width:80%;
   font-family: Space Mono;
-  color: rgba(0,0,0,1);
+  color:#ebf5ff;
   font-weight: Bold;
   font-size: 2vh;
   opacity: 1;
