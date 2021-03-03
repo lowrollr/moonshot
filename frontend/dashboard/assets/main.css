@@ -1,26 +1,53 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
 
+
+
 #dropdown {
   font-family: Space Mono; 
   border:0px;
+
   outline:0px;
+}
+
+#react-select-2--value {
+  background-color:rgb(25, 25, 25); !important;
+  border:0px !important;
+  outline:0px !important;
+}
+
+#dropdown .Select-clear-zone {
+  background-color:rgb(25, 25, 25); !important;
+  border:0px !important;
+  outline:0px !important;
 
 }
+
+#dropdown .Select-arrow-zone {
+  background-color:rgb(25, 25, 25); !important;
+  border:0px !important;
+  outline:0px !important;
+}
+
+#dropdown .Select-value-label{
+  color:#ebf5ff;
+  font-weight:bolder;
+}
+
+#dropdown .Select-menu-outer{
+  border:0px;
+  outline:0px;
+  background-color: rgb(25, 25, 25);
+  color:#ebf5ff;;
+}
+
+
 
 #dropdown .VirtualizedSelectFocusedOption{
   background-color: #1a202c;
-  color:aliceblue;
+  color:#ebf5ff;;
   font-weight:bolder;
   border:0px;
   outline:0px;
-
-}
-
-#dropdown .Select-value{
-  background-color: #ebf5ff;
-  font-weight:bolder;
-  border:0px;
-   outline:0px;
 
 }
 
