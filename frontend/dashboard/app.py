@@ -32,6 +32,10 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 # First, we'll initialize some data structures. 
 # Then, we'll initialize some socket-listening threads.
 # Finally, we'll initialize the Dash App.
@@ -159,5 +163,4 @@ def intervalUpdate(n, value, data):
 #     return getStatusElems(container_statuses)
 
 if __name__ == '__main__':
-    
-    app.run_server(host='0.0.0.0', port=8050)
+    app.run_server(host='0.0.0.0', port=8050, debug=False, dev_tools_silence_routes_logging=False)

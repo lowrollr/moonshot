@@ -17,9 +17,9 @@ def startClient(name, port, reconnect=False):
             ws = create_connection(uri)
             if not ws is None:
                 print(f"Connected to {name}:{port}\n")
-                if reconnect:
-                    rawMessage = {'type':'reconnect', 'msg':'', 'src':containersToId["frontend"], 'dest':containersToId[name]}
-                    ws.send(json.dumps(rawMessage).encode('utf-8'))
+                # if reconnect:
+                #     rawMessage = {'type':'reconnect', 'msg':'', 'src':containersToId["frontend"], 'dest':containersToId[name]}
+                #     ws.send(json.dumps(rawMessage).encode('utf-8'))
                 return ws
             else:
                 print(f"Could not connect to {name}:{port}. Retrying...")
@@ -38,15 +38,20 @@ def startInit(conn, dest, port):
         except ConnectionResetError:
             conn = startClient(dest, port, True)
 
-def readData(conn, name, port):
+def readData(conn, name, port, dest=""):
     while True:
         try:
             data = conn.recv()
-            return data
+            return conn, data
             
-        except ConnectionResetError:
+        except Exception as e:
             #make sure its reconnect insteaad of normal
+            print("Could not connect because of:", e)
+            conn.close()
             conn = startClient(name, port, True)
+            if dest != "":
+                rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
+                conn.send(json.dumps(rawMsg).encode('utf-8'))
             continue
 
 def retrieveCoinData(dc_socket):
@@ -54,7 +59,7 @@ def retrieveCoinData(dc_socket):
     while True:
         rawMessage = {'type':'coins', 'msg':'', 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
         dc_socket.send(json.dumps(rawMessage).encode('utf-8'))
-        coinMsg = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
+        dc_socket, coinMsg = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
         coins = []
         if "coins" in coinMsg:
             coins = json.loads(coinMsg)["msg"]
@@ -80,7 +85,7 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
     p_value = 0.0
     
     while True:
-        data = readData(pm_conn, 'portfolio_manager', os.environ['PM_PORT'])
+        pm_conn, data = readData(pm_conn, 'portfolio_manager', os.environ['PM_PORT'])
         if data:
             data = json.loads(data)
             pm_status.ping()
@@ -118,14 +123,14 @@ def BHSocket(bh_status):
     while True:
         rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
         bh_conn.send(json.dumps(rawMsg).encode('utf-8'))
-        data = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'])
+        bh_conn, data = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'], "frontend")
         if data:
             bh_status.ping()
         time.sleep(2)
 
 def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_positions):
     while True:
-        data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
+        dc_conn, data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
             data = json.loads(data)
             # print(data)

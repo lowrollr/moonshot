@@ -159,7 +159,7 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 			}
 		}
 	} else {
-		log.Println(message)
+		// log.Println(message)
 		log.Warn("Did not provide correct type")
 	}
 	return
@@ -316,7 +316,7 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 					Destination: containerToId[destinationStr],
 					Msg:         *packageToSend(&data.Candlesticks),
 				}
-				log.Println(candleMessage)
+				// log.Println(candleMessage)
 				go client.WriteAllSocketCandleJSON(&candleMessage, wg)
 			}
 		}

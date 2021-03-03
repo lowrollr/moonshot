@@ -25,8 +25,10 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
     def onConnect(self, request):
         print("Client connecting: {}".format(request.peer))
 
+ 
     def onOpen(self):
         print("WebSocket connection open.")
+
 
     def onMessage(self, payload, isBinary):
         if isBinary:
@@ -43,10 +45,8 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
             elif msg['src'] == containersToId['frontend'] and msg['type'] == 'ping':
                 rawMsg = {'type': 'ping', 'msg':'fuck you too', 'src':containersToId['beverly_hills'], 'dest':containersToId['frontend']}
                 self.sendMessage(json.dumps(rawMsg).encode('utf-8'))
-
-
+                
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {}".format(reason))
-
 

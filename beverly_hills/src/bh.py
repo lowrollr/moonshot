@@ -80,9 +80,7 @@ class BeverlyHills():
     def compute(self):
         while True:
             data = json.loads(readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"]))
-            
             self.computeEngine.prepare(data["msg"])
-            
             
 
     def startServer(self):
@@ -95,6 +93,7 @@ class BeverlyHills():
         coro = loop.create_server(socketServer, '0.0.0.0', int(os.environ["SERVERPORT"]))
         server = loop.run_until_complete(coro)
         loop.run_forever()
+
 
     def loop(self):
         #split off two threads, one for starting server and handling connections.
