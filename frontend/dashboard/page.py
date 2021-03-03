@@ -186,8 +186,8 @@ def getStatusElems(container_statuses):
                 getStatusDiv(container_statuses['Data Consumer'])
             ], className = 'statuspair'),
             html.Li([
-                html.Div('PM', className='statustext'),
-                getStatusDiv(container_statuses['PM'])
+                html.Div('Portfolio Manager', className='statustext'),
+                getStatusDiv(container_statuses['Portfolio Manager'])
             ], className = 'statuspair'),
             html.Li([
                 html.Div('Beverly Hills', className='statustext'),
@@ -214,14 +214,14 @@ def getPortfolioPositions(positions):
     elements = []
     for coin in positions:
         if positions[coin]:
-            cur_amnt = positions[coin]['amnt']
+            cur_amnt = round(positions[coin]['amnt'],  4)
             cur_price = positions[coin]['price']
-            profit = positions[coin]['profit']
+            profit = round(positions[coin]['profit'], 2)
             if profit > 0:
                 profit = '+' + str(profit) + '%'
             else:
                 profit = str(profit) + '%'
-            alloc = positions[coin]['alloc']
+            alloc = round(positions[coin]['alloc'], 3)
             element = html.Li(
                 className='position',
                 children= f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
@@ -237,14 +237,14 @@ def getPortfolioPositions(positions):
 def getCoinPositions(coin, cur_position):
     elements = []
     if cur_position:
-        cur_amnt = cur_position['amnt']
+        cur_amnt = round(cur_position['amnt'], 4)
         cur_price = cur_position['price']
-        profit = cur_position['profit']
+        profit = round(cur_position['profit'], 2)
         if profit > 0:
             profit = '+' + str(profit) + '%'
         else:
             profit = str(profit) + '%'
-        alloc = cur_position['alloc']
+        alloc = round(cur_position['alloc'], 3)
 
         elements.append(html.Li(
             className = 'position',

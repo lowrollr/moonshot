@@ -47,7 +47,7 @@ external_stylesheets = ["./assets/main.css"]
 
 # Initialize Data Structures
 container_statuses = dict()
-for c in {'PM', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
+for c in {'Portfolio Manager', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
     container_statuses[c] = Status()
 #PRETEND WE GET THE COINS HERE
 #TODO actually get the coins
@@ -76,7 +76,7 @@ bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['B
 pm_socket_thread = threading.Thread(target=PMSocket, args=(
     glob_status,
     pm_conn,
-    container_statuses['PM'],
+    container_statuses['Portfolio Manager'],
     position_history.all_positions,
     position_history.coin_positions,
     cur_positions,
