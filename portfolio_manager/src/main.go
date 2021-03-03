@@ -10,13 +10,4 @@ func main() {
 	go pm.ReadOrderBook(initialized)
 	<-initialized
 	pm.StartTrading()
-
-	// _ = initAtlas(&coins)
-
-	// go userDataStream()
-	//connect to data consumer
-	//
-
-	// startPM()
-
 }

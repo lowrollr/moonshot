@@ -17,7 +17,18 @@ func (client *Client) Receive() string {
 	return message.Msg
 }
 
-func (client *Client) ReceiveCandleData() *map[string]CandlestickData {
+func (client *Client) ReceiveSingleCandleData() *map[string]CandlestickData {
+	message := SocketSingleCandleMessage{}
+
+	err := client.conn.ReadJSON(&message)
+	if err != nil {
+		log.Warn("Was not able to read json data from socket because", err)
+	}
+
+	return &message.Msg
+}
+
+func (client *Client) ReceiveCandleData() *map[string][]CandlestickData {
 	message := SocketCandleMessage{}
 
 	err := client.conn.ReadJSON(&message)
@@ -26,7 +37,6 @@ func (client *Client) ReceiveCandleData() *map[string]CandlestickData {
 	}
 
 	return &message.Msg
-
 }
 
 func NewInternalClient(connection *ws.Conn) *Client {
@@ -141,9 +151,36 @@ func GetPrediction(bevConn *Client, coin string, timestamp int) bool {
 	return false
 }
 
+func (client *Client) GetPreviousData(dest string) (*[]string, *map[string][]CandlestickData) {
+	if dest != "main_data_consumer" {
+		log.Warn("dont try and get coins from something thats not main data consumer")
+	}
+	dataMessage := SocketMessage {
+		Msg: "150",
+		Type: "data",
+		Source: containerToId["portfolio_manager"],
+		Destination: containerToId[dest],
+	}
+	for {
+		err := client.conn.WriteJSON(dataMessage)
+		if err != nil {
+			log.Warn("Was not able to send data message to", dest, ". With error:", err)
+		}
+		candle_data := client.ReceiveCandleData()
+		coin_labels := make([]string, len(*candle_data))
+
+		i := 0
+		for coin, _ := range *candle_data {
+			coin_labels[i] = coin
+			i++
+		}
+		return &coin_labels, candle_data
+	}
+}
+
 func (client *Client) GetCoins(dest string) *[]string {
 	if dest != "main_data_consumer" {
-		log.Panic("dont try and get coins from something thats not main data consumer")
+		log.Warn("dont try and get coins from something thats not main data consumer")
 	}
 	coinKeyWord := SocketMessage{Msg: "",
 		Type:        "coins",

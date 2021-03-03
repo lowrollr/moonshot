@@ -67,7 +67,7 @@ func (atlas *Atlas) Process(data CandlestickData, coinName string) {
 func (atlas *Atlas) CalcEnter(data CandlestickData, coinName string, bhconn *Client) bool {
 	// log.Println(data.Close, atlas.SMAGoal[coinName].GetVal()*0.97)
 	if data.Close < atlas.SMAGoal[coinName].GetVal()*0.97 {
-		prediction := GetPrediction(bhconn, coinName, data.Time)
+		prediction := GetPrediction(bhconn, coinName, data.StartTime)
 		if prediction {
 			return true
 		}

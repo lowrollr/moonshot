@@ -69,7 +69,7 @@ type PortfolioManager struct {
 
 func initPM() *PortfolioManager {
 	mapDomainConnection := StartClient()
-	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
+	coins, _ := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer")
 	strategy := initAtlas(coins)
 	client := coinbasepro.NewClient()
 	candleDict := make(map[string]CandlestickData)
@@ -189,8 +189,7 @@ func (pm *PortfolioManager) StartTrading() {
 	pm.UpdateLiquidity()
 
 	for {
-
-		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveSingleCandleData()
 		if len(newCandleData) > 0 {
 			pm.CandleDict = newCandleData
 			pm.PMProcess()

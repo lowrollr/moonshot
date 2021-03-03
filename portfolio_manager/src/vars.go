@@ -98,20 +98,8 @@ type SocketCoinsMessage struct {
 	Destination int      `json:"dest"`
 }
 
-type Candlestick struct {
-	// *sync.Mutex `gorm:"-" json:"-"`
-	Open      float64 `gorm:"Type:real;not null;" json:"open"`
-	High      float64 `gorm:"Type:real;not null;" json:"high"`
-	Low       float64 `gorm:"Type:real;not null;" json:"low"`
-	Close     float64 `gorm:"Type:real;not null;" json:"close"`
-	Volume    float64 `gorm:"Type:real;not null;" json:"volume"`
-	NumTrades int     `gorm:"not null;" json:"trades"`
-	coinName  string  `gorm:"-"`
-	StartTime int64   `gorm:"type:bigint;not null" json:"time"`
-}
-
 type CandlestickData struct {
-	Time      int     `json:"time"`
+	StartTime int     `json:"time"`
 	Open      float64 `json:"open"`
 	High      float64 `json:"high"`
 	Low       float64 `json:"low"`
@@ -121,6 +109,13 @@ type CandlestickData struct {
 }
 
 type SocketCandleMessage struct {
+	Type        string                       `json:"type"`
+	Msg         map[string][]CandlestickData `json:"msg"`
+	Source      int                          `json:"src"`
+	Destination int                          `json:"dest"`
+}
+
+type SocketSingleCandleMessage struct {
 	Type        string                     `json:"type"`
 	Msg         map[string]CandlestickData `json:"msg"`
 	Source      int                        `json:"src"`
