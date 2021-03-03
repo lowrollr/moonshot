@@ -114,7 +114,7 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		log.Warn("Was not able to unmarshall", err)
 	}
-	
+
 	if message.Type == "coins" {
 		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
 		coinMessage := SocketCoinMessageConstruct(
@@ -244,13 +244,12 @@ func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 		-> The loop that consumes the data from the websocket
 */
 func (data *DataConsumer) ConsumeData(conn *ws.Conn, symbols *[]string) {
-	sec := 60 - time.Now().Second()
-	if sec != 60 {
-		log.Println("Waiting", sec, "second(s) to top of minute...")
-		time.Sleep(time.Duration(sec) * time.Second)
-	}
-	log.Println("Let's Consume!!")
-	
+	// sec := 60 - time.Now().Second()
+	// if sec != 60 {
+	// 	log.Println("Waiting", sec, "second(s) to top of minute...")
+	// 	time.Sleep(time.Duration(sec) * time.Second)
+	// }
+
 	for {
 		message := CoinBaseMessage{}
 		if err := conn.ReadJSON(&message); err != nil {
@@ -281,12 +280,13 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 	volume, _ := strconv.ParseFloat(msg.LastSize, 64)
 	//send data to the frontend
 	trade_coin := strings.Split(msg.ProductID, "-")[0]
-	now := int64(msg.Time.Minute())
+	now := int64(msg.Time.Unix()) / 60
 
 	messageToFrontend := SocketPriceMessageConstruct(
 		&CoinPrice{
 			Coin:  trade_coin,
 			Price: tradePrice,
+			Time:  now,
 		},
 		containerToId["main_data_consumer"],
 		containerToId["frontend"],

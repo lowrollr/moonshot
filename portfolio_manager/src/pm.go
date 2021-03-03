@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,6 +26,12 @@ type ProfitQueue struct {
 	NumOvr  int
 }
 
+type PaperTradingInfo struct {
+	MakerFee float64
+	TakerFee float64
+	Volume   float64
+}
+
 type CoinInfo struct {
 	InPosition       bool
 	EnterPrice       decimal.Decimal
@@ -38,6 +45,8 @@ type CoinInfo struct {
 	AvgLoss          float64
 	IntermediateCash float64
 	CoinOrderBook    *OrderBook
+	BidLiquidity     *SMA
+	AskLiquidity     *SMA
 }
 
 type PortfolioManager struct {
@@ -53,23 +62,16 @@ type PortfolioManager struct {
 	CoinbaseClient    *coinbasepro.Client
 	TradesToCalibrate int
 	CandleDict        map[string]CandlestickData
-}
-
-type EnterSignal struct {
-	Coin   string
-	Profit float64
+	IsPaperTrading    bool
+	PaperInfo         *PaperTradingInfo
+	TargetSlippage    float64
 }
 
 func initPM() *PortfolioManager {
 	mapDomainConnection := StartClient()
 	coins := mapDomainConnection[domainToUrl["main_data_consumer"]].GetCoins("main_data_consumer")
 	strategy := initAtlas(coins)
-
 	client := coinbasepro.NewClient()
-	accounts, err := client.GetAccounts()
-	if err != nil {
-		println(err.Error())
-	}
 	candleDict := make(map[string]CandlestickData)
 	coinInfoDict := make(map[string]*CoinInfo)
 	for _, coin := range *coins {
@@ -93,6 +95,16 @@ func initPM() *PortfolioManager {
 			AvgLoss:          0.0,
 			IntermediateCash: 0.0,
 			CoinOrderBook:    nil,
+			AskLiquidity: &SMA{
+				Values: deque.New(),
+				MaxLen: 60,
+				CurSum: 0,
+			},
+			BidLiquidity: &SMA{
+				Values: deque.New(),
+				MaxLen: 60,
+				CurSum: 0,
+			},
 		}
 	}
 	pm := &PortfolioManager{
@@ -104,33 +116,58 @@ func initPM() *PortfolioManager {
 		CoinbaseClient:    client,
 		TradesToCalibrate: 20,
 		Strat:             strategy,
-		MakerFee:          0.5,
-		TakerFee:          0.5,
+		MakerFee:          0.005,
+		TakerFee:          0.005,
 		CandleDict:        candleDict,
+		IsPaperTrading:    false,
+		PaperInfo: &PaperTradingInfo{
+			MakerFee: 0.005,
+			TakerFee: 0.005,
+			Volume:   0.0,
+		},
+		TargetSlippage: 0.0005,
 	}
-	for _, a := range accounts {
-		// is account USD
-		currency := a.Currency
-		if currency == "USD" {
-			cashAvailable, err := strconv.ParseFloat(a.Available, 64)
-			if err == nil {
-				pm.FreeCash = cashAvailable
-			}
-			portfolioValue, err := strconv.ParseFloat(a.Balance, 64)
-			if err == nil {
-				pm.PortfolioValue = portfolioValue
-			}
+	if os.Getenv("PAPERTRADING") == "1" {
+		log.Println("PM is paper trading!")
+		pm.IsPaperTrading = true
+	}
 
-			break
+	if !pm.IsPaperTrading {
+
+		accounts, err := client.GetAccounts()
+		if err != nil {
+			println(err.Error())
 		}
-	}
-	fees, err := client.GetFees()
-	if err != nil {
-		log.Println("Error fetching account fees!")
+		fees, err := client.GetFees()
+		if err != nil {
+			log.Println("Error fetching account fees!")
+		} else {
+			pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
+			pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
+		}
+		for _, a := range accounts {
+
+			// is account USD
+			currency := a.Currency
+			if currency == "USD" {
+				cashAvailable, err := strconv.ParseFloat(a.Available, 64)
+				if err == nil {
+					pm.FreeCash = cashAvailable
+				}
+				portfolioValue, err := strconv.ParseFloat(a.Balance, 64)
+				if err == nil {
+					pm.PortfolioValue = portfolioValue
+				}
+
+				break
+			}
+		}
 	} else {
-		pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
-		pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
+		pm.PortfolioValue = 30000.00
+		pm.FreeCash = 30000.00
+		pm.calcFees()
 	}
+
 	// log.Println(pm.CoinDict["BTC"])
 	// pm.enterPosition("BTC", 20000)
 	// log.Println(pm.CoinDict["BTC"])
@@ -149,6 +186,7 @@ func initPM() *PortfolioManager {
 func (pm *PortfolioManager) StartTrading() {
 	time.Sleep(1 * time.Second)
 	pm.PortfolioValue = pm.CalcPortfolioValue()
+	pm.UpdateLiquidity()
 
 	for {
 
@@ -158,6 +196,7 @@ func (pm *PortfolioManager) StartTrading() {
 			pm.PMProcess()
 		}
 		pm.PortfolioValue = pm.CalcPortfolioValue()
+		pm.UpdateLiquidity()
 	}
 
 }
@@ -171,7 +210,12 @@ func (pm *PortfolioManager) PMProcess() {
 		pm.Strat.Process(candle, coin)
 		if pm.CoinDict[coin].InPosition {
 			if pm.Strat.CalcExit(candle, coin) {
-				pm.PortfolioValue += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+				if pm.IsPaperTrading {
+					pm.FreeCash += pm.paperExit(coin, pm.CoinDict[coin].AmntOwned, pm.CandleDict[coin].Close)
+				} else {
+					pm.FreeCash += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
+				}
+
 			}
 		} else {
 			if pm.Strat.CalcEnter(candle, coin, pm.ClientConnections[domainToUrl["beverly_hills"]]) {
@@ -185,9 +229,15 @@ func (pm *PortfolioManager) PMProcess() {
 	for _, coin := range enter_coins {
 		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
 		cashToAllocate := pm.PortfolioValue * allocation
+		expLiquidity := (pm.CoinDict[coin].AskLiquidity.GetVal() + pm.CoinDict[coin].BidLiquidity.GetVal()) / 2
+		cashToAllocate = math.Min(cashToAllocate, expLiquidity)
 		if cashToAllocate < pm.FreeCash {
-			cashUsed := pm.enterPosition(coin, cashToAllocate)
-			pm.FreeCash -= cashUsed
+			if pm.IsPaperTrading {
+				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate, pm.CandleDict[coin].Close)
+			} else {
+				pm.FreeCash -= pm.enterPosition(coin, cashToAllocate)
+			}
+
 		} else {
 			// all coins in positions sorted by EV
 			pmCoins := pm.Coins
@@ -205,19 +255,29 @@ func (pm *PortfolioManager) PMProcess() {
 					cashNeeded := curCashValue - pm.FreeCash
 
 					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
-						cashReceived := pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
-						pm.FreeCash += cashReceived
+						if pm.IsPaperTrading {
+							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned, pm.CandleDict[coinIn].Close)
+						} else {
+							pm.FreeCash += pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
+						}
+
 					} else {
 						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
 						// partially exit position
-						cashReceived := pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
-						pm.FreeCash = cashReceived
+						if pm.IsPaperTrading {
+							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell), pm.CandleDict[coinIn].Close)
+						} else {
+							pm.FreeCash += pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
+						}
 					}
 				}
 				if pm.FreeCash > 0 {
 					amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
-					cashUsed := pm.enterPosition(coin, amntToAllocate)
-					pm.FreeCash -= cashUsed
+					if pm.IsPaperTrading {
+						pm.FreeCash -= pm.paperEnter(coin, amntToAllocate, pm.CandleDict[coin].Close)
+					} else {
+						pm.FreeCash -= pm.enterPosition(coin, amntToAllocate)
+					}
 				}
 			}
 		}
@@ -401,6 +461,8 @@ func (pm *PortfolioManager) ReadOrderBook(initialized chan bool) {
 						fullyInitialized = true
 						initialized <- true
 					}
+				} else {
+					pm.CoinDict[coin].CoinOrderBook = InitOrderBook(&message.Bids, &message.Asks)
 				}
 			} else if message.Type == "l2update" {
 				coin := strings.Split(message.ProductID, "-")[0]

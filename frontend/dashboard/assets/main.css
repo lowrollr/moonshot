@@ -1,16 +1,78 @@
-* {
-  padding: 0px !important;
-  margin: 0px !important;
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
+
+.position_list {
+  padding-left: 0;
+  list-style: none;
 }
+
+.position{
+  color:#ebf5ff;;
+  list-style-type: none;
+  font-family: Space Mono;
+  font-size: 0.9vw;
+  text-align:center;
+  padding:10px;
+
+}
+
+#dropdown {
+  font-family: Space Mono; 
+  border:0px;
+
+  outline:0px;
+}
+
+#react-select-2--value {
+  background-color:rgb(25, 25, 25) !important;
+  border:0px !important;
+  outline:0px !important;
+}
+
+#dropdown .Select-clear-zone {
+  background-color:rgb(25, 25, 25) !important;
+  border:0px !important;
+  outline:0px !important;
+
+}
+
+#dropdown .Select-arrow-zone {
+  background-color:rgb(25, 25, 25) !important;
+  border:0px !important;
+  outline:0px !important;
+}
+
+#dropdown .Select-value-label{
+  color:#ebf5ff;
+  font-weight:bolder;
+}
+
+#dropdown .Select-menu-outer{
+  border:0px;
+  outline:0px;
+  background-color: rgb(25, 25, 25);
+  color:#ebf5ff;;
+}
+
+
+
+#dropdown .VirtualizedSelectFocusedOption{
+  background-color: #1a202c;
+  color:#ebf5ff;;
+  font-weight:bolder;
+  border:0px;
+  outline:0px;
+
+}
+
 .background {
   width: 100vw;
   height: 100vh;
-  background: url("./images/v1_4.png");
+  background: url("./images/v1_6.png");
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover; 
   opacity: 1;
-  position: relative;
+  position: fixed;
   top: 0px;
   left: 0px;
   overflow: hidden;
@@ -25,7 +87,7 @@
 }
 .asset_value {
   
-  color: rgba(0,0,0,1);
+  color: #ebf5ff;
   font-size: 5.55vh;
   
 }
@@ -41,72 +103,79 @@
 .sidebar {
   width: 20%;
   height: 100%;
-  background: rgba(240,240,240,0.3);
-  z-index: 1;
-  opacity: 1;
+  background: rgb(51 51 51 / 30%);
   position: fixed;
+  z-index: 1;
   top: 0px;
   right: 0px;
   overflow-x: hidden;
-  align-items: center;
+  color:
+
 }
 .asset_plot {
   width: 70%;
   height: 80%;
-  background: rgba(240,240,240,0.3);
+  background: rgb(51 51 51 / 30%);
   opacity: 1;
   overflow: hidden;
   position: absolute;
   bottom:5%;
-  left:2.5%
+  left:2.5%;
 }
 .status_group {
-  width:75%
-  
-  
+  position:absolute;
+  bottom:0;
+  flex-wrap: wrap;
+  list-style-type: none;
+  width:80%;
+  display:block;
+  margin: 0;
+  padding: 20px;
 }
 .overall_statustext {
+  position: relative;
+  width:80%;
   font-family: Space Mono;
   font-size: 3vh;
   font-weight: Bold;
-  width: 100%;
-  color: rgba(0,0,0,1);
-  text-align: right;
-  position: relative;
-  right:3vh;
-  
+  color: #ebf5ff;
+  text-align:right;
+  display:inline-block;
+  margin-right:1.75vh;
 }
 .statustext {
-  font-family: Space Mono;
-  color: rgba(0,0,0,1);
+  
   position: relative;
-  right:3vh;
+  width:80%;
+  font-family: Space Mono;
+  color:#ebf5ff;
   font-weight: Bold;
   font-size: 2vh;
   opacity: 1;
-  text-align: right;
+  text-align:right;
+  display:inline-block;
+  margin-right:2vh;
 }
 .statuspair {
   opacity: 1;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
 }
 .statusbubble {
   width: 1.75vh;
   height: 1.75vh;
-  position: relative;
-  float:right;
-  top:-2.25vh;
   background: rgba(114,228,126,1);
   opacity: 1;
   border-radius: 50%;
+  display:inline-block;
 }
 .statusbubble_big {
   width: 2.25vh;
   height: 2.25vh;
-  position: relative;
-  float:right;
-  top:-3.25vh;
   background: rgba(114,228,126,1);
   opacity: 1;
   border-radius: 50%;
+  
+  display:inline-block;
+  
 }

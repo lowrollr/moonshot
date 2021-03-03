@@ -80,7 +80,7 @@ def PMPing(pm_conn):
         pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
         time.sleep(2)
 
-def PMSocket(pm_conn, pm_status, all_positions, coin_positions, current_positions):
+def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, current_positions, portfolio_datastream, plot_positions):
     
     p_value = 0.0
     
@@ -89,19 +89,33 @@ def PMSocket(pm_conn, pm_status, all_positions, coin_positions, current_position
         if data:
             data = json.loads(data)
             pm_status.ping()
-            if data['type'] == 'enter':
+            if data['type'] == 'pong':
+                glob_status.isPaperTrading = False
+            elif data['type'] == 'portfolio_value':
+                glob_status.isPaperTrading = True
+                account_value = float(data['msg'])
+                current_positions.p_value = account_value
+                if portfolio_datastream.initialized:
+                    portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
+                else:
+                    portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
+            elif data['type'] == 'enter':
                 split_msg = data['msg'].split(',')
                 coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
-                current_positions.openPosition(coin, amnt, price, p_value)
+                current_positions.openPosition(coin, amnt, price, glob_status.lastTimestampReceived)
+                plot_positions.addNewPosition(coin, price, 'enter', glob_status.lastTimestampReceived)
 
             elif data['type'] == 'exit':
                 split_msg = data['msg'].split(',')
                 coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
-                closed_position = current_positions.closePosition(coin, amnt, price)
+                closed_position = current_positions.closePosition(coin, amnt, price, glob_status.lastTimestampReceived)
                 if closed_position:
                     all_positions.append(closed_position)
                     coin_positions[coin].append(closed_position)
-
+                    plot_positions.addNewPosition(coin, price, 'exit', glob_status.lastTimestampReceived)
+                else:
+                    plot_positions.addNewPosition(coin, price, 'partial_exit', glob_status.lastTimestampReceived)
+            
 
 def BHSocket(bh_status):
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
@@ -114,7 +128,7 @@ def BHSocket(bh_status):
             bh_status.ping()
         time.sleep(2)
 
-def DCSocket(dc_conn, dc_status, coin_datastreams, current_positions):
+def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_positions):
     while True:
         dc_conn, data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
         if data:
@@ -125,7 +139,12 @@ def DCSocket(dc_conn, dc_status, coin_datastreams, current_positions):
                 coin_name = data['msg']['coin'].upper()
                 close_price = float(data['msg']['price'])
                 
-                coin_datastreams[coin_name].update(close_price)
+                timestamp = int(data['msg']['time'])
+                glob_status.lastTimestampReceived = timestamp
+                if coin_datastreams[coin_name].initialized:
+                    coin_datastreams[coin_name].update(close_price, timestamp)
+                else:
+                    coin_datastreams[coin_name].initialize(close_price, timestamp)
                 current_positions.updatePosition(coin_name, close_price)
 
 
@@ -134,20 +153,23 @@ def getCoins():
     coins = retrieveCoinData(dc_conn)
     return dc_conn, coins
 
-def CBSocket(porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
+def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
     auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url="https://api-public.sandbox.pro.coinbase.com")
     accounts = auth_client.get_accounts()
     coins = set(coins)
     while True:
-        
-        accounts = auth_client.get_accounts()
-        account_value = 0.0
-        for x in accounts:
-            if x['currency'] in coins:
-                account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1]
-            elif x['currency'] == 'USD':
-                account_value += float(x['balance'])
-
-        porfolio_datastream.update(account_value)
+        if not glob_status.isPaperTrading:
+            accounts = auth_client.get_accounts()
+            account_value = 0.0
+            for x in accounts:
+                if x['currency'] in coins:
+                    account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1][0]
+                elif x['currency'] == 'USD':
+                    account_value += float(x['balance'])
+            if porfolio_datastream.initialized:
+                porfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
+            else:
+                porfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
+            cur_positions.p_value = account_value
         cb_status.ping()
         time.sleep(0.2)

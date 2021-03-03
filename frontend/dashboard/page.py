@@ -39,7 +39,11 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
                 dcc.Graph(
                     id='main_plot', 
                     className='asset_plot',
-                    figure=plot
+                    figure=plot,
+                    config={'showTips': False, 
+                            'displaylogo': False,
+                            'watermark': False,
+                            'staticPlot': True,}
                     )
             ]
         )
@@ -51,8 +55,8 @@ def getTopText(data, asset):
     delta = '+$0.00'
     perc_change = '+0.00%'
     if data:
-        cur_value = data[-1]
-        first_value = data[0]
+        cur_value = data[-1][0]
+        first_value = data[0][0]
         if asset == 'AD LUNAM CAPITAL':
             cur_value = round(cur_value, 2)
             first_value = round(first_value, 2)
@@ -99,14 +103,61 @@ def getDropdown(coins, cur_coin):
 
 #TODO: plot volume on secondary axis
 #TODO: add timestamps to x axis & data points
-def getFig(datastream):
+def getFig(datastream, positions=None):
     fig = make_subplots()
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)')
-    if datastream:
-        indices, values = zip(*enumerate(list(datastream)))
-        fig.add_trace(go.Scatter(x=indices, y=values))
+            plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
+            xaxis=dict(
+                showgrid=False,  # Removes X-axis grid lines
+                zeroline=False,
+                showline=False,
+                tickfont = dict(
+                    family = 'Space Mono',
+                    size = 20,
+                    color = '#ebf5ff'
+                ),
+            ),
+            yaxis=dict(
+                showgrid=False,  # Removes Y-axis grid lines
+                zeroline=False,    
+                showline=False,
+                tickfont = dict(
+                    family = 'Space Mono',
+                    size = 20,
+                    color = '#ebf5ff'
+                ),
+            )
+            )
 
+    
+    if datastream:
+        values, _, indices = zip(*list(datastream))
+        going_up = values[0] <= values[-1]
+        linecolor = 'rgba(239,102,102,1)'
+        if going_up:
+            linecolor = 'rgba(114,228,126,1)'
+        fig.add_trace(go.Scatter(x=indices, y=values, line=dict(color=linecolor)) )
+    if positions:
+        enter_indices = []
+        enter_values = []
+        partial_indices = []
+        partial_values = []
+        exit_indices = []
+        exit_values = []
+        for x in positions:
+            if x['type'] == 'enter':
+                enter_indices.append(x['datetime'])
+                enter_values.append(x['value'])
+            elif x['type'] == 'exit':
+                exit_indices.append(x['datetime'])
+                exit_values.append(x['value'])
+            else:
+                partial_indices.append(x['datetime'])
+                partial_values.append(x['value'])
+        fig.add_trace(go.Scatter(x=enter_indices, y=enter_values, mode="markers", marker_color="green"))
+        fig.add_trace(go.Scatter(x=exit_indices, y=exit_values, mode="markers", marker_color="red"))
+        fig.add_trace(go.Scatter(x=partial_indices, y=partial_values, mode="markers", marker_color="yellow"))
     return fig
 
 
@@ -135,8 +186,8 @@ def getStatusElems(container_statuses):
                 getStatusDiv(container_statuses['Data Consumer'])
             ], className = 'statuspair'),
             html.Li([
-                html.Div('PM', className='statustext'),
-                getStatusDiv(container_statuses['PM'])
+                html.Div('Portfolio Manager', className='statustext'),
+                getStatusDiv(container_statuses['Portfolio Manager'])
             ], className = 'statuspair'),
             html.Li([
                 html.Div('Beverly Hills', className='statustext'),
@@ -163,14 +214,14 @@ def getPortfolioPositions(positions):
     elements = []
     for coin in positions:
         if positions[coin]:
-            cur_amnt = positions[coin]['amnt']
+            cur_amnt = round(positions[coin]['amnt'],  4)
             cur_price = positions[coin]['price']
-            profit = positions[coin]['profit']
+            profit = round(positions[coin]['profit'], 2)
             if profit > 0:
                 profit = '+' + str(profit) + '%'
             else:
                 profit = str(profit) + '%'
-            alloc = positions[coin]['alloc']
+            alloc = round(positions[coin]['alloc'], 3)
             element = html.Li(
                 className='position',
                 children= f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
@@ -186,14 +237,14 @@ def getPortfolioPositions(positions):
 def getCoinPositions(coin, cur_position):
     elements = []
     if cur_position:
-        cur_amnt = cur_position['amnt']
+        cur_amnt = round(cur_position['amnt'], 4)
         cur_price = cur_position['price']
-        profit = str(cur_position['profit'])
+        profit = round(cur_position['profit'], 2)
         if profit > 0:
             profit = '+' + str(profit) + '%'
         else:
             profit = str(profit) + '%'
-        alloc = cur_position['alloc']
+        alloc = round(cur_position['alloc'], 3)
 
         elements.append(html.Li(
             className = 'position',

@@ -2,7 +2,8 @@ from data import (
     DataStream,
     Positions,
     PositionStream,
-    Status
+    Status, 
+    PlotPositions
 )
 from client import (
     PMSocket,
@@ -39,16 +40,22 @@ log.setLevel(logging.ERROR)
 # Then, we'll initialize some socket-listening threads.
 # Finally, we'll initialize the Dash App.
 
+class GlobalStatus:
+    def __init__(self):
+        self.isPaperTrading = False
+        self.lastTimestampReceived = 0
+
+
+glob_status = GlobalStatus()
 external_stylesheets = ["./assets/main.css"]
 
 # Initialize Data Structures
 container_statuses = dict()
-for c in {'PM', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
+for c in {'Portfolio Manager', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
     container_statuses[c] = Status()
 #PRETEND WE GET THE COINS HERE
 #TODO actually get the coins
 dc_conn, coins = getCoins()
-print(coins)
 coin_datastreams = dict()
 for coin in coins:
     coin_datastreams[coin] = DataStream(name=coin)
@@ -56,10 +63,12 @@ for coin in coins:
 porfolio_datastream = DataStream(name='portfolio')
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
+plot_positions = PlotPositions(coins)
 
 pm_conn = PMConnect()
 
 dc_socket_thread = threading.Thread(target=DCSocket, args=(
+    glob_status,
     dc_conn,
     container_statuses['Data Consumer'], 
     coin_datastreams,
@@ -69,16 +78,20 @@ dc_socket_thread = threading.Thread(target=DCSocket, args=(
 bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
 
 pm_socket_thread = threading.Thread(target=PMSocket, args=(
+    glob_status,
     pm_conn,
-    container_statuses['PM'],
+    container_statuses['Portfolio Manager'],
     position_history.all_positions,
     position_history.coin_positions,
     cur_positions,
+    porfolio_datastream,
+    plot_positions,
     ))
 
 pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
 
 cb_socket_thread = threading.Thread(target=CBSocket, args=(
+    glob_status,
     porfolio_datastream, 
     coin_datastreams,
     cur_positions,
@@ -94,7 +107,6 @@ cb_socket_thread.start()
 
 # Initialize Dash App
 app = dash.Dash(__name__)
-
 app.layout = createPage(
         toptext = getTopText(porfolio_datastream.day_data, 'AD LUNAM CAPITAL'),
         status_elems = getStatusElems(container_statuses), 
@@ -137,7 +149,7 @@ def intervalUpdate(n, value, data):
                 toptext = getTopText(coin_datastreams[asset].day_data, asset),
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getCoinPositions(asset, cur_positions.positions[asset]),
-                plot = getFig(coin_datastreams[asset].day_data),
+                plot = getFig(coin_datastreams[asset].day_data, plot_positions.positions_to_plot_day[asset]),
                 coins=coins,
                 cur_coin=asset,
             ), data
