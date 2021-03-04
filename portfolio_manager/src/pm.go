@@ -68,6 +68,7 @@ type PortfolioManager struct {
 }
 
 func initPM() *PortfolioManager {
+	Dumbo.InitializeDB()
 	mapDomainConnection := StartClient()
 	coins, _ := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer")
 	strategy := initAtlas(coins)

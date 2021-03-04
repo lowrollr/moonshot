@@ -23,16 +23,16 @@ type dumbo struct {
 }
 
 func (Dumbo *dumbo) InitializeDB() {
-	fmt.Println("Connecting to database")
-
+	log.Println("Connecting to database")
 	var err error
 	global_db, err := Dumbo.ConnectDB(db_string, dbType)
-	Dumbo.DBInterface = global_db
+	
 	if err != nil {
 		//if we can't connect to db then panic and stop
 		panic(err)
 	}
-	fmt.Println("Connected to database successfully")
+	Dumbo.DBInterface = global_db
+	log.Println("Connected to database successfully")
 }
 
 /*

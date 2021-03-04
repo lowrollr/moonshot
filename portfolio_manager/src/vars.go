@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	ws "github.com/gorilla/websocket"
 )
 
@@ -23,6 +25,12 @@ var (
 			return true
 		},
 	}
+
+	Dumbo     *dumbo
+	db        *gorm.DB
+	dbType    = os.Getenv("DBTYPE")
+	db_string = os.Getenv("DBTYPE") + "://" + os.Getenv("DBUSER") + ":" + os.Getenv("DBPASS") + "@" + os.Getenv("DBNETLOC") + ":" + os.Getenv("DBPORT") + "/" + os.Getenv("DBNAME") + "?sslmode=disable"
+	dbName    = os.Getenv("DBNAME")
 
 	domainToUrl = map[string]string{
 		"main_data_consumer": "main_data_consumer:" + os.Getenv("DATAPORT"),
@@ -48,7 +56,6 @@ var (
 	CONPORT = ":" + string(os.Getenv("SERVERPORT"))
 
 	stratSocket net.Conn
-	Dumbo       *dumbo
 
 	coinbaseTakerFees = map[float64]float64{
 		10000:     0.005,
