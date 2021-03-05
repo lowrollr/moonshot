@@ -10,7 +10,7 @@ import (
 
 func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targetPrice float64) float64 {
 
-	fees := cashAllocated * pm.PaperInfo.TakerFee
+	fees := cashAllocated * pm.TakerFee
 	totalAmnt := 0.0
 	cashAvailable := cashAllocated - fees
 	cashRemaining := cashAvailable
@@ -37,7 +37,7 @@ func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targe
 		info.CashInvested = cashAllocated
 		info.EnterPriceFl = cashAvailable / totalAmnt
 		info.AmntOwned = decimal.NewFromFloat(totalAmnt)
-		pm.PaperInfo.Volume += cashAvailable
+		pm.Volume += cashAvailable
 		pm.calcFees()
 		log.Println("Entered ", coin, ": ", totalAmnt, "@", info.EnterPriceFl)
 		slippage := -100.0 * ((info.EnterPriceFl / targetPrice) - 1.0)
@@ -54,7 +54,7 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 	amntStr := portionToSell.String()
 	amntFlt, _ := strconv.ParseFloat(amntStr, 64)
 
-	fees := amntFlt * pm.PaperInfo.TakerFee
+	fees := amntFlt * pm.TakerFee
 	cashReceived := 0.0
 	amntAvailable := amntFlt - fees
 	amntRemaining := amntAvailable
@@ -86,7 +86,7 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 			info.IntermediateCash = 0.0
 			info.updateProfitInfo(profitPercentage)
 		}
-		pm.PaperInfo.Volume += cashReceived
+		pm.Volume += cashReceived
 		pm.calcFees()
 		averagePrice := cashReceived / amntAvailable
 		log.Println("Exited ", coin, ": ", amntFlt, "@", averagePrice)
@@ -102,14 +102,14 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 func (pm *PortfolioManager) calcFees() {
 	foundTier := false
 	for amnt, fee := range coinbaseTakerFees {
-		if amnt > pm.PaperInfo.Volume {
-			pm.PaperInfo.TakerFee = fee
+		if amnt > pm.Volume {
+			pm.TakerFee = fee
 			foundTier = true
 			break
 		}
 	}
 	if !foundTier {
-		pm.PaperInfo.TakerFee = 0.0004
+		pm.TakerFee = 0.0004
 	}
 
 	return

@@ -3,7 +3,7 @@ package main
 import (
 	"math"
 
-	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
+	"gopkg.in/karalabe/cookiejar.v2/collections/deque"
 )
 
 type RateOfChange struct {

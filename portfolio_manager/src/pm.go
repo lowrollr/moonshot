@@ -11,7 +11,7 @@ import (
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
 	decimal "github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
+	"gopkg.in/karalabe/cookiejar.v2/collections/deque"
 	// "sort"
 	// "math"
 )
@@ -24,12 +24,6 @@ type ProfitQueue struct {
 	NumPos  int
 	NumNeg  int
 	NumOvr  int
-}
-
-type PaperTradingInfo struct {
-	MakerFee float64
-	TakerFee float64
-	Volume   float64
 }
 
 type CoinInfo struct {
@@ -50,6 +44,7 @@ type CoinInfo struct {
 }
 
 type PortfolioManager struct {
+	Volume            float64
 	MakerFee          float64
 	TakerFee          float64
 	Strat             *Atlas
@@ -63,7 +58,6 @@ type PortfolioManager struct {
 	TradesToCalibrate int
 	CandleDict        map[string]CandlestickData
 	IsPaperTrading    bool
-	PaperInfo         *PaperTradingInfo
 	TargetSlippage    float64
 }
 
@@ -118,14 +112,10 @@ func initPM() *PortfolioManager {
 		Strat:             strategy,
 		MakerFee:          0.005,
 		TakerFee:          0.005,
+		Volume:            0.0,
 		CandleDict:        candleDict,
 		IsPaperTrading:    false,
-		PaperInfo: &PaperTradingInfo{
-			MakerFee: 0.005,
-			TakerFee: 0.005,
-			Volume:   0.0,
-		},
-		TargetSlippage: 0.0005,
+		TargetSlippage:    0.0005,
 	}
 	if os.Getenv("PAPERTRADING") == "1" {
 		log.Println("PM is paper trading!")
@@ -187,7 +177,6 @@ func (pm *PortfolioManager) StartTrading() {
 	time.Sleep(1 * time.Second)
 	pm.PortfolioValue = pm.CalcPortfolioValue()
 	pm.UpdateLiquidity()
-
 	for {
 
 		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
@@ -226,6 +215,7 @@ func (pm *PortfolioManager) PMProcess() {
 	if len(enter_coins) > 0 {
 		pm.SortByProfit(&enter_coins)
 	}
+	enter_coins = []string{"BTC", "ETH", "LTC", "BCH", "EOS", "DASH", "OXT", "MKR", "XLM", "ATOM", "XTZ", "ETC", "OMG", "ZEC", "LINK", "REP", "ZRX", "ALGO", "KNC", "COMP", "BAND"}
 	for _, coin := range enter_coins {
 		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
 		cashToAllocate := pm.PortfolioValue * allocation
@@ -240,44 +230,46 @@ func (pm *PortfolioManager) PMProcess() {
 
 		} else {
 			// all coins in positions sorted by EV
-			pmCoins := pm.Coins
-			evMap := pm.SortByEV(pm.GetCoinsInPosition(*pmCoins))
-			for _, coinIn := range *pmCoins {
-				if !(ExistsInSlice(coinIn, &enter_coins)) {
+			coinsInPosition := pm.GetCoinsInPosition(*pm.Coins)
+			evMap := pm.SortByEV(coinsInPosition)
+			for _, coinIn := range *coinsInPosition {
+				// if !(ExistsInSlice(coinIn, &enter_coins)) {
 
-					if cashToAllocate <= pm.FreeCash || ((*evMap)[coinIn] > pm.CoinDict[coinIn].AvgProfit && pm.CoinDict[coinIn].ProfitHistory.Results.Size() > 0) {
-						break
-					}
-
-					amntOwnedStr := pm.CoinDict[coinIn].AmntOwned.String()
-					amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
-					curCashValue := pm.CandleDict[coinIn].Close * amntOwnedFlt
-					cashNeeded := curCashValue - pm.FreeCash
-
-					if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
-						if pm.IsPaperTrading {
-							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned, pm.CandleDict[coinIn].Close)
-						} else {
-							pm.FreeCash += pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
-						}
-
-					} else {
-						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
-						// partially exit position
-						if pm.IsPaperTrading {
-							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell), pm.CandleDict[coinIn].Close)
-						} else {
-							pm.FreeCash += pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
-						}
-					}
+				if cashToAllocate <= pm.FreeCash || ((*evMap)[coinIn] > pm.CoinDict[coinIn].AvgProfit && pm.CoinDict[coinIn].ProfitHistory.Results.Size() > 0) {
+					break
 				}
-				if pm.FreeCash > 0 {
-					amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
+
+				amntOwnedStr := pm.CoinDict[coinIn].AmntOwned.String()
+				amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
+				curCashValue := pm.CandleDict[coinIn].Close * amntOwnedFlt
+				cashNeeded := curCashValue - pm.FreeCash
+
+				if pm.FreeCash == 0 || cashNeeded >= 0.5*curCashValue {
 					if pm.IsPaperTrading {
-						pm.FreeCash -= pm.paperEnter(coin, amntToAllocate, pm.CandleDict[coin].Close)
+						pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned, pm.CandleDict[coinIn].Close)
 					} else {
-						pm.FreeCash -= pm.enterPosition(coin, amntToAllocate)
+						pm.FreeCash += pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
 					}
+
+				} else {
+					amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
+					// partially exit position
+					if pm.IsPaperTrading {
+						pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell), pm.CandleDict[coinIn].Close)
+					} else {
+						pm.FreeCash += pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
+					}
+					break
+				}
+				// }
+
+			}
+			if pm.FreeCash > 0 {
+				amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
+				if pm.IsPaperTrading {
+					pm.FreeCash -= pm.paperEnter(coin, amntToAllocate, pm.CandleDict[coin].Close)
+				} else {
+					pm.FreeCash -= pm.enterPosition(coin, amntToAllocate)
 				}
 			}
 		}
@@ -323,9 +315,9 @@ func (pm *PortfolioManager) SortByProfit(coins *[]string) {
 func (pm *PortfolioManager) SortByEV(coins *[]string) *map[string]float64 {
 	evMap := make(map[string]float64)
 	for _, coin := range *coins {
-
-		enterPrice := pm.CoinDict[coin].EnterPriceFl
-		expectedValue := pm.CoinDict[coin].AvgProfit - ((pm.CandleDict[coin].Close - enterPrice) / enterPrice)
+		amntOwnedStr := pm.CoinDict[coin].AmntOwned.String()
+		amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
+		expectedValue := pm.CoinDict[coin].AvgWin - (((((pm.CandleDict[coin].Close * amntOwnedFlt) * (1 - pm.TakerFee)) + pm.CoinDict[coin].IntermediateCash) / pm.CoinDict[coin].CashInvested) - 1.0)
 		evMap[coin] = expectedValue
 
 	}
