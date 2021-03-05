@@ -490,4 +490,4 @@ def exitPosition(info, fees, time):
     info['cash_invested'] = 0.0
     info['intermediate_cash'] = 0.0
     info['amnt_owned'] = 0.0
-    return new_cash
+    return new_cash, profit

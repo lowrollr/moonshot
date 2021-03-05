@@ -56,7 +56,8 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
 
     # list of profits compiled through appending all profits from each individual movement
     overall_profits = []
-
+    wins = []
+    losses = []
     # list of hold times compiled through appending all hold times from each individual movement
     overall_hold_times = []
     with alive_bar(len(exits), spinner=getRandomSpinner()) as bar:
@@ -123,50 +124,35 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
 
                 # calculate hold time and percent profit for the movement
                 hold_time = (time_exit - time_entry) / 60000
-                profit = round(((price_exit / price_entry) * 100) - 100, 2)
+                profit = exits[i][2]
                 movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
                 movement_stats['% Profit'] = str(profit) + '%'
 
                 # append the hold time and profit to the overall set of hold times and profits
                 overall_hold_times.append(hold_time)
                 overall_profits.append(profit)
+                if profit > 0:
+                    wins.append(profit)
+                else:
+                    losses.append(profit)
 
                 # append a tuple containing the stringified plot and movement stats
                 plots.append((plot_as_div, movement_stats))
                 bar()
 
-    profit_arr = [x for x in overall_profits if x > 0]
-    loss_arr = [x for x in overall_profits if x < 0]
-
-    profitable_trades = []
-                #   time,       fee
-    fee_changes = [(fees[0][2], fees[0][1])]
-
-    for fee in fees:
-        if fee[1] != fee_changes[-1][1]:
-            fee_changes.append((fee[2], fee[1]))
-
-    for i in range(len(overall_profits)):
-        fee = 0.5
-        for time_fee in fee_changes:
-            if overall_hold_times[i] > time_fee[0]:
-                fee = time_fee[1]
-        if overall_profits[i] > fee:
-            profitable_trades.append(1)
-        else:
-            profitable_trades.append(0)
+   
 
     # calculate metrics for the overall performance
     overall_stats['Total Trades'] = len(overall_hold_times)
     overall_stats['Average Hold Time'] = str(round(mean(overall_hold_times), 2)) + ' min'
     overall_stats['Maximum Hold Time'] = str(round(max(overall_hold_times), 2)) + ' min'
     overall_stats['Minimum Hold Time'] = str(round(min(overall_hold_times), 2)) + ' min'
-    overall_stats['Average Profit (%)'] = str(round(mean(overall_profits), 2)) + '%'
-    overall_stats['Profit Average (%)'] = round(mean(profit_arr), 2)
-    overall_stats['Loss Average (%)'] = round(mean(loss_arr), 2)
+    overall_stats['Average P&L (%)'] = str(round(mean(overall_profits) * 100, 2)) + '%'
+    overall_stats['Average Profit (%)'] = round(mean(wins) * 100, 2)
+    overall_stats['Average Loss (%)'] = round(mean(losses) * 100, 2)
     overall_stats['Max Profit (%)'] = str(round(max(overall_profits), 2)) + '%'
     overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits), 2)) + '%'
-    overall_stats['Percentage of Trades Profitable'] = round(sum(profitable_trades) / len(profitable_trades) * 100, 2)
+    overall_stats['Win Rate (%)'] = round(len(wins) / len(overall_profits) * 100, 2)
     
     return (plots, overall_stats)
 
@@ -343,7 +329,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                 filenames[name].append(generate_movement_page(mp, mp_stats, name, movement_num))
                 movement_num += 1
             
-            coin_stats[name]["Asset RateOfChange (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
+            coin_stats[name]["Asset Growth (%)"] = round(((dataset['close'].iloc[-1] - dataset['close'].iloc[0]) / dataset['close'].iloc[0]), 3) * 100
             # coin_stats[name]["Profit Average(%)"]
             fig = make_subplots()
             fig.update_layout(template='plotly_dark', title_text=f'{name}')
@@ -359,11 +345,13 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
     bar_width = int(0.9 * (time_amount / num_bars))
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.update_layout(template='plotly_dark', title_text='Portfolio Growth')
+    fig.update_layout(template='plotly_dark', title_text='Portfolio Growth', barmode='stack')
     times = [x[0] for x in portfolio_growth]
     port_values = [x[1] for x in portfolio_growth]
     fig.add_trace(go.Scatter(x=times, y=port_values, name='Portfolito Value'), secondary_y=False)
-    fig.add_trace(go.Bar(x=[a[0] for a in volume_bars], y=[a[1] for a in volume_bars], name='Total Trade Volume', opacity=0.25, marker_color='grey', width=bar_width), secondary_y=True)
+    fig.add_trace(go.Bar(x=[a[0] for a in volume_bars], y=[a[1] for a in volume_bars], name='Wins', opacity=0.25, marker_color='green', width=bar_width), secondary_y=True)
+    fig.add_trace(go.Bar(x=[a[0] for a in volume_bars], y=[a[2] for a in volume_bars], name='Losses', opacity=0.25, marker_color='red', width=bar_width), secondary_y=True)
+
     growth_plot = plot(fig, include_plotlyjs=False, output_type='div')
 
     fig = make_subplots()
@@ -401,18 +389,18 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
         script(type='text/javascript', src='script.js')
         script(src='https://cdn.plot.ly/plotly-latest.min.js')
 
-    avg_asset_roc = round((sum([coin_stats[x]["Asset RateOfChange (%)"] for x in coin_stats])/len(coin_stats)), 1)
+    avg_asset_roc = round((sum([coin_stats[x]["Asset Growth (%)"] for x in coin_stats])/len(coin_stats)), 1)
     # profit_avg = round((sum([coin_stats[x]["Average Profit(%)"] for x in coin_stats if coin_stats[x]["Average Profit(%)"] > 0])))
     # loss_avg = round((sum([coin_stats[x]["Average Profit(%)"] for x in coin_stats if coin_stats[x]["Average Profit(%)"] < 0])))
     portfolio_roc = round((port_values[-1]*100 - port_values[0]*100)/(port_values[0]), 1)
     total_trades =  int(sum([coin_stats[x]["Total Trades"] for x in coin_stats]))
     #
-    avg_profit_avg = round(sum([float(coin_stats[x]['Percentage of Trades Profitable'])/100 * float(coin_stats[x]["Total Trades"]) * float(coin_stats[x]["Profit Average (%)"]) for x in coin_stats])/
-    sum([float(coin_stats[x]['Percentage of Trades Profitable'])/100 * int(coin_stats[x]['Total Trades']) for x in coin_stats]), 2)
-    avg_loss_avg = round(sum([float(1 - coin_stats[x]['Percentage of Trades Profitable'])/100 * float(coin_stats[x]["Total Trades"]) * float(coin_stats[x]["Loss Average (%)"]) for x in coin_stats])/
-    sum([float(1 - coin_stats[x]['Percentage of Trades Profitable'])/100 * int(coin_stats[x]['Total Trades']) for x in coin_stats]), 2)
+    avg_profit_avg = round(sum([float(coin_stats[x]['Win Rate (%)']) * float(coin_stats[x]["Total Trades"]) * float(coin_stats[x]["Average Profit (%)"]) for x in coin_stats])/
+    sum([float(coin_stats[x]['Win Rate (%)']) * int(coin_stats[x]['Total Trades']) for x in coin_stats]), 2)
+    avg_loss_avg = round(sum([float(1 - coin_stats[x]['Win Rate (%)']) * float(coin_stats[x]["Total Trades"]) * float(coin_stats[x]["Average Loss (%)"]) for x in coin_stats])/
+    sum([float(1 - coin_stats[x]['Win Rate (%)']) * int(coin_stats[x]['Total Trades']) for x in coin_stats]), 2)
 
-    tot_win = round((sum([float(coin_stats[x]['Percentage of Trades Profitable'])/100 * float(coin_stats[x]["Total Trades"]) for x in coin_stats])/sum([int(coin_stats[x]['Total Trades']) for x in coin_stats]) * 100), 2)
+    tot_win = round((sum([float(coin_stats[x]['Win Rate (%)']) * float(coin_stats[x]["Total Trades"]) for x in coin_stats])/sum([int(coin_stats[x]['Total Trades']) for x in coin_stats])), 2)
 
     with doc:
         with div():
@@ -421,12 +409,12 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
             td(raw(growth_plot))
             with table().add(tbody()):
                 tr().add(td("Initial Portfolio Value :")).add(td(round(port_values[0], 2)))
-                tr().add(td("Exit Portfolio value: ")).add(td(round(port_values[-1], 2)))
+                tr().add(td("Exit Portfolio Value: ")).add(td(round(port_values[-1], 2)))
                 tr().add(td("Portfolio RateOfChange (%)")).add(td(str(portfolio_roc) + "%"))
                 tr().add(td("Asset Avg. RateOfChange (%)")).add(td(str(avg_asset_roc) + "%"))
                 tr().add(td("Total Trades: ")).add(td(str(total_trades)))
-                tr().add(td("Total Average of Average Profit: ")).add(td(str(avg_profit_avg) + "%"))
-                tr().add(td("Total Average of Average Loss: ")).add(td(str(avg_loss_avg) + "%"))
+                tr().add(td("Overall Average Profit: ")).add(td(str(avg_profit_avg) + "%"))
+                tr().add(td("Overall Average Loss: ")).add(td(str(avg_loss_avg) + "%"))
                 tr().add(td("Overall Win Rate: ")).add(td(str(tot_win) + "%"))
 
             td(raw(allocation_plot))
@@ -442,7 +430,7 @@ def writePMReport(coin_datasets, entries, exits, portfolio_growth, portfolio_all
                     for stat in coin_stats[coin]:
                         row = tr()
                         row.add(td(stat))
-                        if stat == "Percentage of Trades Profitable" or stat == "Asset RateOfChange (%)" or stat == "Profit Average (%)" or stat == "Loss Average (%)":
+                        if stat == "Win Rate (%)" or stat == "Asset Growth (%)" or stat == "Average Profit (%)" or stat == "Average Loss (%)":
                             row.add(td(str(round(coin_stats[coin][stat], 2)) + "%"))
                         else:
                             row.add(td(coin_stats[coin][stat]))

@@ -411,14 +411,16 @@ class Trading:
         coin_allocations['CASH'] = [(all_timestamps[0], 1.0)]
         
         next_bar_timestamp = all_timestamps[0] + (1440 * 60000)
-        trade_count = 0
+        win_count = 0
+        loss_count = 0
         with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
             
             for time in all_timestamps:
                 if time >= next_bar_timestamp:
-                    volume_bars.append((time - (720 * 60000), trade_count))
+                    volume_bars.append((time - (720 * 60000), win_count, loss_count))
                     next_bar_timestamp += (1440 * 60000)
-                    trade_count = 0
+                    win_count = 0
+                    loss_count = 0
                 enter_signals = []
                 exited_position = False
                 
@@ -444,12 +446,16 @@ class Trading:
 
                             if strategy.calc_exit(row, coin):
                                 sell_signals[coin].append((row.time, row.close))
-                                exits[coin].append((row.time, row.close))
+                                
                                 exited_position = True
-                                exited_cash = utils.exitPosition(coin_info[coin], self.fees, time)
+                                exited_cash, profit = utils.exitPosition(coin_info[coin], self.fees, time)
+                                exits[coin].append((row.time, row.close, profit))
                                 self.computeVolumeFee(exited_cash, time)
                                 cash += exited_cash
-                                trade_count += 1
+                                if profit > 0:
+                                    win_count += 1
+                                else:
+                                    loss_count += 1
       
                 if enter_signals:
                        
@@ -468,32 +474,33 @@ class Trading:
                             entries[coin].append((time, coin_info[coin]['last_close_price']))
                             
                         else:
-                            current_positions = sorted([(c, coin_info[c]['avg_win'] - utils.getCurrentReturn(coin_info[c], self.fees)) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
-                            for coin_c, expexted_remaining_profit in current_positions:
+                            pass
+                            # current_positions = sorted([(c, coin_info[c]['avg_win'] - utils.getCurrentReturn(coin_info[c], self.fees)) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
+                            # for coin_c, expexted_remaining_profit in current_positions:
                                 
-                                if coin_c in enter_signals:
-                                    continue
-                                if cash_allocated <= cash or (expexted_remaining_profit > coin_info[coin]['avg_win']):
-                                    break
-                                cash_needed = cash_allocated - cash
-                                cash_available = (1-self.fees)*(coin_info[coin_c]['amnt_owned'] * coin_info[coin_c]['last_close_price'])
-                                # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
-                                if not cash or cash_allocated >= cash_available * (1/2):
-                                    exited_position = True
-                                    exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
-                                    exited_cash = utils.exitPosition(coin_info[coin_c], self.fees, time)
-                                    self.computeVolumeFee(exited_cash, time)
-                                    cash +=  exited_cash
-                                    trade_count += 1
+                            #     if coin_c in enter_signals:
+                            #         continue
+                            #     if cash_allocated <= cash or (expexted_remaining_profit > coin_info[coin]['avg_win']):
+                            #         break
+                            #     cash_needed = cash_allocated - cash
+                            #     cash_available = (1-self.fees)*(coin_info[coin_c]['amnt_owned'] * coin_info[coin_c]['last_close_price'])
+                            #     # if the amount of cash we need to open the position exceeds the amount of cash available in position i, 
+                            #     if not cash or cash_allocated >= cash_available * (1/2):
+                            #         exited_position = True
+                            #         exits[coin_c].append((time, coin_info[coin_c]['last_close_price']))
+                            #         exited_cash = utils.exitPosition(coin_info[coin_c], self.fees, time)
+                            #         self.computeVolumeFee(exited_cash, time)
+                            #         cash +=  exited_cash
+                            #         trade_count += 1
                                     
-                                else:
-                                    # partially close the position, but keep the reamining capital that's not needed in the position
-                                    amnt_to_close = cash_needed / cash_available
-                                    coin_info[coin_c]['amnt_owned'] -= coin_info[coin_c]['amnt_owned'] * (amnt_to_close)
-                                    coin_info[coin_c]['intermediate_cash'] += cash_needed
-                                    self.computeVolumeFee(cash_needed, time)
-                                    cash += cash_needed
-                                    break
+                            #     else:
+                            #         # partially close the position, but keep the reamining capital that's not needed in the position
+                            #         amnt_to_close = cash_needed / cash_available
+                            #         coin_info[coin_c]['amnt_owned'] -= coin_info[coin_c]['amnt_owned'] * (amnt_to_close)
+                            #         coin_info[coin_c]['intermediate_cash'] += cash_needed
+                            #         self.computeVolumeFee(cash_needed, time)
+                            #         cash += cash_needed
+                            #         break
 
 
                                     
@@ -544,12 +551,16 @@ class Trading:
         for coin in coins:
             print(coin, coin_info[coin]['avg_win'], coin_info[coin]['avg_loss'], coin_info[coin]['avg_profit'], coin_info[coin]['win_rate'], len(coin_info[coin]['recent_trade_results']))
             if coin_info[coin]['in_position']:
-                exits[coin].append((time, coin_info[coin]['last_close_price']))
-                exited_cash = utils.exitPosition(coin_info[coin], self.fees, time)
+                
+                exited_cash, profit = utils.exitPosition(coin_info[coin], self.fees, time)
+                exits[coin].append((time, coin_info[coin]['last_close_price'], profit))
                 self.computeVolumeFee(exited_cash, time)
                 cash += exited_cash
-                trade_count += 1
-        volume_bars.append((time - (720 * 60000), trade_count))
+                if profit > 0:
+                    win_count += 1
+                else:
+                    loss_count += 1
+        volume_bars.append((time - (720 * 60000), win_count, loss_count))
         print(f'Cash: {cash}')
         writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.all_volumes_fees, buy_signals, sell_signals, volume_bars)
 
