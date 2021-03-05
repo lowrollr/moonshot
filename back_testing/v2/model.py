@@ -392,7 +392,7 @@ class Trading:
             coin_info[coin]['enter_value'] = 0.0
             coin_info[coin]['cash_invested'] = 0.0
             coin_info[coin]['last_start_time'] = 0
-            coin_info[coin]['recent_trade_results'] = deque(maxlen=history_size)
+            coin_info[coin]['recent_trade_results'] = deque(maxlen=50)
             coin_info[coin]['allocation'] = 0.0
             coin_info[coin]['avg_profit'] = 0.0
             coin_info[coin]['win_rate'] = 0.0
@@ -413,6 +413,7 @@ class Trading:
         next_bar_timestamp = all_timestamps[0] + (1440 * 60000)
         trade_count = 0
         with alive_bar(len(all_timestamps), spinner=utils.getRandomSpinner()) as bar:
+            
             for time in all_timestamps:
                 if time >= next_bar_timestamp:
                     volume_bars.append((time - (720 * 60000), trade_count))
@@ -467,12 +468,12 @@ class Trading:
                             entries[coin].append((time, coin_info[coin]['last_close_price']))
                             
                         else:
-                            current_positions = sorted([(c, coin_info[c]['avg_profit'] - utils.getCurrentReturn(coin_info[c])) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
-                            for coin_c, e_profit in current_positions:
+                            current_positions = sorted([(c, coin_info[c]['avg_win'] - utils.getCurrentReturn(coin_info[c], self.fees)) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
+                            for coin_c, expexted_remaining_profit in current_positions:
                                 
-                                if time <= coin_info[coin_c]['last_start_time']:
+                                if coin_c in enter_signals:
                                     continue
-                                if cash_allocated <= cash or(e_profit > coin_info[coin_c]['avg_profit'] and coin_info[coin_c]['recent_trade_results']):
+                                if cash_allocated <= cash or (expexted_remaining_profit > coin_info[coin]['avg_win']):
                                     break
                                 cash_needed = cash_allocated - cash
                                 cash_available = (1-self.fees)*(coin_info[coin_c]['amnt_owned'] * coin_info[coin_c]['last_close_price'])
@@ -492,6 +493,8 @@ class Trading:
                                     coin_info[coin_c]['intermediate_cash'] += cash_needed
                                     self.computeVolumeFee(cash_needed, time)
                                     cash += cash_needed
+                                    break
+
 
                                     
   
@@ -502,6 +505,7 @@ class Trading:
                                 utils.enterPosition(coin_info[coin], cash_allocated, self.fees, time)
                                 self.computeVolumeFee(coin_info[coin]['cash_invested'], time)
                                 entries[coin].append((time, coin_info[coin]['last_close_price']))
+                            pass
                                 
                                 
                 # update weights
@@ -523,7 +527,7 @@ class Trading:
                                 coin_info[coin]['avg_loss'] = sum([x for x in trade_results if x <= 0])/num_losses
                             else:
                                 coin_info[coin]['avg_loss'] = 0.0
-                            
+                        
             
                 # log coin allocations and portfolio value
                 portfolio_value.append((time, cash + sum([((coin_info[x]['amnt_owned']) * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])))
@@ -538,6 +542,7 @@ class Trading:
                 bar()
 
         for coin in coins:
+            print(coin, coin_info[coin]['avg_win'], coin_info[coin]['avg_loss'], coin_info[coin]['avg_profit'], coin_info[coin]['win_rate'], len(coin_info[coin]['recent_trade_results']))
             if coin_info[coin]['in_position']:
                 exits[coin].append((time, coin_info[coin]['last_close_price']))
                 exited_cash = utils.exitPosition(coin_info[coin], self.fees, time)

@@ -456,13 +456,13 @@ def calcKellyPercent(info, default_amnt=0.05, low_amnt=0.01):
     avg_win = info['avg_win']
     avg_loss = info['avg_loss']
 
-    if len(trades) == trades.maxlen:
-        if avg_win and avg_loss:
-            kelly = win_rate - ((1 - win_rate)/(avg_win/abs(avg_loss)))
-            if kelly > 0:
-                return kelly
-            else:
-                return low_amnt
+    
+    if avg_win and avg_loss:
+        kelly = win_rate - ((1 - win_rate)/(avg_win/abs(avg_loss)))
+        if kelly > 0:
+            return kelly
+        else:
+            return low_amnt
         
     return default_amnt
 
@@ -471,9 +471,9 @@ def calcKellyPercent(info, default_amnt=0.05, low_amnt=0.01):
 
 
 '''
-def getCurrentReturn(info):
-    return (info['last_close_price'] - info['enter_value'])/info['enter_value']
-
+def getCurrentReturn(info, fees):
+    return ((((info['last_close_price'] * info['amnt_owned']) * (1-fees)) + info['intermediate_cash']) / info['position_cost']) - 1
+    
 def enterPosition(info, cash_allocated, fees, time):
     info['cash_invested'] = cash_allocated * (1 - fees)
     info['amnt_owned'] = info['cash_invested'] / info['last_close_price']
