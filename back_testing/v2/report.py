@@ -126,7 +126,7 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
                 hold_time = (time_exit - time_entry) / 60000
                 profit = exits[i][2]
                 movement_stats['Hold Time'] = str(int(hold_time)) + ' min'
-                movement_stats['% Profit'] = str(profit) + '%'
+                movement_stats['% Profit'] = str(round(profit*100, 2)) + '%'
 
                 # append the hold time and profit to the overall set of hold times and profits
                 overall_hold_times.append(hold_time)
@@ -150,8 +150,8 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     overall_stats['Average P&L (%)'] = str(round(mean(overall_profits) * 100, 2)) + '%'
     overall_stats['Average Profit (%)'] = round(mean(wins) * 100, 2)
     overall_stats['Average Loss (%)'] = round(mean(losses) * 100, 2)
-    overall_stats['Max Profit (%)'] = str(round(max(overall_profits), 2)) + '%'
-    overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits), 2)) + '%'
+    overall_stats['Max Profit (%)'] = str(round(max(overall_profits) * 100, 2)) + '%'
+    overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits) * 100, 2)) + '%'
     overall_stats['Win Rate (%)'] = round(len(wins) / len(overall_profits) * 100, 2)
     
     return (plots, overall_stats)
