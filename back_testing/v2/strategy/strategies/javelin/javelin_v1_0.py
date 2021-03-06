@@ -68,7 +68,7 @@ class Javelin(Strategy):
             
             percentage_eroded = minutes_elapsed/(150)
             self.moving_target[coin_name] = max(0, (1-percentage_eroded) * self.target[coin_name])
-            
+
         if self.stop_loss[coin_name]:
             self.stop_loss[coin_name] = max(self.stop_loss[coin_name], data.close * 0.995)
         
@@ -93,9 +93,9 @@ class Javelin(Strategy):
 
     def calc_exit(self, data, coin_name):
         
-        if data.close > data.SMA_for_long * (1 + self.moving_target[coin_name]):
-            
-            self.stop_loss[coin_name] = max(self.stop_loss[coin_name], data.close * 0.999)
+        if data.close > data.SMA_for_short * (1 + self.moving_target[coin_name]):
+                
+                self.stop_loss[coin_name] = max(self.stop_loss[coin_name], data.close * 0.999)
         
        
         if data.close < self.stop_loss[coin_name]:
