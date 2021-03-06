@@ -463,7 +463,7 @@ class Trading:
                     
                     for coin, _ in coin_profit_pairs:
                         
-                        allocation = utils.calcKellyPercent(coin_info[coin])
+                        allocation = utils.calcKellyPercent(coin_info[coin], amnt_needed=10)
                         kelly_values[coin].append((time, allocation))
                         locked_cash = sum([(coin_info[x]['amnt_owned'] * coin_info[x]['last_close_price']) for x in coin_info if coin_info[x]['in_position']])
                         cash_allocated = allocation * (locked_cash + cash)

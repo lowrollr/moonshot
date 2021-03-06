@@ -450,19 +450,24 @@ WHAT:
     -> https://www.investopedia.com/articles/trading/04/091504.asp
 
 ''' 
-def calcKellyPercent(info, default_amnt=0.05, low_amnt=0.01):
+def calcKellyPercent(info, default_amnt=0.05, low_amnt=0.01, amnt_needed=20):
     trades = info['recent_trade_results']
     win_rate = info['win_rate']
     avg_win = info['avg_win']
     avg_loss = info['avg_loss']
 
-    
+    # if len(trades) >= amnt_needed:
+        
     if avg_win and avg_loss:
         kelly = win_rate - ((1 - win_rate)/(avg_win/abs(avg_loss)))
         if kelly > 0:
             return kelly
         else:
             return low_amnt
+        # elif avg_win:
+        #     return 0.8
+        # elif avg_loss:
+        #     return low_amnt
         
     return default_amnt
 

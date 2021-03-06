@@ -57,9 +57,12 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     # list of profits compiled through appending all profits from each individual movement
     overall_profits = []
     wins = []
+    wins_after_wins = 0
     losses = []
+    losses_after_losses = 0
     # list of hold times compiled through appending all hold times from each individual movement
     overall_hold_times = []
+    last_result = ''
     with alive_bar(len(exits), spinner=getRandomSpinner()) as bar:
         # consider each entry exit pair (their lengths are identical)
         for i, x in enumerate(entries):
@@ -133,15 +136,20 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
                 overall_profits.append(profit)
                 if profit > 0:
                     wins.append(profit)
+                    if last_result == 'win':
+                        wins_after_wins += 1
+                    last_result = 'win'
                 else:
                     losses.append(profit)
+                    if last_result == 'loss':
+                        losses_after_losses += 1
+                    last_result = 'loss'
 
                 # append a tuple containing the stringified plot and movement stats
                 plots.append((plot_as_div, movement_stats))
                 bar()
-
-   
-
+    
+    
     # calculate metrics for the overall performance
     overall_stats['Total Trades'] = len(overall_hold_times)
     overall_stats['Average Hold Time'] = str(round(mean(overall_hold_times), 2)) + ' min'
@@ -154,6 +162,23 @@ def generate_movement_graphs(dataframe, entries, exits, indicators_to_graph, nam
     overall_stats['Max Drawdown (%)'] = str(round(min(overall_profits) * 100, 2)) + '%'
     overall_stats['Win Rate (%)'] = round(len(wins) / len(overall_profits) * 100, 2)
     
+    prob_consecutive_wins = 0
+    prob_consecutive_losses = 0
+    if last_result == 'win':
+        if len(wins) > 1:
+            prob_consecutive_wins = wins_after_wins / (len(wins) - 1)
+        if len(losses):
+            prob_consecutive_losses = losses_after_losses / len(losses)
+    else:
+        if len(wins):
+            prob_consecutive_wins = wins_after_wins / len(wins)
+        if len(losses) > 1:
+            prob_consecutive_losses = losses_after_losses / (len(losses) - 1)
+    
+    overall_stats['P(W|w)'] = prob_consecutive_wins
+    overall_stats['P(L|l)'] = prob_consecutive_losses
+    
+
     return (plots, overall_stats)
 
 '''
