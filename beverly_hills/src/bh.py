@@ -29,7 +29,7 @@ class BeverlyHills():
         self.candles = dict()
         self.consumerConnect()
         self.computeEngine = ComputeEngine(coins=self.coins)
-        # self.loadPrevData()
+        self.loadPrevData()
         
 
     def consumerConnect(self):
@@ -49,32 +49,32 @@ class BeverlyHills():
         coins = ""
         while True:
             #change this to something else 
-            rawMsg = {'type': 'coins', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+            rawMsg = {'type': 'data', 'msg':'15000', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
             conn.send(json.dumps(rawMsg).encode('utf-8'))
-            coins = readData(conn, 'main_data_consumer', os.environ["DATAPORT"])
-            if len(coins) > 0:
-                break
+            coins = json.loads(readData(conn, 'main_data_consumer', os.environ["DATAPORT"]))
+            coin_labels = []
             if coins["type"] == "coins":
-                coins = json.loads(coins["msg"])
+                coin_labels = coins['msg']
+                break
+            elif coins['type'] == "all_data":
+                self.previous_data = coins["msg"]
+                coin_labels = list(self.previous_data.keys())
+                # print(coin_labels)
+                print(self.previous_data)
+                break
             else:
-                raise Exception("Not sending coins back when it should")
-        print("Received coins from data consumer")
-        coin_msg = json.loads(coins)
-        self.coins = coin_msg["msg"]
+                raise Exception(f"Not sending coins back when it should. Type sent: {coins['type']} ")
 
-        print('sending start message')
-        rawMsg = {'type': 'start', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
-        conn.send(json.dumps(rawMsg).encode('utf-8'))
+        print("Received coins from data consumer")
+        self.coins = coin_labels
 
     def loadPrevData(self):
         if self.previous_data != {}:
-            for coin in self.previous_data:
-                # self.ComputeEngine.prepare
-                pass
+            self.computeEngine.allDataPrepare(self.previous_data)
         
         print('sending start message')
         rawMsg = {'type': 'start', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
-        conn.send(json.dumps(rawMsg).encode('utf-8'))
+        self.connections['main_data_consumer'].send(json.dumps(rawMsg).encode('utf-8'))
 
     
     def compute(self):

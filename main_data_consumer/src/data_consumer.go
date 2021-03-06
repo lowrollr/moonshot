@@ -124,7 +124,6 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 		)
 		data.Clients[idToContainer[message.Source]].
 			WriteSocketCoinsJSON(coinMessage)
-		data.NumConnections++
 	} else if message.Type == "reconnect" {
 		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
 		log.Println("Reconnected to ", idToContainer[message.Source], ws.RemoteAddr())
@@ -162,6 +161,7 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 		// log.Println(message)
 		log.Warn("Did not provide correct type")
 	}
+	data.NumConnections++
 	return
 }
 
