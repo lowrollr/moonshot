@@ -14,7 +14,7 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 
-from talib import HT_TRENDLINE as talib_HT
+from talib import HT_SINE as talib_HT
 
 '''
 CLASS: ADX
@@ -23,7 +23,7 @@ WHAT:
     -> Params Required:
         -> 'period'
 '''
-class HT_TRENDLINE(Indicator):
+class HT_SINE(Indicator):
 
     '''
     ARGS:
@@ -38,8 +38,8 @@ class HT_TRENDLINE(Indicator):
     '''
     def genData(self, dataset, gen_new_values=True):
 
-        dataset[self.name] = talib_HT(dataset[self.value])
-        return [self.name]
+        dataset[self.name + '_sine'], dataset[self.name + '_leadsine'] = talib_HT(dataset[self.value])
+        return [self.name + '_sine', self.name + '_leadsine']
 
     def setDefaultParams(self):
-        self.params = []
+        return []

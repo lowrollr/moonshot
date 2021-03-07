@@ -3,7 +3,7 @@ FILE: ht_trendline.py
 AUTHORS:
     -> Jacob Marshall (marshingjay@gmail.com)
 WHAT:
-    -> This file contains the ADX Indicator
+    -> This file contains the HT Dominant Cycle Phase Indicator
 '''
 
 import pandas
@@ -14,7 +14,7 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
 
-from talib import HT_TRENDLINE as talib_HT
+from talib import HT_DCPERIOD as talib_HT
 
 '''
 CLASS: ADX
@@ -23,7 +23,7 @@ WHAT:
     -> Params Required:
         -> 'period'
 '''
-class HT_TRENDLINE(Indicator):
+class HT_DCPERIOD(Indicator):
 
     '''
     ARGS:
@@ -42,4 +42,4 @@ class HT_TRENDLINE(Indicator):
         return [self.name]
 
     def setDefaultParams(self):
-        self.params = []
+        return []

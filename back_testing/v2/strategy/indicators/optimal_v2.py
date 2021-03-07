@@ -53,6 +53,7 @@ class Optimal_v2(Indicator):
                     cur_max = close
                     cur_max_time = time
                     
+        #Joining continual  uptrends
         cur_movement = [movements[0]]
         if len(movements) > 1:
             for (start, end), (buy, sell) in movements[1:]:
@@ -68,6 +69,7 @@ class Optimal_v2(Indicator):
         prev_movement = joined_movements[0]
         final_joined_movements = []
         was_join_last = False
+        #Joining movements within certain time period of 600000
         for x in joined_movements[1:]:
             prev_buy = prev_movement[0][1][0]
             prev_sell = prev_movement[-1][1][1]
@@ -76,7 +78,7 @@ class Optimal_v2(Indicator):
             cur_buy = x[0][1][0]
             cur_sell = x[-1][1][1]
             cur_enter_time = x[0][0][0]
-            if prev_buy < cur_buy and prev_sell < cur_sell and cur_enter_time - 600000 < prev_exit_time:
+            if prev_buy < cur_buy and prev_sell < cur_sell and cur_enter_time - 1800000 < prev_exit_time:
                 final_joined_movements.append(prev_movement + x)
                 prev_movement = prev_movement + x
                 was_join_last = True
@@ -88,37 +90,40 @@ class Optimal_v2(Indicator):
             final_joined_movements.append(prev_movement)
             
         for x in final_joined_movements:
-            overall_entry = x[0][1][0]
-            overall_exit = x[-1][1][1]
-            movement_slope = (overall_exit - overall_entry) / (x[-1][0][1] - x[0][0][0])
-            total_delta = (overall_exit - overall_entry) / overall_entry
-            for (start, end), (buy, sell) in x:
-                profit_perc = (sell - buy) / buy
-                delta_entry = buy - overall_entry
-                delta_exit = overall_exit - sell
-                # weight_entry = (1 / (0.001 + delta_entry)) * pow(profit_perc, 2) * pow(movement_slope, 2)
-                # weight_exit = (1 / (0.001 + delta_exit)) * pow(profit_perc, 2) * pow(movement_slope, 2)
-                weight_entry = (1 / (0.001 + delta_entry)) * pow(total_delta, 2)
-                weight_exit = (1 / (0.001 + delta_exit)) * pow(total_delta, 2)
-                entry_weights[start] = weight_entry
-                exit_weights[end] = weight_exit
+            overall_entry_price, overall_entry_time = x[0][1][0], x[0][0][0]
+            overall_exit_price, overall_exit_time = x[-1][1][1], x[-1][0][1]
+            # movement_slope = (overall_exit - overall_entry) / (x[-1][0][1] - x[0][0][0])
+            total_delta = (overall_exit_price - overall_entry_price) / overall_entry_price
+            entry_weights[overall_entry_time] = total_delta
+            exit_weights[overall_exit_time] = total_delta
+            # for (start, end), (buy, sell) in x:
+            #     profit_perc = (sell - buy) / buy
+                
+            #     delta_entry = (buy - overall_entry) / buy
+            #     delta_exit = (overall_exit - sell) /  overall_exit
+            #     # weight_entry = (1 / (0.001 + delta_entry)) * pow(profit_perc, 2) * pow(movement_slope, 2)
+            #     # weight_exit = (1 / (0.001 + delta_exit)) * pow(profit_perc, 2) * pow(movement_slope, 2)
+            #     weight_entry = (1 / (0.001 + delta_entry)) * pow(total_delta, 2)
+            #     weight_exit = (1 / (0.001 + delta_exit)) * pow(total_delta, 2)
+            #     entry_weights[start] = weight_entry
+            #     exit_weights[end] = weight_exit
 
-        entry_weights_list = list(entry_weights.values())
-        exit_weights_list = list(exit_weights.values())
-        mm_scalter = MinMaxScaler()
-        q_scaler = QuantileTransformer()
-        numpy_entry_weights = np.array(entry_weights_list).reshape(-1, 1)
-        numpy_exit_weights = np.array(exit_weights_list).reshape(-1, 1)
-        entry_weights_list = q_scaler.fit_transform(numpy_entry_weights)[:,0]
-        exit_weights_list = q_scaler.fit_transform(numpy_exit_weights)[:,0]
+        # entry_weights_list = list(entry_weights.values())
+        # exit_weights_list = list(exit_weights.values())
+        # mm_scalter = MinMaxScaler()
+        # q_scaler = QuantileTransformer()
+        # numpy_entry_weights = np.array(entry_weights_list).reshape(-1, 1)
+        # numpy_exit_weights = np.array(exit_weights_list).reshape(-1, 1)
+        # entry_weights_list = q_scaler.fit_transform(numpy_entry_weights)[:,0]
+        # exit_weights_list = q_scaler.fit_transform(numpy_exit_weights)[:,0]
 
-        entry_weights_keys = list(entry_weights.keys())
-        exit_weights_keys = list(exit_weights.keys())
+        # entry_weights_keys = list(entry_weights.keys())
+        # exit_weights_keys = list(exit_weights.keys())
 
-        for k in range(len(entry_weights_keys)):
-            entry_weights[entry_weights_keys[k]] = entry_weights_list[k]
-        for k in range(len(exit_weights_keys)):
-            exit_weights[exit_weights_keys[k]] = exit_weights_list[k]
+        # for k in range(len(entry_weights_keys)):
+        #     entry_weights[entry_weights_keys[k]] = entry_weights_list[k]
+        # for k in range(len(exit_weights_keys)):
+        #     exit_weights[exit_weights_keys[k]] = exit_weights_list[k]
 
         def fillDatasetHelper(time):
             if time in entry_weights:
