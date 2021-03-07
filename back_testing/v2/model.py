@@ -564,7 +564,6 @@ class Trading:
         print(f'Cash: {cash}')
         writePMReport(coin_datasets, entries, exits, portfolio_value, coin_allocations, kelly_values, self.indicators_to_graph, self.all_volumes_fees, buy_signals, sell_signals, volume_bars)
 
-
     '''
 
     '''
@@ -639,13 +638,18 @@ class Trading:
                 
 
                 # construct a single dataframe from all of the individual dataframes in the group, and construct the first_times set
+                
+                if self.scale:
+                    print('Scaling Model Data...')
+                    for d_chunk in dataset_chunks:
+                        utils.realtimeScale(d_chunk, new_features, 15000)
+
                 dataset = pd.DataFrame()
                 dataset = pd.concat(dataset_chunks)
                 
 
-                if self.scale:
-                    print('Scaling Model Data...')
-                    utils.realtimeScale(dataset, new_features, 15000)
+                
+                    
                     
                 print('Preprocessing Model Predictions...')
 
