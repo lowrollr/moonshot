@@ -92,7 +92,9 @@ func (Dumbo *dumbo) AutoMigrate() error {
 		temp_order := OrderBook{coinName: strings.ToLower(coin) + "_order_book"}
 		temp_min_kline := Candlestick{coinName: strings.ToLower(coin) + "_minute_kline"}
 		temp_custom_kline := OHCLData{coinName: strings.ToLower(coin) + "_custom_kline"}
-		err := Dumbo.DBInterface.AutoMigrate(&temp_order, &temp_min_kline, &temp_custom_kline).Error
+		temp_trades := Trades{coinName: strings.ToLower(coin) + "_trades"}
+		err := Dumbo.DBInterface.AutoMigrate(&temp_order, 
+						&temp_min_kline, &temp_custom_kline, &temp_trades).Error
 		if err != nil {
 			return err
 		}
@@ -130,6 +132,21 @@ func (o OrderBook) TableName() string {
 		return strings.ToLower(o.coinName)
 	}
 	return "order_book" // default table name
+}
+
+/*
+	ARGS:
+        -> N/A
+    RETURN:
+        -> (string): name of the coin for the database table
+    WHAT:
+		-> Returns the name of the coin so that it is a dynamic table names
+*/
+func (f Trades) TableName() string {
+	if f.coinName != "" {
+		return strings.ToLower(f.coinName)
+	}
+	return "trades"
 }
 
 /*

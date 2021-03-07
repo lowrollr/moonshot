@@ -11,27 +11,32 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	decimal "github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 )
 
 type dumbo struct {
+	sync.Mutex
 	DBInterface *gorm.DB
 }
 
-func (Dumbo *dumbo) InitializeDB() {
+func (Local_Dumbo *dumbo) InitializeDB() {
 	log.Println("Connecting to database")
 	var err error
-	global_db, err := Dumbo.ConnectDB(db_string, dbType)
-	
+	global_db, err := Local_Dumbo.ConnectDB(db_string, dbType)
+
 	if err != nil {
 		//if we can't connect to db then panic and stop
 		panic(err)
 	}
-	Dumbo.DBInterface = global_db
+	Local_Dumbo.DBInterface = global_db
 	log.Println("Connected to database successfully")
 }
 
@@ -63,6 +68,53 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 	//Sleep for two seconds
 	time.Sleep(2 * time.Second)
 	return nil, fmt.Errorf("Failed to connect to the database of %d attempts", tries)
+}
+
+func (Local_Dumbo *dumbo) StoreTrade(trade_type, coin string, numCoins, executedValue, price, allocatedValue decimal.Decimal, fees string, profitVal *float64) {
+	Local_Dumbo.Lock()
+	defer Local_Dumbo.Unlock()
+
+	first_enter_const := decimal.NewFromInt(-100)
+	first_exit_const := decimal.NewFromInt(-100)
+	sec_const := decimal.NewFromInt(-1)
+	//calc slippage
+	var slippage decimal.Decimal
+	var trade_bool bool
+	if trade_type == "enter" {
+		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_enter_const)
+		trade_bool = false
+	} else if trade_type == "exit" {
+		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_exit_const)
+		trade_bool = true
+	} else {
+		log.Warn("Trades are either enter or exit. Not: ", trade_type)
+	}
+	//convert to float64
+	sizeTrade, _ := numCoins.Float64()
+	execCash, _ := executedValue.Float64()
+	actualCash, _ := allocatedValue.Float64()
+	cPrice, _ := price.Float64()
+	feeVal, _ := strconv.ParseFloat(fees, 64)
+	slipVal, _ := slippage.Float64()
+
+	temp_trade_entry := Trades{
+		TradeType:     trade_bool,
+		coinName:      coin,
+		SizeTrade:     sizeTrade,
+		ExecutedValue: execCash,
+		RealizedValue: actualCash,
+		CoinPrice:     cPrice,
+		Fees:          feeVal,
+		Slippage:      slipVal,
+	}
+	if profitVal != nil {
+		temp_trade_entry.Profit = *profitVal
+	}
+	err := Local_Dumbo.DBInterface.Table(strings.ToLower(coin) + "_trades").Create(&temp_trade_entry).Error
+	if err != nil {
+		log.Warn("Was not able to store trade. Err:", err)
+	}
+
 }
 
 /*
