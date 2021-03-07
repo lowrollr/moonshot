@@ -16,7 +16,7 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
-# import pickle5 as pickle
+import pickle5 as pickle
 from v2.utils import findParams, realtimeScale
 from load_config import load_config
 from v2.model import Trading
@@ -35,6 +35,7 @@ import copy
 from itertools import repeat
 from glob import glob
 import multiprocessing as mp
+import random
 
 """
 """
@@ -239,32 +240,34 @@ class notebookUtils:
                     if compiling_features:
                         features.extend(new_features)
                         indicator_objs.extend(new_inds)
+                if scale:
+                    scaler = None
+                    if scale == 'minmax':
+                        scaler = MinMaxScaler()
+
+                    elif scale == 'quartile':
+                        scaler = QuantileTransformer(n_quantiles=100)
+                    elif scale == 'minmaxwindow':
+                        realtimeScale(d, features, minmaxwindowsize)
+                    else:
+                        raise Exception(f'Unknown scaler: {scaler}')
+                    
+
+                    if d.columns.to_series()[np.isinf(d).any()] is not None:
+                        for val in d.columns.to_series()[np.isinf(d).any()]:
+                            if val in features:
+                                features.remove(val)
+
+                            d[val].replace([np.inf], np.nan, inplace=True)
+                            d[val].replace([np.nan], dataset[val].max(), inplace=True)
+                    if scaler:
+                        d[features] = scaler.fit_transform(d[features]) 
+
                 coin_dataset.append(d)
                 compiling_features = False
 
             coin_dataset = concat(coin_dataset)
-            if scale:
-                scaler = None
-                if scale == 'minmax':
-                    scaler = MinMaxScaler()
-
-                elif scale == 'quartile':
-                    scaler = QuantileTransformer(n_quantiles=100)
-                elif scale == 'minmaxwindow':
-                    realtimeScale(coin_dataset, features, minmaxwindowsize)
-                else:
-                    raise Exception(f'Unknown scaler: {scaler}')
-                
-
-                if coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()] is not None:
-                    for val in coin_dataset.columns.to_series()[np.isinf(coin_dataset).any()]:
-                        if val in features:
-                            features.remove(val)
-
-                        coin_dataset[val].replace([np.inf], np.nan, inplace=True)
-                        coin_dataset[val].replace([np.nan], coin_dataset[val].max(), inplace=True)
-                if scaler:
-                    coin_dataset[features] = scaler.fit_transform(coin_dataset[features])  
+             
 
             dataset_list.append(coin_dataset)
             
@@ -468,7 +471,7 @@ class notebookUtils:
         -> Plots the dataframe's buy or sell points alongside the close price
         -> optionally plots the label data (optimal buy/sell points) for reference
     '''
-    def graphPoints(self, df, mode="buy", plot_optimal=False):
+    def graphPoints(self, df, mode="buy", plot_optimal=False, plot_sma=False, fields=[]):
         plt.clf()
         plt.figure(figsize=(20,10))
 
@@ -481,7 +484,18 @@ class notebookUtils:
 
         # plot the classification buy/sell points
         df["classify"] = df.apply(lambda x: inputPrice(x, "classify"), axis=1)
-
+        if plot_sma:
+            df["plot_sma_short"] = df.iloc[:,1].rolling(window=30).mean()
+            plt.plot(df.index, df['plot_sma_short'], color="orange")
+            plt.plot(df.index, df['plot_sma_short']*0.99, color="yellow")
+            plt.plot(df.index, df['plot_sma_short']*0.98, color="red")
+            plt.plot(df.index, df['plot_sma_short']*0.97, color="pink")
+            df["plot_sma_long"] = df.iloc[:,1].rolling(window=90).mean()
+            plt.plot(df.index, df['plot_sma_long'], color="brown")
+            plt.plot(df.index, df['plot_sma_long']*0.99, color="green")
+            plt.plot(df.index, df['plot_sma_long']*0.98, color="blue")
+            plt.plot(df.index, df['plot_sma_long']*0.97, color="purple")
+        
         plt.scatter(df.index, df['classify'], color=color, s=50)
 
         # plot the optimal buy/sell points
@@ -489,9 +503,12 @@ class notebookUtils:
             df['optimal'] = df.apply(lambda x: inputPrice(x, 'optimal'), axis=1)
             
             plt.scatter(df.index, df['optimal'], color="purple")
-
+        for x in fields:
+            
+            
+            plt.plot(df.index, df[x], color=np.random.rand(3,))
         # plot the close price
-        plt.plot(df.index, df['close'], color='blue')
+        plt.plot(df.index, df['close'], color='black')
         
 
     '''
