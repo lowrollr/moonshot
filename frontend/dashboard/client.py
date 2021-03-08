@@ -77,7 +77,14 @@ def PMPing(pm_conn):
     
     while True:
         ping_msg = {'type':'ping', 'msg':'fuck you lol', 'src':containersToId["frontend"], 'dest':containersToId['portfolio_manager']}
-        pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
+
+        try:
+            pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
+            
+        except Exception as e:
+            #make sure its reconnect insteaad of normal
+            print("Disconnected from PM, reconnecting... (", e, ")")
+            pm_conn = PMConnect()
         time.sleep(2)
 
 def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, current_positions, portfolio_datastream, plot_positions):
