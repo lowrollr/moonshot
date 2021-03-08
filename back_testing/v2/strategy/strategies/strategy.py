@@ -6,7 +6,11 @@ WHAT:
     -> This file contains the Strategy superclass
 '''
 import os
-import pickle as pickle
+import sys
+if sys.version_info.minor == 6:
+    import pickle5 as pickle
+else:
+    import pickle as pickle
 import multiprocessing as mp
 from itertools import chain, repeat
 import numpy as np
