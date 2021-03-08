@@ -309,6 +309,7 @@ def realtimeScale(dataset, columns, windowsize):
     results = process_pool.starmap(realtimeScaleMP, params)
     for i, r in enumerate(results):
         dataset[columns[i]] = r
+    process_pool.close()
         
 
 '''
