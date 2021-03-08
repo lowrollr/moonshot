@@ -48,6 +48,8 @@ type Trades struct {
 	CoinPrice     float64 `gorm:"Type:real;not null;"`
 	Fees          float64 `gorm:"Type:real;not null;"`
 	Profit        float64 `gorm:"Type:real;"`
+	Slippage      float64 `gorm:"Type:real; not null;"`
+	StartTime     int64   `gorm:"Type:bigint;not null"`
 }
 
 type OHCLData struct {

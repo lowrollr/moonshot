@@ -96,6 +96,7 @@ func (Local_Dumbo *dumbo) StoreTrade(trade_type, coin string, numCoins, executed
 	cPrice, _ := price.Float64()
 	feeVal, _ := strconv.ParseFloat(fees, 64)
 	slipVal, _ := slippage.Float64()
+	curTime := time.Now().Unix()
 
 	temp_trade_entry := Trades{
 		TradeType:     trade_bool,
@@ -106,6 +107,7 @@ func (Local_Dumbo *dumbo) StoreTrade(trade_type, coin string, numCoins, executed
 		CoinPrice:     cPrice,
 		Fees:          feeVal,
 		Slippage:      slipVal,
+		StartTime:          curTime,
 	}
 	if profitVal != nil {
 		temp_trade_entry.Profit = *profitVal

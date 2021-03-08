@@ -67,6 +67,14 @@ func (client *Client) WriteSocketCandleJSON(msg *SocketCandleMessage) {
 	return
 }
 
+func (client *Client) WriteSocketPMDataJSON(msg *SocketPMDataMessage) {
+	err := client.GetClient().WriteJSON(msg)
+	if err != nil {
+		log.Warn(err)
+	}
+	return
+}
+
 /*
 	ARGS:
 		-> msg (*SocketByteMessage): byte message object
@@ -111,7 +119,6 @@ func (client *Client) WriteSocketJSON(msg *SocketMessage) {
 func (client *Client) WriteAllSocketCandleJSON(msg *SocketAllCandleMessage, wg *sync.WaitGroup) {
 	defer wg.Done()
 	err := client.GetClient().WriteJSON(msg)
-	log.Warn(err)
 	if err != nil {
 		log.Warn("Was not able to write to client:", idToContainer[client.ClientId], "With error:", err)
 	}

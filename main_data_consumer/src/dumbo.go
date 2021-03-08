@@ -27,12 +27,12 @@ type dumbo struct {
 	DBInterface *gorm.DB
 }
 
-func (Dumbo *dumbo) InitializeDB() {
+func (LocalDumbo *dumbo) InitializeDB() {
 	fmt.Println("Connecting to database")
 
 	var err error
 	global_db, err := Dumbo.ConnectDB(db_string, dbType)
-	Dumbo.DBInterface = global_db
+	LocalDumbo.DBInterface = global_db
 	if err != nil {
 		//if we can't connect to db then panic and stop
 		panic(err)
@@ -40,7 +40,7 @@ func (Dumbo *dumbo) InitializeDB() {
 	fmt.Println("Connected to database successfully")
 
 	fmt.Println("Creating tables in database")
-	err = Dumbo.AutoMigrate()
+	err = LocalDumbo.AutoMigrate()
 	if err != nil {
 		panic(err)
 	}
@@ -84,16 +84,16 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
     WHAT:
 		-> Creates the tables in the database
 */
-func (Dumbo *dumbo) AutoMigrate() error {
+func (LocalDumbo *dumbo) AutoMigrate() error {
 	//Create tables specified in models.go
 	//get coins
-	coins := Dumbo.SelectCoins(-1)
+	coins := LocalDumbo.SelectCoins(-1)
 	for _, coin := range *coins {
 		temp_order := OrderBook{coinName: strings.ToLower(coin) + "_order_book"}
 		temp_min_kline := Candlestick{coinName: strings.ToLower(coin) + "_minute_kline"}
 		temp_custom_kline := OHCLData{coinName: strings.ToLower(coin) + "_custom_kline"}
 		temp_trades := Trades{coinName: strings.ToLower(coin) + "_trades"}
-		err := Dumbo.DBInterface.AutoMigrate(&temp_order, 
+		err := LocalDumbo.DBInterface.AutoMigrate(&temp_order, 
 						&temp_min_kline, &temp_custom_kline, &temp_trades).Error
 		if err != nil {
 			return err
@@ -173,7 +173,7 @@ func (o OHCLData) TableName() string {
     WHAT:
 		-> Inserts coin data into database
 */
-func (Dumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
+func (LocalDumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error {
 	//Getting information needed to store
 	coin_abb := strings.Split(strings.ToLower(event.Symbol), "usdt")[0]
 
@@ -193,7 +193,7 @@ func (Dumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error 
 			Time:        update_time,
 			PriorityVal: int8(i),
 		}
-		err = Dumbo.DBInterface.Table(strings.ToLower(coin_abb) + "_order_book").Create(&temp_order_entry).Error
+		err = LocalDumbo.DBInterface.Table(strings.ToLower(coin_abb) + "_order_book").Create(&temp_order_entry).Error
 		if err != nil {
 			return err
 		}
@@ -211,10 +211,10 @@ func (Dumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) error 
     WHAT:
 		-> Inserts ohcl data into db
 */
-func (Dumbo *dumbo) StoreAllCandles(event *map[string]*Candlestick, wg *sync.WaitGroup) {
+func (LocalDumbo *dumbo) StoreAllCandles(event *map[string]*Candlestick, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for coin, candleData := range *event {
-		err := Dumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
+		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
 			Create(candleData).Error
 
 		if err != nil {
@@ -231,9 +231,9 @@ func (Dumbo *dumbo) StoreAllCandles(event *map[string]*Candlestick, wg *sync.Wai
     WHAT:
 		-> Inserts volume and trade coin data into database
 */
-func (Dumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) error {
+func (LocalDumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) error {
 	for symbol, data := range all_coin_candles {
-		err := Dumbo.DBInterface.Table(strings.ToLower(symbol) + "_custom_kline").Create(data).Error
+		err := LocalDumbo.DBInterface.Table(strings.ToLower(symbol) + "_custom_kline").Create(data).Error
 		if err != nil {
 			return err
 		}
@@ -249,11 +249,11 @@ func (Dumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLData) er
     WHAT:
 		-> Retrieves all historic data up to the number of entries
 */
-func (Dumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *map[string][]Candlestick {
+func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *map[string][]Candlestick {
 	all_candles := map[string][]Candlestick{}
 	for _, coin := range *coins {
 		temp_coin_candles := []Candlestick{}
-		err := Dumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
+		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
 			Limit(entries).Order("start_time asc").Find(&temp_coin_candles).Error
 		if err != nil {
 			log.Warn("Could not retrieve coin candle data", err)
@@ -291,6 +291,27 @@ func (Dumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *map[str
 		all_candles[coin] = coin_candles
 	}
 	return &all_candles
+}
+
+func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entries int) *TradesAndCandles{
+	all_candles := LocalDumbo.GetAllPreviousCandles(coins, coin_entries)
+	all_trades := make(map[string][]float64, len(*coins))
+	for _, coin := range *coins {
+		temp_trades := []Trades{}
+		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_trades").
+			Limit(coin_entries).Where("trade_type = ?", "true").Order("start_time asc").Find(&temp_trades).Error
+		if err != nil {
+			log.Warn("Could not retrieve trades from coin:", coin, "With error:", err)
+		}
+		for i, trade := range temp_trades {
+			all_trades[coin][i] = trade.Profit
+		}
+	}
+	all_candles_and_trades := TradesAndCandles {
+		Profits : all_trades,
+		Coins: *all_candles,
+	}
+	return &all_candles_and_trades
 }
 
 /*

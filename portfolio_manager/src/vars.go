@@ -134,6 +134,19 @@ type MessageChannel struct {
 	ProductIds []string `json:"product_ids"`
 }
 
+type SocketPMDataMessage struct {
+	Type        string           `json:"type"`
+	Msg         TradesAndCandles `json:"msg"`
+	Source      int              `json:"src"`
+	Destination int              `json:"dest"`
+	Error       string           `json:"error"`
+}
+
+type TradesAndCandles struct {
+	Profits map[string][]float64         `json:"profits"`
+	Coins   map[string][]CandlestickData `json:"candles"`
+}
+
 type SnapshotChange struct {
 	Side  string
 	Price string
@@ -155,7 +168,8 @@ type Trades struct {
 	CoinPrice     float64 `gorm:"Type:real;not null;"`
 	Fees          float64 `gorm:"Type:real;not null;"`
 	Profit        float64 `gorm:"Type:real;"`
-	Slippage      float64 `gorm:Type:real;not null;"`
+	Slippage      float64 `gorm:"Type:real; not null;"`
+	StartTime     int64   `gorm:"Type:bigint;not null"`
 }
 
 //coinbase vars

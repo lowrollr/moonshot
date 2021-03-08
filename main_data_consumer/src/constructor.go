@@ -76,6 +76,16 @@ func SocketAllCandleConstruct(msg *map[string][]Candlestick, src, dest int) (*So
 	}
 }
 
+func SocketPMDataConstruct(msg *TradesAndCandles, src, dest int, err string) (*SocketPMDataMessage) {
+	return &SocketPMDataMessage {
+		Type: "pm_data",
+		Msg: *msg,
+		Source: src,
+		Destination: dest,
+		Error: err,
+	}
+}
+
 /*
 	ARGS:
 		-> price (*CoinPrice):
