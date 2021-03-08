@@ -3,6 +3,7 @@ import time
 import os
 import json
 import cbpro
+import threading
 from websocket import create_connection
 
 from vars import (
@@ -38,20 +39,19 @@ def startInit(conn, dest, port):
         except ConnectionResetError:
             conn = startClient(dest, port, True)
 
-def readData(conn, name, port, dest=""):
+def readData(conn, name, port, reconnectFn):
+    reconnected = False
     while True:
         try:
             data = conn.recv()
-            return conn, data
+            return conn, data, reconnected
             
         except Exception as e:
+            reconnected = True
             #make sure its reconnect insteaad of normal
             print("Could not connect because of:", e)
             conn.close()
-            conn = startClient(name, port, True)
-            if dest != "":
-                rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
-                conn.send(json.dumps(rawMsg).encode('utf-8'))
+            conn = reconnectFn()
             continue
 
 def retrieveCoinData(dc_socket):
@@ -59,7 +59,7 @@ def retrieveCoinData(dc_socket):
     while True:
         rawMessage = {'type':'coins', 'msg':'', 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
         dc_socket.send(json.dumps(rawMessage).encode('utf-8'))
-        dc_socket, coinMsg = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'])
+        dc_socket, coinMsg, _ = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'], DCConnect)
         coins = []
         if "coins" in coinMsg:
             coins = json.loads(coinMsg)["msg"]
@@ -71,7 +71,21 @@ def retrieveCoinData(dc_socket):
 def PMConnect():
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
     startInit(pm_conn, "portfolio_manager", os.environ["PM_PORT"])
+    rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['portfolio_manager']}
+    pm_conn.send(json.dumps(rawMsg).encode('utf-8'))
     return pm_conn
+
+def BHConnect():
+    bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
+    startInit(bh_conn, "beverly_hills", os.environ["BH_PORT"])
+    rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
+    bh_conn.send(json.dumps(rawMsg).encode('utf-8'))
+    return bh_conn
+
+def DCConnect():
+    dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
+    return dc_conn
+
 
 def PMPing(pm_conn):
     
@@ -84,15 +98,22 @@ def PMPing(pm_conn):
         except Exception as e:
             #make sure its reconnect insteaad of normal
             print("Disconnected from PM, reconnecting... (", e, ")")
-            pm_conn = PMConnect()
+            return
+            # pm_conn = PMConnect()
+            # pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
+            
         time.sleep(2)
 
-def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, current_positions, portfolio_datastream, plot_positions):
+def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, current_positions, portfolio_datastream, plot_positions, reconnectFn=PMConnect):
     
     p_value = 0.0
-    
+    pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
+    pm_ping_thread.start()
     while True:
-        pm_conn, data = readData(pm_conn, 'portfolio_manager', os.environ['PM_PORT'])
+        pm_conn, data, reconnected = readData(pm_conn, 'portfolio_manager', os.environ['PM_PORT'], reconnectFn)
+        if reconnected:
+            pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
+            pm_ping_thread.start()
         if data:
             data = json.loads(data)
             pm_status.ping()
@@ -124,20 +145,19 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                     plot_positions.addNewPosition(coin, price, 'partial_exit', glob_status.lastTimestampReceived)
             
 
-def BHSocket(bh_status):
-    bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
-    startInit(bh_conn, "beverly_hills", os.environ["BH_PORT"])
+def BHSocket(bh_status, reconnectFn=BHConnect):
+    bh_conn = BHConnect()
     while True:
         rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
         bh_conn.send(json.dumps(rawMsg).encode('utf-8'))
-        bh_conn, data = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'], "frontend")
+        bh_conn, data, _ = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'], reconnectFn)
         if data:
             bh_status.ping()
         time.sleep(2)
 
-def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_positions):
+def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_positions, reconnectFn=DCConnect):
     while True:
-        dc_conn, data = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'])
+        dc_conn, data, _= readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'], reconnectFn)
         if data:
             data = json.loads(data)
             # print(data)
@@ -156,7 +176,7 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
 
 
 def getCoins():
-    dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
+    dc_conn = DCConnect()
     coins = retrieveCoinData(dc_conn)
     return dc_conn, coins
 

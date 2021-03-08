@@ -12,7 +12,8 @@ from client import (
     getCoins,
     startInit,
     PMConnect,
-    PMPing,
+    DCConnect,
+    BHConnect,
     CBSocket
 )
 from page import (
@@ -66,6 +67,7 @@ position_history = PositionStream(coins)
 plot_positions = PlotPositions(coins)
 
 pm_conn = PMConnect()
+bh_conn = BHConnect()
 
 dc_socket_thread = threading.Thread(target=DCSocket, args=(
     glob_status,
@@ -75,7 +77,7 @@ dc_socket_thread = threading.Thread(target=DCSocket, args=(
     cur_positions,
     ))
 
-bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'],))
+bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'], bh_conn))
 
 pm_socket_thread = threading.Thread(target=PMSocket, args=(
     glob_status,
@@ -88,7 +90,7 @@ pm_socket_thread = threading.Thread(target=PMSocket, args=(
     plot_positions,
     ))
 
-pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
+
 
 cb_socket_thread = threading.Thread(target=CBSocket, args=(
     glob_status,
@@ -101,7 +103,7 @@ cb_socket_thread = threading.Thread(target=CBSocket, args=(
 dc_socket_thread.start() 
 bh_socket_thread.start()
 pm_socket_thread.start()
-pm_ping_thread.start()
+
 cb_socket_thread.start()
 
 
