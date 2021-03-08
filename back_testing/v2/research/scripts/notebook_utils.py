@@ -16,7 +16,10 @@ from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
-import pickle5 as pickle
+if sys.version_info.minor == 6:
+    import pickle5 as pickle
+else:
+    import pickle as pickle
 from v2.utils import findParams, realtimeScale
 from load_config import load_config
 from v2.model import Trading
