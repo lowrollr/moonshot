@@ -215,7 +215,6 @@ func (pm *PortfolioManager) PMProcess() {
 	if len(enter_coins) > 0 {
 		pm.SortByProfit(&enter_coins)
 	}
-	enter_coins = []string{"BTC", "ETH", "LTC", "BCH", "EOS", "DASH", "OXT", "MKR", "XLM", "ATOM", "XTZ", "ETC", "OMG", "ZEC", "LINK", "REP", "ZRX", "ALGO", "KNC", "COMP", "BAND"}
 	for _, coin := range enter_coins {
 		allocation := CalcKellyPercent(pm.CoinDict[coin], pm.TradesToCalibrate)
 		cashToAllocate := pm.PortfolioValue * allocation
@@ -296,6 +295,23 @@ func (pm *PortfolioManager) GetCoinsInPosition(coins []string) *[]string {
 }
 
 func (pm *PortfolioManager) CalcPortfolioValue() float64 {
+	if !pm.IsPaperTrading {
+		accounts, _ := pm.CoinbaseClient.GetAccounts()
+		for _, a := range accounts {
+
+			// is account USD
+			currency := a.Currency
+			if currency == "USD" {
+				cashAvailable, err := strconv.ParseFloat(a.Available, 64)
+				if err == nil {
+					pm.FreeCash = cashAvailable
+				}
+
+				break
+			}
+		}
+	}
+
 	total_value := pm.FreeCash
 	for _, coin := range *pm.Coins {
 		if pm.CoinDict[coin].InPosition {
