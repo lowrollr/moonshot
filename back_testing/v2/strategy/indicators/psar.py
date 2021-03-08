@@ -51,6 +51,6 @@ class PSAR(Indicator):
 
     def setDefaultParams(self):
         self.params = [
-            Param(0,0.2,2,'acceleration',0.01),
+            Param(0,0.2,2,'acceleration',0.02),
             Param(0,0.2,2,'maximum',0.2)
         ]

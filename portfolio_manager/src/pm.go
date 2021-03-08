@@ -301,6 +301,23 @@ func (pm *PortfolioManager) GetCoinsInPosition(coins []string) *[]string {
 }
 
 func (pm *PortfolioManager) CalcPortfolioValue() float64 {
+	if !pm.IsPaperTrading {
+		accounts, _ := pm.CoinbaseClient.GetAccounts()
+		for _, a := range accounts {
+
+			// is account USD
+			currency := a.Currency
+			if currency == "USD" {
+				cashAvailable, err := strconv.ParseFloat(a.Available, 64)
+				if err == nil {
+					pm.FreeCash = cashAvailable
+				}
+
+				break
+			}
+		}
+	}
+
 	total_value := pm.FreeCash
 	for _, coin := range *pm.Coins {
 		if pm.CoinDict[coin].InPosition {
