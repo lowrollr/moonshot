@@ -145,6 +145,19 @@ type SnapshotEntry struct {
 	Size  string
 }
 
+type Trades struct {
+	//0 for entry 1 for exit
+	TradeType     bool    `gorm:"not null;"`
+	coinName      string  `gorm:"-"`
+	SizeTrade     float64 `gorm:"Type:real;not null;"`
+	ExecutedValue float64 `gorm:"Type:real;not null;"`
+	RealizedValue float64 `gorm:"Type:real;not null;"`
+	CoinPrice     float64 `gorm:"Type:real;not null;"`
+	Fees          float64 `gorm:"Type:real;not null;"`
+	Profit        float64 `gorm:"Type:real;"`
+	Slippage      float64 `gorm:Type:real;not null;"`
+}
+
 //coinbase vars
 type CoinBaseMessage struct {
 	Type          string           `json:"type"`

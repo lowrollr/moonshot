@@ -28,14 +28,26 @@ type OrderBook struct {
 
 type Candlestick struct {
 	// *sync.Mutex `gorm:"-" json:"-"`
-	Open        float64 `gorm:"Type:real;not null;" json:"open"`
-	High        float64 `gorm:"Type:real;not null;" json:"high"`
-	Low         float64 `gorm:"Type:real;not null;" json:"low"`
-	Close       float64 `gorm:"Type:real;not null;" json:"close"`
-	Volume      float64 `gorm:"Type:real;not null;" json:"volume"`
-	NumTrades   int     `gorm:"not null;" json:"trades"`
-	coinName    string  `gorm:"-"`
-	StartTime   int64   `gorm:"type:bigint;not null" json:"time"`
+	Open      float64 `gorm:"Type:real;not null;" json:"open"`
+	High      float64 `gorm:"Type:real;not null;" json:"high"`
+	Low       float64 `gorm:"Type:real;not null;" json:"low"`
+	Close     float64 `gorm:"Type:real;not null;" json:"close"`
+	Volume    float64 `gorm:"Type:real;not null;" json:"volume"`
+	NumTrades int     `gorm:"not null;" json:"trades"`
+	coinName  string  `gorm:"-"`
+	StartTime int64   `gorm:"type:bigint;not null" json:"time"`
+}
+
+type Trades struct {
+	//0 for entry 1 for exit
+	TradeType     bool    `gorm:"not null;"`
+	coinName      string  `gorm:"-"`
+	SizeTrade     float64 `gorm:"Type:real;not null;"`
+	ExecutedValue float64 `gorm:"Type:real;not null;"`
+	RealizedValue float64 `gorm:"Type:real;not null;"`
+	CoinPrice     float64 `gorm:"Type:real;not null;"`
+	Fees          float64 `gorm:"Type:real;not null;"`
+	Profit        float64 `gorm:"Type:real;"`
 }
 
 type OHCLData struct {

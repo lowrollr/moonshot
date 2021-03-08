@@ -357,6 +357,10 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 		enterPriceFl, _ := strconv.ParseFloat(info.EnterPrice.String(), 64)
 		info.EnterPriceFl = enterPriceFl
 		info.AmntOwned = fillSize
+
+		targetValue := decimal.NewFromFloat(cashAllocated)
+		// StoreTrade(coin string, numCoins, executedValue, price decimal.Decimal, allocatedValue float64, fees string)
+		go Dumbo.StoreTrade("enter", coin, fillSize, execValue, info.EnterPrice, targetValue, filledOrder.FillFees, nil)
 		sendEnter(pm.FrontendSocket, coin, filledOrder.FilledSize, info.EnterPrice.String())
 		return cashAllocated
 	} else {
@@ -369,7 +373,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 	log.Println(filledOrder)
 	info := pm.CoinDict[coin]
 	if filledOrder.Settled {
-
+		fillSize, _ := decimal.NewFromString(filledOrder.FilledSize)
 		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fees, _ := decimal.NewFromString(filledOrder.FillFees)
 		newCash, _ := strconv.ParseFloat(execValue.Sub(fees).String(), 64)
@@ -383,8 +387,9 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 			info.IntermediateCash = 0.0
 
 			info.updateProfitInfo(profitPercentage)
-		}
 
+			go Dumbo.StoreTrade("exit", coin, fillSize, execValue, execValue, portionToSell, filledOrder.FillFees, &profitPercentage)
+		}
 		sendExit(pm.FrontendSocket, coin, portionToSell.String(), filledOrder.ExecutedValue)
 		return newCash
 	} else {
