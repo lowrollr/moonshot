@@ -108,6 +108,19 @@ type SocketAllDataMessage struct {
 	Destination int                      `json:"dest"`
 }
 
+type SocketPMDataMessage struct {
+	Type        string           `json:"type"`
+	Msg         TradesAndCandles `json:"msg"`
+	Source      int              `json:"src"`
+	Destination int              `json:"dest"`
+	Error       string           `json:"error"`
+}
+
+type TradesAndCandles struct {
+	Profits map[string][]float64     `json:"profits"`
+	Coins   map[string][]Candlestick `json:"candles"`
+}
+
 //coinbase vars
 type CoinBaseMessage struct {
 	Type          string           `json:"type"`

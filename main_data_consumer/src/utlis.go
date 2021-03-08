@@ -61,3 +61,18 @@ func packageToSend(candlesticks *map[string]*Candlestick) *map[string]Candlestic
 	}
 	return &packagedCandles
 }
+
+func CompressByteArray(uncompressed []byte) {
+	// b, err := json.Marshal(all_coin_candle)
+	// if err != nil {
+	// 	log.Warn("Was not able to marshall data to json. Error:", err)
+	// }
+	// var z bytes.Buffer
+	// gz := zlib.NewWriter(&z)
+	// if _, err := gz.Write(b); err != nil {
+	// 	log.Warn(err)
+	// }
+	// if err := gz.Close(); err != nil {
+	// 	log.Warn(err)
+	// }
+}

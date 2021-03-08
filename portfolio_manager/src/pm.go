@@ -62,9 +62,11 @@ type PortfolioManager struct {
 }
 
 func initPM() *PortfolioManager {
+	trades_to_cal := 20
 	Dumbo.InitializeDB()
 	mapDomainConnection := StartClient()
-	coins, _ := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer")
+	coins, prev_candles, prev_profits := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer", trades_to_cal)
+	log.Println(coins, prev_candles, prev_profits)
 	strategy := initAtlas(coins)
 	client := coinbasepro.NewClient()
 	candleDict := make(map[string]CandlestickData)
@@ -101,6 +103,12 @@ func initPM() *PortfolioManager {
 				CurSum: 0,
 			},
 		}
+		for _, profit := range (*prev_profits)[coin] {
+			coinInfoDict[coin].ProfitHistory.Results.PushRight(profit)
+		}
+		for _, candle := range (*prev_candles)[coin] {
+			strategy.Process(candle, coin)
+		}
 	}
 	pm := &PortfolioManager{
 		ClientConnections: mapDomainConnection,
@@ -109,7 +117,7 @@ func initPM() *PortfolioManager {
 		FreeCash:          0.0,
 		PortfolioValue:    0.0,
 		CoinbaseClient:    client,
-		TradesToCalibrate: 20,
+		TradesToCalibrate: trades_to_cal,
 		Strat:             strategy,
 		MakerFee:          0.005,
 		TakerFee:          0.005,
@@ -124,7 +132,6 @@ func initPM() *PortfolioManager {
 	}
 
 	if !pm.IsPaperTrading {
-
 		accounts, err := client.GetAccounts()
 		if err != nil {
 			println(err.Error())
@@ -137,7 +144,6 @@ func initPM() *PortfolioManager {
 			pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
 		}
 		for _, a := range accounts {
-
 			// is account USD
 			currency := a.Currency
 			if currency == "USD" {
@@ -486,12 +492,14 @@ func (pm *PortfolioManager) ReadOrderBook(initialized chan bool) {
 						pm.CoinDict[coin].CoinOrderBook.Asks.Update(change[1], change[2])
 					}
 				}
-			} else if message.Type != "subscriptions" {
+			} else if message.Type == "error" {
+				log.Println(message)
+			} else if message.Type != "subscriptions"{
 				log.Warn("Got wrong message type: " + message.Type)
 				conn.Close()
 				log.Warn("Attempting to restart connection...")
 				break
-			}
+			} 
 		}
 
 	}

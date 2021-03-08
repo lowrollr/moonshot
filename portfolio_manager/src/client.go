@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -38,6 +39,19 @@ func (client *Client) ReceiveCandleData() *map[string][]CandlestickData {
 	}
 
 	return &message.Msg
+}
+
+func (client *Client) ReceiveCandleTradeData() (*TradesAndCandles, error) {
+	message := SocketPMDataMessage{}
+
+	err := client.conn.ReadJSON(&message)
+	if err != nil {
+		log.Warn("Was not able to read json data from socket because", err)
+	}
+	if message.Error != "nil" {
+		return &TradesAndCandles{}, errors.New(message.Error)
+	}
+	return &message.Msg, nil
 }
 
 func NewInternalClient(connection *ws.Conn) *Client {
@@ -152,30 +166,32 @@ func GetPrediction(bevConn *Client, coin string, timestamp int) bool {
 	return false
 }
 
-func (client *Client) GetPreviousData(dest string) (*[]string, *map[string][]CandlestickData) {
+func (client *Client) GetPreviousData(dest string, trades_num int) (*[]string, *map[string][]CandlestickData, *map[string][]float64) {
 	if dest != "main_data_consumer" {
 		log.Warn("dont try and get coins from something thats not main data consumer")
 	}
 	dataMessage := SocketMessage{
-		Msg:         "150",
-		Type:        "data",
+		Msg:         "150," + strconv.Itoa(trades_num),
+		Type:        "pm_data",
 		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId[dest],
 	}
+	log.Println("data consumer message", dataMessage)
 	for {
 		err := client.conn.WriteJSON(dataMessage)
 		if err != nil {
 			log.Warn("Was not able to send data message to", dest, ". With error:", err)
 		}
-		candle_data := client.ReceiveCandleData()
-		coin_labels := make([]string, len(*candle_data))
+		trade_candle_data, err := client.ReceiveCandleTradeData()
+		log.Println("trade candle data:", trade_candle_data)
+		coin_labels := make([]string, len(trade_candle_data.Coins))
 
 		i := 0
-		for coin, _ := range *candle_data {
+		for coin, _ := range trade_candle_data.Coins {
 			coin_labels[i] = coin
 			i++
 		}
-		return &coin_labels, candle_data
+		return &coin_labels, &trade_candle_data.Coins, &trade_candle_data.Profits
 	}
 }
 

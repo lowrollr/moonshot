@@ -127,6 +127,44 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 	} else if message.Type == "reconnect" {
 		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
 		log.Println("Reconnected to ", idToContainer[message.Source], ws.RemoteAddr())
+	} else if message.Type == "pm_data" {
+		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
+		if message.Msg == "" {
+			log.Warn("Did not send number of max entries to retrieve. Error:", err)
+		} else {
+			all_entries := strings.Split(message.Msg, ",")
+			if len(all_entries) == 1 {
+				log.Warn("Was not able to get two values for pm data. Entries:", all_entries)
+			} else {
+				coin_depth, coin_str_err := strconv.Atoi(all_entries[0])
+				trade_depth, trade_str_err := strconv.Atoi(all_entries[1])
+				if coin_str_err != nil || trade_str_err != nil {
+					log.Warn(coin_str_err, trade_str_err)
+					var final_err error
+					if coin_str_err != nil {
+						final_err = coin_str_err
+					} else {
+						final_err = trade_str_err
+					}
+					errMessage := SocketPMDataConstruct(
+						&TradesAndCandles{},
+						containerToId["main_data_consumer"],
+						message.Source,
+						final_err.Error(),
+					)
+					data.Clients[idToContainer[message.Source]].WriteSocketPMDataJSON(errMessage)
+				} else {
+					trades_candles := Dumbo.GetAllPMData(data.Coins, coin_depth, trade_depth)
+					dataMessage := SocketPMDataConstruct(
+						trades_candles,
+						containerToId["main_data_consumer"],
+						message.Source,
+						"nil",
+					)
+					data.Clients[idToContainer[message.Source]].WriteSocketPMDataJSON(dataMessage)
+				}
+			}
+		}
 	} else if message.Type == "data" {
 		data.Clients[idToContainer[message.Source]].SetClient(ws, message.Source)
 		if message.Msg == "" {
@@ -137,18 +175,6 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 				log.Warn("Was not able to convert string to num. Send correct entry num. Error:", err)
 			} else {
 				all_coin_candle := Dumbo.GetAllPreviousCandles(data.Coins, entries)
-				// b, err := json.Marshal(all_coin_candle)
-				// if err != nil {
-				// 	log.Warn("Was not able to marshall data to json. Error:", err)
-				// }
-				// var z bytes.Buffer
-				// gz := zlib.NewWriter(&z)
-				// if _, err := gz.Write(b); err != nil {
-				// 	log.Warn(err)
-				// }
-				// if err := gz.Close(); err != nil {
-				// 	log.Warn(err)
-				// }
 				dataMessage := SocketAllCandleConstruct(
 					all_coin_candle,
 					containerToId["main_data_consumer"],
