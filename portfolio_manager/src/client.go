@@ -33,7 +33,8 @@ func (client *Client) ReceiveCandleData() *map[string][]CandlestickData {
 
 	err := client.conn.ReadJSON(&message)
 	if err != nil {
-		log.Warn("Was not able to read json data from socket because", err)
+		log.Warn("Was not able to read json data from socket because: ", err)
+		client.conn = ConnectServer(domainToUrl["main_data_consumer"])
 	}
 
 	return &message.Msg
@@ -155,10 +156,10 @@ func (client *Client) GetPreviousData(dest string) (*[]string, *map[string][]Can
 	if dest != "main_data_consumer" {
 		log.Warn("dont try and get coins from something thats not main data consumer")
 	}
-	dataMessage := SocketMessage {
-		Msg: "150",
-		Type: "data",
-		Source: containerToId["portfolio_manager"],
+	dataMessage := SocketMessage{
+		Msg:         "150",
+		Type:        "data",
+		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId[dest],
 	}
 	for {
