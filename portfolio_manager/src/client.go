@@ -73,7 +73,7 @@ func ConnectServer(dest string) *ws.Conn {
 	}
 }
 
-func StartClient() map[string]*Client {
+func StartClients() map[string]*Client {
 	mapDomainConnection := make(map[string]*Client)
 	for hostname, fullUrl := range domainToUrl {
 		mapDomainConnection[fullUrl] = NewInternalClient(ConnectServer(fullUrl))
