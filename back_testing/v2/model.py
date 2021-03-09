@@ -482,7 +482,7 @@ class Trading:
                                 if cur_profit > 0:
                                     cash_needed = cash_allocated - cash
                                     cash_available = (1-self.fees)*(coin_info[coin_in_position]['amnt_owned'] * coin_info[coin_in_position]['last_close_price'])
-                                    if cash_available >= cash_needed:
+                                    if cash_needed >= cash_available:
                                         exited_position = True
                                         
                                         exited_cash, profit = utils.exitPosition(coin_info[coin_in_position], self.fees, time)
