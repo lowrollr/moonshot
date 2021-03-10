@@ -73,7 +73,7 @@ class JTI(Indicator):
                     except ValueError as err:
                         jti_theta = 0.0
                     
-                    dataset.at[index, self.name + '_a'] = jti_aW
+                    dataset.at[index, self.name + '_a'] = jti_a
                     dataset.at[index, self.name + '_b'] = jti_b
                     dataset.at[index, self.name + '_c'] = jti_c
                     dataset.at[index, self.name + '_theta'] = jti_theta
