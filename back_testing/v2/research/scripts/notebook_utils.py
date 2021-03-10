@@ -63,7 +63,7 @@ class notebookUtils:
     '''
     def fetchIndicators(self, indicator_list, param_specification={}):
         indicator_objects = []
-        for indicator, value in indicator_list:
+        for indicator, value, appended_name in indicator_list:
             base_dir = 'v2.strategy.indicators.'
             module = import_module(base_dir + indicator.lower())
             indicator_object = None
@@ -75,7 +75,7 @@ class notebookUtils:
                     indicator_object = obj
                     break
             if indicator_object:
-                ind_obj = indicator_object(_params=[], _value=value)
+                ind_obj = indicator_object(_params=[], _value=value, _appended_name=appended_name)
                 ind_obj.setDefaultParams()
                 if indicator in param_specification:
                     params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
@@ -99,10 +99,14 @@ class notebookUtils:
     '''
     def genDataForAll(self, dataset, indicators):
         names = []
+        inds_for_later = []
         for x in indicators:
-            new_names = x.genData(dataset, gen_new_values=False)
-            names.extend(new_names)
-        return names
+            if x.value in dataset.columns:
+                new_names = x.genData(dataset, gen_new_values=False)
+                names.extend(new_names)
+            else:
+                inds_for_later.append(x)
+        return names, inds_for_later
 
 
     '''
@@ -121,19 +125,21 @@ class notebookUtils:
     def generateSpans(self, dataset, indicator_name, column_name, param_name, param_values, gen_data=True):
         names = []
         inds = []
+        inds_for_later = []
         for x in param_values:
+            appended_name = f'{column_name}_{param_name}_{x}'
             # grab new instantiated indicator objects corresponding to each name passed, set the param accordingly
-            ind = self.fetchIndicators([[indicator_name, column_name]], param_specification={indicator_name:{param_name: x}})[0]
-            # construct the column name
-            name = f'{type(ind).__name__}_{column_name}_{param_name}_{x}'
-            ind.name = name
-            names.append(name)
+            ind = self.fetchIndicators([[indicator_name, column_name, appended_name]], param_specification={indicator_name:{param_name: x}})[0]
+            
             # generate the data and add it to the dataset
             inds.append(ind)
             if gen_data:
-                ind.genData(dataset, gen_new_values=False)
+                if ind.value in dataset.columns:
+                    names.extend(ind.genData(dataset, gen_new_values=False))
+                else:
+                    inds_for_later.append(ind)
 
-        return names, inds
+        return names, inds, inds_for_later
 
     '''
     ARGS:
@@ -213,7 +219,7 @@ class notebookUtils:
                 print(f'Loading data from chunk {i}...')
                 new_indicators = self.fetchIndicators(indicators, param_spec)
                 
-                new_features = self.genDataForAll(dataset=d, indicators=new_indicators)
+                new_features, inds_for_later = self.genDataForAll(dataset=d, indicators=new_indicators)
                 new_indicators = [x for x in new_indicators if type(x) not in [Optimal, Optimal_v2]]
                 if 'Optimal_v2' in new_features or 'Optimal' in new_features:
                     optimal_col_name = 'Optimal_v2' if 'Optimal_v2' in new_features else 'Optimal'
@@ -236,14 +242,22 @@ class notebookUtils:
                     features.extend(new_features)
                     indicator_objs.extend(new_indicators)
                 for span in spans:
-                    new_features, new_inds = self.generateSpans(dataset=d, 
+                    new_features, new_inds, inds_later = self.generateSpans(dataset=d, 
                                                 indicator_name=span['indicator_name'],
                                                 column_name=span['column_name'],
                                                 param_name=span['param_name'],
                                                 param_values=span['param_values'])
+                    inds_for_later.extend(inds_later)
                     if compiling_features:
                         features.extend(new_features)
                         indicator_objs.extend(new_inds)
+                while inds_for_later:
+                    new_features, inds_for_later = self.genDataForAll(dataset=d, indicators=inds_for_later)
+                    if compiling_features:
+                        features.extend(new_features)
+                        
+
+                
                 if scale:
                     scaler = None
                     if scale == 'minmax':
