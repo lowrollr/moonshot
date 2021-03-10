@@ -41,9 +41,7 @@ class JTI(Indicator):
         if gen_new_values:
             period.genValue()
         
-        jti_sma_param = Param(0,0,0,'period',period.value)
-        jti_sma = SMA(_params=[jti_sma_param], _value=self.value, _appended_name='JTI')
-        jti_sma.genData(dataset, gen_new_values=False)
+        
         dataset[self.name + '_a'] = np.NAN
         dataset[self.name + '_b'] = np.NAN
         dataset[self.name + '_c'] = np.NAN
@@ -54,7 +52,10 @@ class JTI(Indicator):
         lastMin = (99999999999999999, 0)
         lastMax = (0, 0)
         lookingForMax = True
-        for idx,row in dataset.iterrows():
+        for row in dataset.itertuples():
+            
+            index = row.Index
+            cur_value = getattr(row, self.value)
             if lookingForMax:
                 
                 if curMin[1] and lastMax[1]:
@@ -65,19 +66,23 @@ class JTI(Indicator):
                     jti_b = sqrt(pow(minutes_since_max, 2) + pow((1 - (lastMax[0]/row.close)), 2))
                     jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMax[0]/curMin[1])), 2))
                     cos_c = (pow(jti_a, 2) + pow(jti_b, 2) - pow(jti_c, 2)) / (2 * jti_a * jti_b)
-                    jti_theta = acos(cos_c)
+                    jti_theta = 0.0
+                    try:
+                        jti_theta = acos(cos_c)
+                    except ValueError as err:
+                        jti_theta = 0.0
                     
-                    dataset.at[idx, self.name + '_a'] = jti_a
-                    dataset.at[idx, self.name + '_b'] = jti_b
-                    dataset.at[idx, self.name + '_c'] = jti_c
-                    dataset.at[idx, self.name + '_theta'] = jti_theta
+                    dataset.at[index, self.name + '_a'] = jti_a
+                    dataset.at[index, self.name + '_b'] = jti_b
+                    dataset.at[index, self.name + '_c'] = jti_c
+                    dataset.at[index, self.name + '_theta'] = jti_theta
 
-                if row.SMA_JTI < curMax[0]:
+                if cur_value < curMax[0]:
                     lookingForMax = False
                     lastMin = curMin
-                    curMin = (row.SMA_JTI, row.time)
+                    curMin = (cur_value, row.time)
                 else:
-                    curMax = (row.SMA_JTI, row.time)
+                    curMax = (cur_value, row.time)
 
             else:
                 if curMax[1] and lastMin[1]:
@@ -88,23 +93,25 @@ class JTI(Indicator):
                     jti_b = sqrt(pow(minutes_since_min, 2) + pow((1 - (lastMin[0]/row.close)), 2))
                     jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMin[0]/curMax[1])), 2))
                     cos_c = (pow(jti_a, 2) + pow(jti_b, 2) - pow(jti_c, 2)) / (2 * jti_a * jti_b)
-                    jti_theta = acos(cos_c)
+
+                    jti_theta = 0.0
+                    try:
+                        jti_theta = acos(cos_c)
+                    except ValueError as err:
+                        jti_theta = 0.0
                     
-                    dataset.at[idx, self.name + '_a'] = jti_a
-                    dataset.at[idx, self.name + '_b'] = jti_b
-                    dataset.at[idx, self.name + '_c'] = jti_c
-                    dataset.at[idx, self.name + '_theta'] = jti_theta
+                    dataset.at[index, self.name + '_a'] = jti_a
+                    dataset.at[index, self.name + '_b'] = jti_b
+                    dataset.at[index, self.name + '_c'] = jti_c
+                    dataset.at[index, self.name + '_theta'] = jti_theta
                 
-                if row.SMA_JTI > curMin[0]:
+                if cur_value > curMin[0]:
                     lookingForMax = True
                     lastMax = curMax
-                    curMax = (row.SMA_JTI, row.time)
+                    curMax = (cur_value, row.time)
                 else:
-                    curMin = (row.SMA_JTI, row.time)
+                    curMin = (cur_value, row.time)
             
-            
-
-        dataset.drop(['SMA_JTI'], inplace=True, axis=1)
 
         return [self.name + '_a',  self.name + '_b', self.name + '_c', self.name + '_theta']
 
