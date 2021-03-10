@@ -63,7 +63,7 @@ class notebookUtils:
     '''
     def fetchIndicators(self, indicator_list, param_specification={}):
         indicator_objects = []
-        for indicator, value in indicator_list:
+        for indicator, value, appended_name in indicator_list:
             base_dir = 'v2.strategy.indicators.'
             module = import_module(base_dir + indicator.lower())
             indicator_object = None
@@ -75,7 +75,7 @@ class notebookUtils:
                     indicator_object = obj
                     break
             if indicator_object:
-                ind_obj = indicator_object(_params=[], _value=value)
+                ind_obj = indicator_object(_params=[], _value=value, _appended_name=appended_name)
                 ind_obj.setDefaultParams()
                 if indicator in param_specification:
                     params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
@@ -127,11 +127,10 @@ class notebookUtils:
         inds = []
         inds_for_later = []
         for x in param_values:
+            appended_name = f'{column_name}_{param_name}_{x}'
             # grab new instantiated indicator objects corresponding to each name passed, set the param accordingly
-            ind = self.fetchIndicators([[indicator_name, column_name]], param_specification={indicator_name:{param_name: x}})[0]
-            # construct the column name
-            name = f'{type(ind).__name__}_{column_name}_{param_name}_{x}'
-            ind.name = name
+            ind = self.fetchIndicators([[indicator_name, column_name, appended_name]], param_specification={indicator_name:{param_name: x}})[0]
+            
             # generate the data and add it to the dataset
             inds.append(ind)
             if gen_data:
