@@ -1,0 +1,114 @@
+'''
+FILE: jti.py
+AUTHORS:
+    -> Jacob Marshall (marshingjay@gmail.com)
+WHAT:
+    -> This file contains the ADX Indicator
+'''
+
+import pandas
+import numpy as np
+
+from math import sqrt, acos
+from v2.strategy.indicators.param import Param
+from v2.strategy.indicators.indicator import Indicator
+from v2.utils import findParams
+from v2.strategy.indicators.sma import SMA
+
+'''
+CLASS: JTI
+WHAT:
+    -> What is JTI? --> Jacob's Triangulation Indicator
+    -> Params Required:
+        -> 'period'
+    -> this indicator has an unstable period
+'''
+class JTI(Indicator):
+
+    '''
+    ARGS:
+        -> dataset (DataFrame): dataset to add the indicator values as a column to
+        -> gen_new_values (Boolean) <optional>: weather or not we should generate new values for each param belonging
+            to this Indicator
+        -> value (String) <optional>: dataframe column name to use for calculations
+    RETURN:
+        -> None
+    WHAT: 
+        -> calculates JTI for the given period
+    '''
+    def genData(self, dataset, gen_new_values=True):
+        period = findParams(self.params, ['period'])[0]
+        if gen_new_values:
+            period.genValue()
+        
+        jti_sma_param = Param(0,0,0,'period',period.value)
+        jti_sma = SMA(_params=[jti_sma_param], _value=self.value, _appended_name='JTI')
+        jti_sma.genData(dataset, gen_new_values=False)
+        dataset[self.name + '_a'] = np.NAN
+        dataset[self.name + '_b'] = np.NAN
+        dataset[self.name + '_c'] = np.NAN
+        dataset[self.name + '_theta'] = np.NAN
+        
+        curMin = (9999999999999999, 0)
+        curMax = (0, 0)
+        lastMin = (99999999999999999, 0)
+        lastMax = (0, 0)
+        lookingForMax = True
+        for idx,row in dataset.iterrows():
+            if lookingForMax:
+                
+                if curMin[1] and lastMax[1]:
+                    minutes_since_max = int((row.time - lastMax[1]) / 60000)
+                    minutes_since_min = int((row.time - curMin[1]) / 60000)
+                    minutes_between = int((curMin[1] - lastMax[1]) / 60000)
+                    jti_a = sqrt(pow(minutes_since_min, 2) + pow((1 - (curMin[0]/row.close)), 2))
+                    jti_b = sqrt(pow(minutes_since_max, 2) + pow((1 - (lastMax[0]/row.close)), 2))
+                    jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMax[0]/curMin[1])), 2))
+                    cos_c = (pow(jti_a, 2) + pow(jti_b, 2) - pow(jti_c, 2)) / (2 * jti_a * jti_b)
+                    jti_theta = acos(cos_c)
+                    
+                    dataset.at[idx, self.name + '_a'] = jti_a
+                    dataset.at[idx, self.name + '_b'] = jti_b
+                    dataset.at[idx, self.name + '_c'] = jti_c
+                    dataset.at[idx, self.name + '_theta'] = jti_theta
+
+                if row.SMA_JTI < curMax[0]:
+                    lookingForMax = False
+                    lastMin = curMin
+                    curMin = (row.SMA_JTI, row.time)
+                else:
+                    curMax = (row.SMA_JTI, row.time)
+
+            else:
+                if curMax[1] and lastMin[1]:
+                    minutes_since_max = int((row.time - curMax[1]) / 60000)
+                    minutes_since_min = int((row.time - lastMin[1]) / 60000)
+                    minutes_between = int((curMax[1] - lastMin[1]) / 60000)
+                    jti_a = sqrt(pow(minutes_since_max, 2) + pow((1 - (curMax[0]/row.close)), 2))
+                    jti_b = sqrt(pow(minutes_since_min, 2) + pow((1 - (lastMin[0]/row.close)), 2))
+                    jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMin[0]/curMax[1])), 2))
+                    cos_c = (pow(jti_a, 2) + pow(jti_b, 2) - pow(jti_c, 2)) / (2 * jti_a * jti_b)
+                    jti_theta = acos(cos_c)
+                    
+                    dataset.at[idx, self.name + '_a'] = jti_a
+                    dataset.at[idx, self.name + '_b'] = jti_b
+                    dataset.at[idx, self.name + '_c'] = jti_c
+                    dataset.at[idx, self.name + '_theta'] = jti_theta
+                
+                if row.SMA_JTI > curMin[0]:
+                    lookingForMax = True
+                    lastMax = curMax
+                    curMax = (row.SMA_JTI, row.time)
+                else:
+                    curMin = (row.SMA_JTI, row.time)
+            
+            
+
+        dataset.drop(['SMA_JTI'], inplace=True, axis=1)
+
+        return [self.name + '_a',  self.name + '_b', self.name + '_c', self.name + '_theta']
+
+    def setDefaultParams(self):
+        self.params = [
+            Param(5,10000,0,'period',60)
+        ]
