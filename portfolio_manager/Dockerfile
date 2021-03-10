@@ -18,7 +18,3 @@ COPY --from=builder /go/src/wait-for-it.sh .
 RUN apk update && apk add bash
 
 CMD ./wait-for-it.sh beverly_hills:7979 -t 0 -- ./portfolio_manager
-
-# RUN go get -d -v
-# RUN go get github.com/derekparker/delve/cmd/dlv
-# CMD ["dlv", "debug", "--listen=:4000", "--headless=true", "--api-version=2", "--log", "."]

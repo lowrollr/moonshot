@@ -249,8 +249,10 @@ func (LocalDumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLDat
     WHAT:
 		-> Retrieves all historic data up to the number of entries
 */
-func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *map[string][]Candlestick {
+func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) (*map[string][]Candlestick, bool) {
 	all_candles := map[string][]Candlestick{}
+	send_more_smoothed := false
+
 	for _, coin := range *coins {
 		temp_coin_candles := []Candlestick{}
 		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
@@ -288,13 +290,18 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *ma
 			}
 			i++
 		}
+
+		curTime := time.Now()
+		if coin_candles[len(coin_candles) - 1].StartTime < curTime.Add(-time.Minute).Unix() {
+			send_more_smoothed = true
+		}
 		all_candles[coin] = coin_candles
 	}
-	return &all_candles
+	return &all_candles, send_more_smoothed
 }
 
-func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entries int) *TradesAndCandles{
-	all_candles := LocalDumbo.GetAllPreviousCandles(coins, coin_entries)
+func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entries int) (*TradesAndCandles, bool) {
+	all_candles, send_more_smoothed := LocalDumbo.GetAllPreviousCandles(coins, coin_entries)
 	all_trades := make(map[string][]float64, len(*coins))
 	for _, coin := range *coins {
 		temp_trades := []Trades{}
@@ -311,7 +318,21 @@ func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entri
 		Profits : all_trades,
 		Coins: *all_candles,
 	}
-	return &all_candles_and_trades
+	return &all_candles_and_trades, send_more_smoothed
+}
+
+func (LocalDumbo *dumbo) GetLastCandles(coins *[]string) *map[string]Candlestick {
+	last_candles := map[string]Candlestick{}
+	for _, coin := range *coins {
+		temp_candle := Candlestick{}
+		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
+			First(&temp_candle).Order("start_time desc").Error
+		if err != nil {
+			log.Warn("Error retrieving the first entry of candle. From coin:", coin, "With error:", err)
+		}
+		last_candles[coin] = temp_candle
+	}
+	return &last_candles
 }
 
 /*
