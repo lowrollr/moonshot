@@ -127,11 +127,10 @@ class notebookUtils:
             # construct the column name
             name = f'{type(ind).__name__}_{column_name}_{param_name}_{x}'
             ind.name = name
-            names.append(name)
             # generate the data and add it to the dataset
             inds.append(ind)
             if gen_data:
-                ind.genData(dataset, gen_new_values=False)
+                names.extend(ind.genData(dataset, gen_new_values=False))
 
         return names, inds
 
