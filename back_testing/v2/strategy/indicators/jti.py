@@ -10,6 +10,7 @@ import pandas
 import numpy as np
 
 from math import sqrt, acos
+from sys import maxsize
 from v2.strategy.indicators.param import Param
 from v2.strategy.indicators.indicator import Indicator
 from v2.utils import findParams
@@ -47,9 +48,9 @@ class JTI(Indicator):
         dataset[self.name + '_c'] = np.NAN
         dataset[self.name + '_theta'] = np.NAN
         
-        curMin = (9999999999999999, 0)
+        curMin = (maxsize, 0)
         curMax = (0, 0)
-        lastMin = (99999999999999999, 0)
+        lastMin = (maxsize, 0)
         lastMax = (0, 0)
         lookingForMax = True
         for row in dataset.itertuples():
@@ -64,7 +65,7 @@ class JTI(Indicator):
                     minutes_between = int((curMin[1] - lastMax[1]) / 60000)
                     jti_a = sqrt(pow(minutes_since_min, 2) + pow((1 - (curMin[0]/row.close)), 2))
                     jti_b = sqrt(pow(minutes_since_max, 2) + pow((1 - (lastMax[0]/row.close)), 2))
-                    jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMax[0]/curMin[1])), 2))
+                    jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMax[0]/curMin[0])), 2))
                     cos_c = (pow(jti_a, 2) + pow(jti_b, 2) - pow(jti_c, 2)) / (2 * jti_a * jti_b)
                     jti_theta = 0.0
                     try:
@@ -72,7 +73,7 @@ class JTI(Indicator):
                     except ValueError as err:
                         jti_theta = 0.0
                     
-                    dataset.at[index, self.name + '_a'] = jti_a
+                    dataset.at[index, self.name + '_a'] = jti_aW
                     dataset.at[index, self.name + '_b'] = jti_b
                     dataset.at[index, self.name + '_c'] = jti_c
                     dataset.at[index, self.name + '_theta'] = jti_theta
@@ -91,7 +92,7 @@ class JTI(Indicator):
                     minutes_between = int((curMax[1] - lastMin[1]) / 60000)
                     jti_a = sqrt(pow(minutes_since_max, 2) + pow((1 - (curMax[0]/row.close)), 2))
                     jti_b = sqrt(pow(minutes_since_min, 2) + pow((1 - (lastMin[0]/row.close)), 2))
-                    jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMin[0]/curMax[1])), 2))
+                    jti_c = sqrt(pow(minutes_between, 2) + pow((1 - (lastMin[0]/curMax[0])), 2))
                     cos_c = (pow(jti_a, 2) + pow(jti_b, 2) - pow(jti_c, 2)) / (2 * jti_a * jti_b)
 
                     jti_theta = 0.0
