@@ -156,7 +156,7 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 		} else {
 			// otherwise, liquidate the remaining part of the position at the given price
 			amntRemaining = 0
-			cashReceived += (amntRemaining * curOrder.Price))
+			cashReceived += (amntRemaining * curOrder.Price)
 		}
 
 		// go to the next order
