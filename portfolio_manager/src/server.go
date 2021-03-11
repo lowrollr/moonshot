@@ -117,7 +117,6 @@ func (pm *PortfolioManager) HandleConnections(w http.ResponseWriter, r *http.Req
 	} else if message.Type == "init" {
 		if idToContainer[message.Source] == "frontend" {
 			pm.FrontendSocket.SetConn(ws)
-
 		} else {
 			log.Warn("Wrong source sent, source sent:", idToContainer[message.Source])
 		}

@@ -36,6 +36,7 @@ type DataConsumer struct {
 	Coins          *[]string
 	Candlesticks   map[string]*Candlestick
 	NumConnections int
+	SmoothPastVals bool
 }
 
 /*
@@ -57,6 +58,7 @@ func initDC() *DataConsumer {
 	return &DataConsumer{
 		Clients:        emptyClients,
 		NumConnections: 0,
+		SmoothPastVals: false,
 	}
 }
 
@@ -154,7 +156,8 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 					)
 					data.Clients[idToContainer[message.Source]].WriteSocketPMDataJSON(errMessage)
 				} else {
-					trades_candles := Dumbo.GetAllPMData(data.Coins, coin_depth, trade_depth)
+					trades_candles, smooth_next_vals := Dumbo.GetAllPMData(data.Coins, coin_depth, trade_depth)
+					data.SmoothPastVals = smooth_next_vals
 					dataMessage := SocketPMDataConstruct(
 						trades_candles,
 						containerToId["main_data_consumer"],
@@ -174,7 +177,8 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 			if err != nil {
 				log.Warn("Was not able to convert string to num. Send correct entry num. Error:", err)
 			} else {
-				all_coin_candle := Dumbo.GetAllPreviousCandles(data.Coins, entries)
+				all_coin_candle, bool_smooth_next_vals := Dumbo.GetAllPreviousCandles(data.Coins, entries)
+				data.SmoothPastVals = bool_smooth_next_vals
 				dataMessage := SocketAllCandleConstruct(
 					all_coin_candle,
 					containerToId["main_data_consumer"],
@@ -184,8 +188,7 @@ func (data *DataConsumer) handleConnections(w http.ResponseWriter, r *http.Reque
 			}
 		}
 	} else {
-		// log.Println(message)
-		log.Warn("Did not provide correct type")
+		log.Warn("Did not provide correct type. Message received:", message)
 	}
 	data.NumConnections++
 	return
@@ -335,12 +338,13 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 		wg := new(sync.WaitGroup)
 		//two containers + storing in db
 		wg.Add(3)
+		smoothed_or_orig_candles := data.SmoothIfNeeded()
 		for destinationStr, client := range data.Clients {
 			if destinationStr != "frontend" {
 				candleMessage := SocketAllCandleMessage{
 					Source:      containerToId["main_data_consumer"],
 					Destination: containerToId[destinationStr],
-					Msg:         *packageToSend(&data.Candlesticks),
+					Msg:         *smoothed_or_orig_candles,
 				}
 				// log.Println(candleMessage)
 				go client.WriteAllSocketCandleJSON(&candleMessage, wg)
@@ -379,6 +383,43 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 		candle.Volume += volume
 	}
 	return
+}
+
+func (data *DataConsumer) SmoothIfNeeded() (*map[string][]Candlestick) {
+	slice_candles := map[string][]Candlestick{}
+	if !data.SmoothPastVals {
+		for _, coin := range *(*data).Coins {
+			slice_candles[coin] = []Candlestick{*data.Candlesticks[coin]}
+		}
+		return &slice_candles
+	} else {
+		//get latest vals
+		lastCandles := Dumbo.GetLastCandles(data.Coins)
+		for _, coin := range *(*data).Coins {
+			num_gaps := int(((*lastCandles)[coin].StartTime - data.Candlesticks[coin].StartTime) / 60)
+			
+			i :=  0
+			gap_slice := make([]Candlestick, num_gaps + 1)
+			for j := 1; j < num_gaps; j++ {
+				ratio := float64(j)/ float64(num_gaps)
+				gap_slice[i] = Candlestick {
+					Open: ratio * (data.Candlesticks[coin].Open - (*lastCandles)[coin].Open) + (*lastCandles)[coin].Open,
+					High: ratio * (data.Candlesticks[coin].High - (*lastCandles)[coin].High) + (*lastCandles)[coin].High,
+					Low: ratio * (data.Candlesticks[coin].Low - (*lastCandles)[coin].Low) + (*lastCandles)[coin].Low,
+					Close: ratio * (data.Candlesticks[coin].Close - (*lastCandles)[coin].Close) + (*lastCandles)[coin].Close,
+					StartTime: (*lastCandles)[coin].StartTime + int64((j * 60)),
+					Volume: (data.Candlesticks[coin].Volume + (*lastCandles)[coin].Volume)/2,
+					NumTrades: (data.Candlesticks[coin].NumTrades + (*lastCandles)[coin].NumTrades)/2,
+					coinName: (*lastCandles)[coin].coinName,
+				}
+			}
+			gap_slice[0] = (*lastCandles)[coin]
+			gap_slice[num_gaps] = *data.Candlesticks[coin]
+			slice_candles[coin] = gap_slice
+		}
+		data.SmoothPastVals = false
+		return &slice_candles
+	}
 }
 
 /*
