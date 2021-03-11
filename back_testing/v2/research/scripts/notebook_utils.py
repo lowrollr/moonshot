@@ -153,20 +153,24 @@ class notebookUtils:
             by filtering out scores over a certain threshold
     '''
     def filter_optimal(self, optimal, threshold, mode):
+        min_threshold = threshold[0]
+        max_threshold = sys.maxsize
+        if len(threshold) > 1:
+            max_threshold = threshold[1]
         if mode == 'both':
-            if optimal > threshold:
+            if optimal > min_threshold and optimal < max_threshold:
                 return 1.0
-            elif optimal < -1*threshold:
+            elif optimal < -1*min_threshold and optimal > -1 * max_threshold:
                 return -1.0
             else:
                 return 0.0
         elif mode == 'buy':
-            if optimal > threshold:
+            if optimal > min_threshold and optimal < max_threshold:
                 return 1.0
             else:
                 return 0.0
         elif mode == "sell":
-            if optimal < -1*(threshold):
+            if optimal < -1*min_threshold and optimal > -1 * max_threshold:
                 return 1.0
             else:
                 return 0.0
@@ -196,7 +200,7 @@ class notebookUtils:
         -> returns the generated dataset and a list of the features added
         -> will add optimal features if specified but those will NOT be included in the returned features list
     '''
-    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000):
+    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":(0.01, 0.05)}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000):
         features = []
         indicator_objs = []
         groups = None
@@ -402,7 +406,7 @@ class notebookUtils:
                 else:
                     classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
 
-                classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, proba_thresh, "buy"))
+                classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, (proba_thresh,), "buy"))
                 classifyingDF.drop("predict", axis=1, inplace=True)
 
             else:
