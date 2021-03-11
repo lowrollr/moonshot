@@ -406,7 +406,7 @@ class notebookUtils:
                 else:
                     classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
 
-                classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, proba_thresh, "buy"))
+                classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, (proba_thresh,), "buy"))
                 classifyingDF.drop("predict", axis=1, inplace=True)
 
             else:
