@@ -238,10 +238,17 @@ func (pm *PortfolioManager) StartTrading() {
 	// loop forever
 	for {
 		// wait for new data to arrive
-		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveSingleCandleData()
+		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
 		// if there is data, process it
 		if len(newCandleData) > 0 {
-			pm.CandleDict = newCandleData
+			for _, coin := range *pm.Coins {
+				candles := newCandleData[coin]
+				for _, candle := range candles {
+					pm.CandleDict[coin] = candle
+					pm.Strat.Process(candle, coin)
+
+				}
+			}
 			pm.PMProcess()
 		}
 		// update portfolio value & liquidity
@@ -270,9 +277,6 @@ func (pm *PortfolioManager) PMProcess() {
 
 		// get the appropriate candlestick
 		candle := pm.CandleDict[coin]
-
-		// call the process function every tick
-		pm.Strat.Process(candle, coin)
 
 		// if we have a position in the given coin, see if the strategy tells us we should exit
 		if pm.CoinDict[coin].InPosition {
