@@ -69,7 +69,7 @@ type SocketByteMessage struct {
 
 type SocketAllCandleMessage struct {
 	Type        string                 `json:"type"`
-	Msg         map[string]Candlestick `json:"msg"`
+	Msg         map[string][]Candlestick `json:"msg"`
 	Source      int                    `json:"src"`
 	Destination int                    `json:"dest"`
 }
