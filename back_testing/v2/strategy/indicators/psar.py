@@ -42,7 +42,7 @@ class PSAR(Indicator):
             maxiumum.genValue()
 
         # compute SAR
-        dataset["intermediate_psar"] = SAR(dataset.high, dataset.close, acceleration=acceleration.value, maximum=maxiumum.value)
+        dataset["intermediate_psar"] = SAR(dataset.high, dataset.low, acceleration=acceleration.value, maximum=maxiumum.value)
         dataset[self.name] = dataset["intermediate_psar"] - dataset[self.value]
 
         dataset.drop(["intermediate_psar"], inplace=True, axis=1)
