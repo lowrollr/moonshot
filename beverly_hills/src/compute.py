@@ -42,7 +42,7 @@ class ComputeEngine:
         self.coins = coins
         for coin in self.coins:
             self.data[coin] = dict()
-        mod_obj = importModel('strawmaker')
+        mod_obj = importModel('kingmaker')
         self.features = mod_obj['features']
         self.probability_threshold = mod_obj['proba_threshold']
         self.indicator_dict = mod_obj['indicators']
