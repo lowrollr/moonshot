@@ -22,7 +22,6 @@ class PSAR(Indicator):
             return {}
         else:
             result -= data[self.value]
-            print(result)
             self.results.addData(result)
             scaled_result = 0.5
             if self.results.curMax != self.results.curMin:
