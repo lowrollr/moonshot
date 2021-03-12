@@ -83,7 +83,7 @@ type PortfolioManager struct {
 */
 func initPM() *PortfolioManager {
 	// declate amount of trades necessary to compute allocation size with kelly criterion
-	trades_to_cal := 20
+	trades_to_cal := 10
 
 	// initialize database connection
 	Dumbo.InitializeDB()
@@ -196,8 +196,6 @@ func initPM() *PortfolioManager {
 				if err == nil {
 					pm.PortfolioValue = portfolioValue
 				}
-
-				break
 			}
 		}
 		// otherwise initialize the porfolio cash
@@ -238,10 +236,17 @@ func (pm *PortfolioManager) StartTrading() {
 	// loop forever
 	for {
 		// wait for new data to arrive
-		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveSingleCandleData()
+		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
 		// if there is data, process it
 		if len(newCandleData) > 0 {
-			pm.CandleDict = newCandleData
+			for _, coin := range *pm.Coins {
+				candles := newCandleData[coin]
+				for _, candle := range candles {
+					pm.CandleDict[coin] = candle
+					pm.Strat.Process(candle, coin)
+
+				}
+			}
 			pm.PMProcess()
 		}
 		// update portfolio value & liquidity
@@ -270,9 +275,6 @@ func (pm *PortfolioManager) PMProcess() {
 
 		// get the appropriate candlestick
 		candle := pm.CandleDict[coin]
-
-		// call the process function every tick
-		pm.Strat.Process(candle, coin)
 
 		// if we have a position in the given coin, see if the strategy tells us we should exit
 		if pm.CoinDict[coin].InPosition {
@@ -339,7 +341,7 @@ func (pm *PortfolioManager) PMProcess() {
 					// if it is, we want to close all or part of it
 					amntOwnedStr := pm.CoinDict[coinIn].AmntOwned.String()
 					amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
-					curCashValue := pm.CandleDict[coinIn].Close * amntOwnedFlt
+					curCashValue := (1 - pm.TakerFee) * pm.CandleDict[coinIn].Close * amntOwnedFlt
 					cashNeeded := curCashValue - pm.FreeCash
 
 					// close all of it if we need all or more of the cash than the position provides
@@ -562,7 +564,7 @@ func (pm *PortfolioManager) SortByEV(coins *[]string) *map[string]float64 {
 		-> if the kelly criterion gives us a number less than or equal to zero, instead return a very small amount (0.05%)
 */
 func CalcKellyPercent(info *CoinInfo, minTrades int) float64 {
-	low_amnt := 0.005
+	low_amnt := 0.001
 	default_amnt := 0.05
 	if info.ProfitHistory.Results.Size() >= minTrades {
 		if info.AvgWin != 0.0 && info.AvgLoss != 0.0 {
@@ -573,7 +575,12 @@ func CalcKellyPercent(info *CoinInfo, minTrades int) float64 {
 			} else {
 				return low_amnt
 			}
+		} else if info.AvgWin > 0 {
+			return 0.8
+		} else if info.AvgLoss < 0 {
+			return 0.001
 		}
+
 	}
 	// return the calculated allocation amount
 	return default_amnt

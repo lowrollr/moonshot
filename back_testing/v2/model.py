@@ -479,7 +479,6 @@ class Trading:
                             entries[coin].append((time, coin_info[coin]['last_close_price']))
                             
                         else:
-                            pass
                             current_positions = sorted([(c, utils.getCurrentReturn(coin_info[c], self.fees)) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
                             for coin_in_position, cur_profit in current_positions:
                                 if cash_allocated <= cash:

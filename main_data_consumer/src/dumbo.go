@@ -93,8 +93,8 @@ func (LocalDumbo *dumbo) AutoMigrate() error {
 		temp_min_kline := Candlestick{coinName: strings.ToLower(coin) + "_minute_kline"}
 		temp_custom_kline := OHCLData{coinName: strings.ToLower(coin) + "_custom_kline"}
 		temp_trades := Trades{coinName: strings.ToLower(coin) + "_trades"}
-		err := LocalDumbo.DBInterface.AutoMigrate(&temp_order, 
-						&temp_min_kline, &temp_custom_kline, &temp_trades).Error
+		err := LocalDumbo.DBInterface.AutoMigrate(&temp_order,
+			&temp_min_kline, &temp_custom_kline, &temp_trades).Error
 		if err != nil {
 			return err
 		}
@@ -249,8 +249,10 @@ func (LocalDumbo *dumbo) StoreCryptosCandle(all_coin_candles map[string]*OHCLDat
     WHAT:
 		-> Retrieves all historic data up to the number of entries
 */
-func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *map[string][]Candlestick {
+func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) (*map[string][]Candlestick, bool) {
 	all_candles := map[string][]Candlestick{}
+	send_more_smoothed := false
+
 	for _, coin := range *coins {
 		temp_coin_candles := []Candlestick{}
 		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
@@ -260,23 +262,23 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *ma
 		}
 		coin_candles := temp_coin_candles
 		//smooth
-		i, gap_index :=  0, 0
-		for i < len(temp_coin_candles) - 1 {
-			if temp_coin_candles[i].StartTime + 60 < temp_coin_candles[i+1].StartTime {
+		i, gap_index := 0, 0
+		for i < len(temp_coin_candles)-1 {
+			if temp_coin_candles[i].StartTime+60 < temp_coin_candles[i+1].StartTime {
 				num_gaps := int((temp_coin_candles[i+1].StartTime - temp_coin_candles[i].StartTime) / 60)
 
-				gap_slice := make([]Candlestick, num_gaps - 1)
+				gap_slice := make([]Candlestick, num_gaps-1)
 				for j := 1; j < num_gaps; j++ {
-					ratio := float64(j)/ float64(num_gaps)
-					gap_slice[i-1] = Candlestick {
-						Open: ratio * (temp_coin_candles[i+1].Open - temp_coin_candles[i].Open) + temp_coin_candles[i].Open,
-						High: ratio * (temp_coin_candles[i+1].High - temp_coin_candles[i].High) + temp_coin_candles[i].High,
-						Low: ratio * (temp_coin_candles[i+1].Low - temp_coin_candles[i].Low) + temp_coin_candles[i].Low,
-						Close: ratio * (temp_coin_candles[i+1].Close - temp_coin_candles[i].Close) + temp_coin_candles[i].Close,
+					ratio := float64(j) / float64(num_gaps)
+					gap_slice[i-1] = Candlestick{
+						Open:      ratio*(temp_coin_candles[i+1].Open-temp_coin_candles[i].Open) + temp_coin_candles[i].Open,
+						High:      ratio*(temp_coin_candles[i+1].High-temp_coin_candles[i].High) + temp_coin_candles[i].High,
+						Low:       ratio*(temp_coin_candles[i+1].Low-temp_coin_candles[i].Low) + temp_coin_candles[i].Low,
+						Close:     ratio*(temp_coin_candles[i+1].Close-temp_coin_candles[i].Close) + temp_coin_candles[i].Close,
 						StartTime: temp_coin_candles[i].StartTime + int64((j * 60)),
-						Volume: (temp_coin_candles[i+1].Volume + temp_coin_candles[i].Volume)/2,
-						NumTrades: (temp_coin_candles[i+1].NumTrades + temp_coin_candles[i].NumTrades)/2,
-						coinName: temp_coin_candles[i].coinName,
+						Volume:    (temp_coin_candles[i+1].Volume + temp_coin_candles[i].Volume) / 2,
+						NumTrades: (temp_coin_candles[i+1].NumTrades + temp_coin_candles[i].NumTrades) / 2,
+						coinName:  temp_coin_candles[i].coinName,
 					}
 				}
 				second_half := coin_candles[gap_index+1:]
@@ -288,17 +290,25 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) *ma
 			}
 			i++
 		}
+
+		curTime := time.Now()
+		if len(coin_candles) > 0 {
+			if coin_candles[len(coin_candles)-1].StartTime < curTime.Add(-time.Minute).Unix() {
+				send_more_smoothed = true
+			}
+		}
+
 		all_candles[coin] = coin_candles
 	}
-	return &all_candles
+	return &all_candles, send_more_smoothed
 }
 
-func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entries int) *TradesAndCandles{
-	all_candles := LocalDumbo.GetAllPreviousCandles(coins, coin_entries)
+func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entries int) (*TradesAndCandles, bool) {
+	all_candles, send_more_smoothed := LocalDumbo.GetAllPreviousCandles(coins, coin_entries)
 	all_trades := make(map[string][]float64, len(*coins))
 	for _, coin := range *coins {
 		temp_trades := []Trades{}
-		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_trades").
+		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin)+"_trades").
 			Limit(coin_entries).Where("trade_type = ?", "true").Order("start_time asc").Find(&temp_trades).Error
 		if err != nil {
 			log.Warn("Could not retrieve trades from coin:", coin, "With error:", err)
@@ -307,11 +317,25 @@ func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entri
 			all_trades[coin][i] = trade.Profit
 		}
 	}
-	all_candles_and_trades := TradesAndCandles {
-		Profits : all_trades,
-		Coins: *all_candles,
+	all_candles_and_trades := TradesAndCandles{
+		Profits: all_trades,
+		Coins:   *all_candles,
 	}
-	return &all_candles_and_trades
+	return &all_candles_and_trades, send_more_smoothed
+}
+
+func (LocalDumbo *dumbo) GetLastCandles(coins *[]string) *map[string]Candlestick {
+	last_candles := map[string]Candlestick{}
+	for _, coin := range *coins {
+		temp_candle := Candlestick{}
+		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
+			First(&temp_candle).Order("start_time desc").Error
+		if err != nil {
+			log.Warn("Error retrieving the first entry of candle. From coin:", coin, "With error:", err)
+		}
+		last_candles[coin] = temp_candle
+	}
+	return &last_candles
 }
 
 /*

@@ -106,9 +106,10 @@ class ComputeEngine:
         with self.lock:
             for coin in self.coins:
                 self.data[coin] = dict()
-                for ind in self.indicators[coin]:
-                    self.data[coin].update(ind.compute(newData[coin]))
-            self.last_updated = newData[first_coin]['time']
+                for item in newData[coin]:
+                    for ind in self.indicators[coin]:
+                        self.data[coin].update(ind.compute(item))
+            self.last_updated = newData[first_coin][-1]['time']
 
 
     def allDataPrepare(self, newData):

@@ -177,7 +177,7 @@ func (atlas *Atlas) CalcExit(data CandlestickData, coinName string) bool {
 
 	// if the Close price is <amntAbove>% above (below if negative) the given SMA, set the stop loss to be a tight value (0.5%) below the Close
 	if data.Close > atlas.SMAGoal[coinName].GetVal()*(1+amntAbove) {
-		atlas.StopLoss[coinName] = math.Max(atlas.StopLoss[coinName], data.Close*0.995)
+		atlas.StopLoss[coinName] = math.Max(atlas.StopLoss[coinName], data.Close*0.999)
 	}
 
 	// if the close price is below the stop loss, reset the stop loss and return true
