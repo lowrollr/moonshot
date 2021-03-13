@@ -201,7 +201,7 @@ class notebookUtils:
         -> returns the generated dataset and a list of the features added
         -> will add optimal features if specified but those will NOT be included in the returned features list
     '''
-    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":(0.01, 0.05)}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000):
+    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":(0.01, 0.05)}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000, seperate_by_coin=False):
         features = []
         indicator_objs = []
         groups = None
@@ -290,14 +290,18 @@ class notebookUtils:
                 compiling_features = False
 
             coin_dataset = concat(coin_dataset)
-             
+            coin_dataset.reset_index(inplace=True, drop=True)
+            coin_dataset.dropna(inplace=True)
 
             dataset_list.append(coin_dataset)
-            
-        dataset = concat(dataset_list)
-        dataset.reset_index(inplace=True, drop=True)
-        dataset.dropna(inplace=True)
-        return dataset, features, indicator_objs
+        
+        if not seperate_by_coin:
+            dataset = concat(dataset_list)
+            dataset.reset_index(inplace=True, drop=True)
+            dataset.dropna(inplace=True)
+            return dataset, features, indicator_objs
+        else:
+            return dataset_list, features, indicator_objs
 
     '''
     ARGS:
