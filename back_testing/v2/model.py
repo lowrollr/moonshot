@@ -81,12 +81,14 @@ class Trading:
         if self.fee_structure != []:
             self.smaller_fees = self.fee_structure[::-1]
         
-        if config['timespan'] == 'max': # test over entire dataset
+        if config['timespan'] == 'max' or config['timespan'] == ['max']: # test over entire dataset
             self.timespan = [0, sys.maxsize]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
             self.timespan = utils.convertTimespan(config["timespan"])
-        elif len(config['timespan']) == 1: # date_a already defined in unix time, no need to convert
+        elif len(config['timespan']) == 1 or (config['timespan'][1] and config['timespan'][1] == "after"): # date_a already defined in unix time, no need to convert
             self.timespan = [int(config['timespan'][0]), sys.maxsize]
+        elif config['timespan'][1] and config['timespan'][1] == "before":
+            self.timespan = [0, int(config['timespan'][0])]
         else: 
             self.timespan = [int(x) for x in config['timespan']]
         
@@ -96,8 +98,11 @@ class Trading:
         self.df_groups = []
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
-        if self.currencies[0] == "all":
-            self.currencies = list(set(utils.retrieveAll(self.timespan[0], self.data_source)).difference(set(self.currencies[1:])))
+        if self.currencies[0] == "all" or self.currencies == "all":
+            if len(config['timespan']) > 1 and config['timespan'][1] == "before":
+                self.currencies = list(set(utils.retrieveAll(self.timespan[1], self.data_source)).difference(set(self.currencies[1:])))
+            else:
+                self.currencies = list(set(utils.retrieveAll(self.timespan[0], self.data_source)).difference(set(self.currencies[1:])))
         if get_data:
             self.getDatasets()
 

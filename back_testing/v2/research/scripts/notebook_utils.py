@@ -493,14 +493,14 @@ class notebookUtils:
         -> Plots the dataframe's buy or sell points alongside the close price
         -> optionally plots the label data (optimal buy/sell points) for reference
     '''
-    def graphPoints(self, df, mode="buy", plot_optimal=False, plot_sma=False, fields=[]):
+    def graphPoints(self, df, mode="buy", plot_optimal=False, plot_sma=False, fields=[], value_match=1):
         plt.clf()
         plt.figure(figsize=(20,10))
 
         color = "red" if mode == "buy" else "green"
 
         def inputPrice(row, column):
-            if row.get(column) == 1:
+            if row.get(column) == value_match:
                 return row.close
             return np.nan
 

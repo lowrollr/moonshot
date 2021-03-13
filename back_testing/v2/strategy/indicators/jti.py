@@ -3,7 +3,7 @@ FILE: jti.py
 AUTHORS:
     -> Jacob Marshall (marshingjay@gmail.com)
 WHAT:
-    -> This file contains the ADX Indicator
+    -> This file contains the Jacob Triangulation Indicator
 '''
 
 import pandas
