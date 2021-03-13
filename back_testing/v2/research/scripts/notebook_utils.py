@@ -62,6 +62,7 @@ class notebookUtils:
         -> DO NOT CALL THIS FUNCTION UNLESS YOU ARE DOING SO FROM A NOTEBOOK >:(
     '''
     def fetchIndicators(self, indicator_list, param_specification={}):
+        
         indicator_objects = []
         for indicator, value, appended_name in indicator_list:
             base_dir = 'v2.strategy.indicators.'
@@ -84,7 +85,7 @@ class notebookUtils:
                 indicator_objects.append(ind_obj)
             else:
                 raise Exception(f'Indicator object <{indicator}> could not be found!')
-
+    
         return indicator_objects
 
 
@@ -129,7 +130,7 @@ class notebookUtils:
         for x in param_values:
             appended_name = f'{column_name}_{param_name}_{x}'
             # grab new instantiated indicator objects corresponding to each name passed, set the param accordingly
-            ind = self.fetchIndicators([[indicator_name, column_name, appended_name]], param_specification={indicator_name:{param_name: x}})[0]
+            ind = self.fetchIndicators([[indicator_name, column_name, appended_name]], param_specification={indicator_name + '_' + appended_name:{param_name: x}})[0]
             
             # generate the data and add it to the dataset
             inds.append(ind)
@@ -493,14 +494,14 @@ class notebookUtils:
         -> Plots the dataframe's buy or sell points alongside the close price
         -> optionally plots the label data (optimal buy/sell points) for reference
     '''
-    def graphPoints(self, df, mode="buy", plot_optimal=False, plot_sma=False, fields=[], value_match=1):
+    def graphPoints(self, df, mode="buy", plot_optimal=False, plot_sma=False, fields=[]):
         plt.clf()
         plt.figure(figsize=(20,10))
 
         color = "red" if mode == "buy" else "green"
 
         def inputPrice(row, column):
-            if row.get(column) == value_match:
+            if row.get(column) == 1:
                 return row.close
             return np.nan
 
