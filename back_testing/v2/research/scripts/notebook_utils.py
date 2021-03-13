@@ -77,7 +77,7 @@ class notebookUtils:
             if indicator_object:
                 ind_obj = indicator_object(_params=[], _value=value, _appended_name=appended_name)
                 ind_obj.setDefaultParams()
-                if indicator in param_specification:
+                if ind_obj.name in param_specification:
                     params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
                     for p in params_to_set:
                         p.value = param_specification[indicator][p.name]
