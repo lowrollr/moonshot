@@ -18,7 +18,7 @@ WHAT:
     -> test
 '''
 
-class Benchmark(Strategy):
+class Atlas_v1_2(Strategy):
     '''
     ARGS:
         -> None
@@ -65,8 +65,8 @@ class Benchmark(Strategy):
         
         
         time = data.time
-        prediction = self.entry_models[1][f'{coin_name}_results'][time]
-        if prediction and data.close < data.SMA *  (0.97):
+        # prediction = self.entry_models[1][f'{coin_name}_results'][time]
+        if data.close < data.SMA * (0.97):
             return True
             
         return False

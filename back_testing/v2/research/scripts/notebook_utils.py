@@ -78,13 +78,13 @@ class notebookUtils:
                 ind_obj = indicator_object(_params=[], _value=value, _appended_name=appended_name)
                 ind_obj.setDefaultParams()
                 if ind_obj.name in param_specification:
-                    params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
+                    params_to_set = findParams(ind_obj.params, param_specification[ind_obj.name].keys())
                     for p in params_to_set:
-                        p.value = param_specification[indicator][p.name]
+                        p.value = param_specification[ind_obj.name][p.name]
                 indicator_objects.append(ind_obj)
             else:
                 raise Exception(f'Indicator object <{indicator}> could not be found!')
-        
+
         return indicator_objects
 
 
