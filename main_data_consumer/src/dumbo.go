@@ -305,6 +305,7 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) (*m
 
 func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entries int) (*TradesAndCandles, bool) {
 	all_candles, send_more_smoothed := LocalDumbo.GetAllPreviousCandles(coins, coin_entries)
+	prev_trades := LocalDumbo.GetTradesAfterExit(coins)
 	all_trades := make(map[string][]float64, len(*coins))
 	for _, coin := range *coins {
 		temp_trades := []Trades{}
@@ -320,6 +321,7 @@ func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entri
 	all_candles_and_trades := TradesAndCandles{
 		Profits: all_trades,
 		Coins:   *all_candles,
+		TradeHistory: *prev_trades,
 	}
 	return &all_candles_and_trades, send_more_smoothed
 }
@@ -336,6 +338,23 @@ func (LocalDumbo *dumbo) GetLastCandles(coins *[]string) *map[string]Candlestick
 		last_candles[coin] = temp_candle
 	}
 	return &last_candles
+}
+
+func (LocalDumbo *dumbo) GetTradesAfterExit(coins *[]string) *map[string][]Trades {
+	p_exit_trades := map[string][]Trades{}
+	for _, coin := range *coins {
+		table_name := coin + "_trades"
+		raw_sql := "SELECT * FROM " + table_name + ` WHERE id < 
+				(SELECT MIN(id) FROM ` + table_name + ` WHERE profit=0
+				AND trade_type=true)`
+		temp_trades := []Trades{}
+		err := LocalDumbo.DBInterface.Raw(raw_sql).Scan(&temp_trades).Error
+		if err != nil {
+			log.Warn("Was not able to ")
+		}
+		p_exit_trades[coin] = temp_trades
+	}
+	return &p_exit_trades
 }
 
 /*
