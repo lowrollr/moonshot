@@ -396,7 +396,7 @@ func (data *DataConsumer) SmoothIfNeeded() (*map[string][]Candlestick) {
 		//get latest vals
 		lastCandles := Dumbo.GetLastCandles(data.Coins)
 		for _, coin := range *(*data).Coins {
-			num_gaps := int(((*lastCandles)[coin].StartTime - data.Candlesticks[coin].StartTime) / 60)
+			num_gaps := int(( data.Candlesticks[coin].StartTime - (*lastCandles)[coin].StartTime)/60)
 			
 			i :=  0
 			gap_slice := make([]Candlestick, num_gaps + 1)
