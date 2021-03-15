@@ -116,6 +116,8 @@ cb_socket_thread.start()
 
 # Initialize Dash App
 app = dash.Dash(__name__)
+flask_server = app.server
+
 app.layout = createPage(
         toptext = getTopText(porfolio_datastream.day_data, 'AD LUNAM CAPITAL'),
         status_elems = getStatusElems(container_statuses), 
@@ -177,4 +179,5 @@ def intervalUpdate(n, value, data):
 #     return getStatusElems(container_statuses)
 
 if __name__ == '__main__':
+    print('Starting local WSGI server')
     app.run_server(host='0.0.0.0', port=8050, debug=False, dev_tools_silence_routes_logging=False)
