@@ -700,6 +700,37 @@ class notebookUtils:
 
         return version_str
 
+    def multiProcessSimulateData(self, datasets, strat_obj):
+        process_pool = mp.Pool(mp.cpu_count())
+        params = zip(datasets, repeat(strat_obj))
+        datasets = process_pool.starmap(self.simulate_all_trades, params)
+        process_pool.close()
+        dataset = pd.concat(datasets)
+        return dataset
+
+    def simulate_all_trades(self, dataset, strategy):
+        dataset['is_potential_buy'] = False
+        coin = 'COIN'
+        generic_strategy = strategy([coin])
+        opened_trades = dict()
+        closed_trades = dict()
+        for row in dataset.itertuples():
+            otkeys = list(opened_trades.keys())
+            for tick in otkeys:
+                opened_trades[tick][0].process(row, coin)
+                if opened_trades[tick][0].calc_exit(row, coin):
+                    closed_trades[tick] = (row.close/opened_trades[tick][1]) - 1
+                    del opened_trades[tick]
+            if generic_strategy.calc_entry(row, coin):
+                dataset.loc[(dataset.time == row.time),'is_potential_buy']=True
+                opened_trades[row.time] = (generic_strategy, row.close)
+                generic_strategy = strategy([coin])
+            
+        dataset['simul_profit'] = 0.0
+        for k in closed_trades:
+            dataset.loc[(dataset.time == k),'simul_profit']=closed_trades[k]
+        return dataset
+
     def importModel(self, model, version="latest", is_entry=True):
         #get the correct model
         base_dir = './v2/strategy/saved_models/' + model + '/'

@@ -19,7 +19,7 @@
     # ["2020.1.1", "2020.2.1"] = data for Jan. 1, 2020 to Feb. 1, 2020 (Inclusive)
     # ["2020.1.1"] = data for Jan. 1, 2020 forwards
     // timespan: ['1574654759999'],
-    timespan: ['1593322559999', 'before']
+    timespan: ['1574654759999', 'before']
     # Candle frequency to retrieve 
     # 1 = 1 minute
     freq: 1,
@@ -38,7 +38,7 @@
                     version: 'latest',
                     entry_models: [
                         {
-                            name: 'strawmaker_plus',
+                            name: 'gamemaker',
                             version: 'latest'
                         }
                     ],
