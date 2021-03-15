@@ -346,12 +346,18 @@ func (LocalDumbo *dumbo) GetTradesAfterExit(coins *[]string) *map[string][]Trade
 		table_name := strings.ToLower(coin) + "_trades"
 		raw_sql := "SELECT * FROM " + table_name + ` WHERE start_time > (SELECT coalesce((SELECT MAX(start_time) FROM ` + table_name + ` WHERE trade_type=2), 0)) ORDER BY start_time DESC;`
 		temp_trades := []Trades{}
-		log.Println(raw_sql)
 		err := LocalDumbo.DBInterface.Raw(raw_sql).Scan(&temp_trades).Error
+		
+		
+		
 		if err != nil {
 			log.Warn(err)
-		}
+		} 
+		
+		
+		
 		p_exit_trades[coin] = temp_trades
+		
 	}
 	return &p_exit_trades
 }
