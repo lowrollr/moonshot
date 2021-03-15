@@ -256,8 +256,12 @@ func (data *DataConsumer) SymbolWebSocket(symbols *[]string) {
 	for {
 		log.Println("Starting initialization for coins: " + strings.Join(*symbols, ", "))
 		symbolConn, err := InitializeSymbolSocket(symbols)
-		if err != nil {
-			log.Panic("Was not able to open websocket with error: " + err.Error())
+		for err != nil {
+			log.Warn("Was not able to open symbol websocket with error: " + err.Error())
+			time.Sleep(1 * time.Second)
+			log.Warn("Trying to reconnect...")
+			symbolConn, err = InitializeSymbolSocket(symbols)
+			
 		}
 		data.ConsumeData(symbolConn, symbols)
 	}
