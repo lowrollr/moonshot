@@ -4,7 +4,9 @@ WORKDIR /dashboard
 
 COPY requirements.txt /
 RUN pip install  -r  /requirements.txt
-COPY .  .
+COPY dashboard  .
 RUN chmod +x wait-for-it.sh
 
-CMD ["./wait-for-it.sh", "portfolio_manager:8000", "-t", "0", "--", "python", "./dashboard/app.py"]
+# CMD ["./wait-for-it.sh", "portfolio_manager:8000", "-t", "0", "--", "python", "./dashboard/app.py"]
+RUN ls
+CMD ["./wait-for-it.sh", "portfolio_manager:8000", "-t", "0", "--", "gunicorn", "--bind", "0.0.0.0:8050", "app:flask_server"]
