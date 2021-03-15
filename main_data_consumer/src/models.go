@@ -40,7 +40,7 @@ type Candlestick struct {
 
 type Trades struct {
 	//0 for entry 1 for exit
-	TradeType     bool    `gorm:"not null;"`
+	TradeType     int    `gorm:"not null;"`
 	coinName      string  `gorm:"-"`
 	SizeTrade     float64 `gorm:"Type:real;not null;"`
 	ExecutedValue float64 `gorm:"Type:real;not null;"`

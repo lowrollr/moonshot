@@ -310,12 +310,12 @@ func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entri
 	for _, coin := range *coins {
 		temp_trades := []Trades{}
 		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin)+"_trades").
-			Limit(coin_entries).Where("trade_type = ?", "true").Order("start_time asc").Find(&temp_trades).Error
+			Limit(coin_entries).Where("trade_type = ?", "2").Order("start_time asc").Find(&temp_trades).Error
 		if err != nil {
 			log.Warn("Could not retrieve trades from coin:", coin, "With error:", err)
 		}
-		for i, trade := range temp_trades {
-			all_trades[coin][i] = trade.Profit
+		for _, trade := range temp_trades {
+			all_trades[coin] = append(all_trades[coin], trade.Profit)
 		}
 	}
 	all_candles_and_trades := TradesAndCandles{
@@ -343,14 +343,13 @@ func (LocalDumbo *dumbo) GetLastCandles(coins *[]string) *map[string]Candlestick
 func (LocalDumbo *dumbo) GetTradesAfterExit(coins *[]string) *map[string][]Trades {
 	p_exit_trades := map[string][]Trades{}
 	for _, coin := range *coins {
-		table_name := coin + "_trades"
-		raw_sql := "SELECT * FROM " + table_name + ` WHERE id < 
-				(SELECT MIN(id) FROM ` + table_name + ` WHERE profit=0
-				AND trade_type=true)`
+		table_name := strings.ToLower(coin) + "_trades"
+		raw_sql := "SELECT * FROM " + table_name + ` WHERE start_time > (SELECT coalesce((SELECT MAX(start_time) FROM ` + table_name + ` WHERE trade_type=2), 0)) ORDER BY start_time DESC;`
 		temp_trades := []Trades{}
+		log.Println(raw_sql)
 		err := LocalDumbo.DBInterface.Raw(raw_sql).Scan(&temp_trades).Error
 		if err != nil {
-			log.Warn("Was not able to ")
+			log.Warn(err)
 		}
 		p_exit_trades[coin] = temp_trades
 	}

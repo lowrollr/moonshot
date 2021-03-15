@@ -143,6 +143,7 @@ type SocketPMDataMessage struct {
 }
 
 type TradesAndCandles struct {
+	OpenPositionTrades map[string][]Trades		`json:"trades"`
 	Profits map[string][]float64         `json:"profits"`
 	Coins   map[string][]CandlestickData `json:"candles"`
 }
@@ -156,20 +157,6 @@ type SnapshotChange struct {
 type SnapshotEntry struct {
 	Price string
 	Size  string
-}
-
-type Trades struct {
-	//0 for entry 1 for exit
-	TradeType     bool    `gorm:"not null;"`
-	coinName      string  `gorm:"-"`
-	SizeTrade     float64 `gorm:"Type:real;not null;"`
-	ExecutedValue float64 `gorm:"Type:real;not null;"`
-	RealizedValue float64 `gorm:"Type:real;not null;"`
-	CoinPrice     float64 `gorm:"Type:real;not null;"`
-	Fees          float64 `gorm:"Type:real;not null;"`
-	Profit        float64 `gorm:"Type:real;"`
-	Slippage      float64 `gorm:"Type:real; not null;"`
-	StartTime     int64   `gorm:"Type:bigint;not null"`
 }
 
 //coinbase vars
@@ -206,4 +193,19 @@ type CoinBaseMessage struct {
 	UserID        string           `json:"user_id"`
 	ProfileID     string           `json:"profile_id"`
 	LastTradeID   int              `json:"last_trade_id"`
+}
+
+
+type Trades struct {
+	//0 for entry 1 for exit
+	TradeType     int   `gorm:"not null;"`
+	coinName      string  `gorm:"-"`
+	SizeTrade     float64 `gorm:"Type:real;not null;"`
+	ExecutedValue float64 `gorm:"Type:real;not null;"`
+	RealizedValue float64 `gorm:"Type:real;not null;"`
+	CoinPrice     float64 `gorm:"Type:real;not null;"`
+	Fees          float64 `gorm:"Type:real;not null;"`
+	Profit        float64 `gorm:"Type:real;"`
+	Slippage      float64 `gorm:"Type:real; not null;"`
+	StartTime     int64   `gorm:"Type:bigint;not null"`
 }

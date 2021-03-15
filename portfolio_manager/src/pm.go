@@ -92,8 +92,8 @@ func initPM() *PortfolioManager {
 	mapDomainConnection := StartClients()
 
 	// retrieve previous data from main data consumer to fill data queues
-	coins, prev_candles, prev_profits := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer", trades_to_cal)
-
+	coins, open_position_trades, prev_candles, prev_profits := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer", trades_to_cal)
+	log.Println(coins)
 	// initialize strategy
 	strategy := initAtlas(coins)
 
@@ -140,10 +140,6 @@ func initPM() *PortfolioManager {
 		// store profit history retrieved from database
 		for _, profit := range (*prev_profits)[coin] {
 			coinInfoDict[coin].ProfitHistory.Results.PushRight(profit)
-		}
-		// process previous data retrieved from database (fills up data queues in strategy object)
-		for _, candle := range (*prev_candles)[coin] {
-			strategy.Process(candle, coin)
 		}
 	}
 
@@ -197,7 +193,24 @@ func initPM() *PortfolioManager {
 					pm.PortfolioValue = portfolioValue
 				}
 
-				break
+				
+			} else {
+				open_trades := (*open_position_trades)[currency]
+				if len(open_trades) > 0 {
+					
+					entry_trade := open_trades[len(open_trades) - 1]
+					log.Println(currency, " entry: ", entry_trade)
+					pm.CoinDict[currency].InPosition = true
+					pm.CoinDict[currency].CashInvested = entry_trade.ExecutedValue + entry_trade.Fees
+					pm.CoinDict[currency].EnterPrice = decimal.NewFromFloat(entry_trade.CoinPrice)
+					pm.CoinDict[currency].EnterPriceFl = entry_trade.CoinPrice
+					pm.CoinDict[currency].AmntOwned = decimal.NewFromFloat(entry_trade.SizeTrade)
+				}
+				for i := 0; i < len(open_trades) - 1; i++ {
+					log.Println(currency, " partial exit: ", open_trades[i])
+					pm.CoinDict[currency].IntermediateCash += (open_trades[i].ExecutedValue - open_trades[i].Fees)
+					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decimal.NewFromFloat(open_trades[i].RealizedValue))
+				}
 			}
 		}
 		// otherwise initialize the porfolio cash
@@ -205,6 +218,14 @@ func initPM() *PortfolioManager {
 		pm.PortfolioValue = 30000.00
 		pm.FreeCash = 30000.00
 		pm.calcFees()
+	}
+
+	for _, coin := range *pm.Coins {
+		
+		// process previous data retrieved from database (fills up data queues in strategy object)
+		for _, candle := range (*prev_candles)[coin] {
+			strategy.Process(candle, coin)
+		}
 	}
 
 	// send start messages to beverly hills and data consumer websocket  servers
@@ -218,6 +239,10 @@ func initPM() *PortfolioManager {
 	return pm
 }
 
+
+func (pm *PortfolioManager) SetStrategyState(coin string, trades []Trades){
+
+}
 /*
 	RECEIVER:
 		-> pm (*Portfolio Manager): Portfolio Manager object
@@ -231,11 +256,41 @@ func initPM() *PortfolioManager {
 		-> updates liquidity and unrealized portfolio value every iteration
 */
 func (pm *PortfolioManager) StartTrading() {
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 	// get initial unrealized portfolio value & liqudity
 	pm.PortfolioValue = pm.CalcPortfolioValue()
 	pm.UpdateLiquidity()
 	// loop forever
+
+	// wait for new data to arrive
+	newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+	// if there is data, process it
+	if len(newCandleData) > 0 {
+		for _, coin := range *pm.Coins {
+			candles := newCandleData[coin]
+			for _, candle := range candles {
+				pm.CandleDict[coin] = candle
+				pm.Strat.Process(candle, coin)
+
+			}
+		}
+		pm.PMProcess()
+	}
+	pm.enterPosition("BTC", 10000)
+	newCandleData = *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+	// if there is data, process it
+	if len(newCandleData) > 0 {
+		for _, coin := range *pm.Coins {
+			candles := newCandleData[coin]
+			for _, candle := range candles {
+				pm.CandleDict[coin] = candle
+				pm.Strat.Process(candle, coin)
+
+			}
+		}
+		pm.PMProcess()
+	}
+	pm.exitPosition("BTC", decimal.NewFromFloat(0.08))
 	for {
 		// wait for new data to arrive
 		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
@@ -619,7 +674,7 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 		allocatedValueDec := decimal.NewFromFloat(cashAllocated)
 
 		// store the trade in the database
-		go Dumbo.StoreTrade("enter", coin, fillSize, execValue, info.EnterPrice, allocatedValueDec, filledOrder.FillFees, nil)
+		go Dumbo.StoreTrade(0, coin, fillSize, execValue, info.EnterPrice, allocatedValueDec, filledOrder.FillFees, 0)
 
 		// send a message to frontend with information about the opened position
 		sendEnter(pm.FrontendSocket, coin, filledOrder.FilledSize, info.EnterPrice.String())
@@ -664,6 +719,9 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 		// if we did not sell all of our position, updated IntermediateCash (used for calculating total profit when we do completely close later)
 		if portionToSell != info.AmntOwned {
 			info.IntermediateCash += newCash
+			info.AmntOwned = info.AmntOwned.Sub(portionToSell)
+			// store the trade in the database
+			go Dumbo.StoreTrade(1, coin, fillSize, execValue, execValue, portionToSell, filledOrder.FillFees, 0.0)
 		} else {
 			// otherwise set the position to closed
 			info.InPosition = false
@@ -675,8 +733,11 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 			info.IntermediateCash = 0.0
 
 			// store the trade in the database
-			go Dumbo.StoreTrade("exit", coin, fillSize, execValue, execValue, portionToSell, filledOrder.FillFees, &profitPercentage)
+			go Dumbo.StoreTrade(2, coin, fillSize, execValue, execValue, portionToSell, filledOrder.FillFees, profitPercentage)
+
 		}
+
+		
 
 		// send a message to frontend with information about the position we exited
 		sendExit(pm.FrontendSocket, coin, portionToSell.String(), filledOrder.ExecutedValue)
