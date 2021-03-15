@@ -13,7 +13,9 @@ services:
   portfolio_manager:
     environment: 
       - DEBUG=1
-    build: ./portfolio_manager
+    build: 
+      context: portfolio_manager/.
+      dockerfile: Dockerfile.debug
     depends_on:
       - beverly_hills
       - main_data_consumer

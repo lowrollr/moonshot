@@ -28,7 +28,9 @@ services:
   beverly_hills:
     environment: 
       - DEBUG=1
-    build: ./beverly_hills
+    build: 
+      context: beverly_hills/.
+      dockerfile: Dockerfile.debug
     depends_on: 
       - crypto_db
       - main_data_consumer

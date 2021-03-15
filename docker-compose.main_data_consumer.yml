@@ -40,7 +40,9 @@ services:
   main_data_consumer:
     environment: 
       - DEBUG=1
-    build: ./main_data_consumer
+    build:
+      context: main_data_consumer/.
+      dockerfile: Dockerfile.debug
     depends_on:
       - crypto_db
     restart: "on-failure"

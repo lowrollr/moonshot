@@ -54,7 +54,9 @@ services:
   frontend:
     environment: 
       - DEBUG=1
-    build: ./frontend
+    build:
+      context: frontend/.
+      dockerfile: Dockerfile.debug
     depends_on: 
       - main_data_consumer
       - beverly_hills
