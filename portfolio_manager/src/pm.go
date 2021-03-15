@@ -83,7 +83,7 @@ type PortfolioManager struct {
 */
 func initPM() *PortfolioManager {
 	// declate amount of trades necessary to compute allocation size with kelly criterion
-	trades_to_cal := 20
+	trades_to_cal := 10
 
 	// initialize database connection
 	Dumbo.InitializeDB()
@@ -193,7 +193,6 @@ func initPM() *PortfolioManager {
 					pm.PortfolioValue = portfolioValue
 				}
 
-				
 			} else {
 				open_trades := (*open_position_trades)[currency]
 				if len(open_trades) > 0 {
@@ -398,7 +397,7 @@ func (pm *PortfolioManager) PMProcess() {
 					// if it is, we want to close all or part of it
 					amntOwnedStr := pm.CoinDict[coinIn].AmntOwned.String()
 					amntOwnedFlt, _ := strconv.ParseFloat(amntOwnedStr, 64)
-					curCashValue := pm.CandleDict[coinIn].Close * amntOwnedFlt
+					curCashValue := (1 - pm.TakerFee) * pm.CandleDict[coinIn].Close * amntOwnedFlt
 					cashNeeded := curCashValue - pm.FreeCash
 
 					// close all of it if we need all or more of the cash than the position provides
@@ -621,7 +620,7 @@ func (pm *PortfolioManager) SortByEV(coins *[]string) *map[string]float64 {
 		-> if the kelly criterion gives us a number less than or equal to zero, instead return a very small amount (0.05%)
 */
 func CalcKellyPercent(info *CoinInfo, minTrades int) float64 {
-	low_amnt := 0.005
+	low_amnt := 0.001
 	default_amnt := 0.05
 	if info.ProfitHistory.Results.Size() >= minTrades {
 		if info.AvgWin != 0.0 && info.AvgLoss != 0.0 {
@@ -632,7 +631,12 @@ func CalcKellyPercent(info *CoinInfo, minTrades int) float64 {
 			} else {
 				return low_amnt
 			}
+		} else if info.AvgWin > 0 {
+			return 0.8
+		} else if info.AvgLoss < 0 {
+			return 0.001
 		}
+
 	}
 	// return the calculated allocation amount
 	return default_amnt

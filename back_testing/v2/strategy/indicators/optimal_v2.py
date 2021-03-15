@@ -19,12 +19,10 @@ class Optimal_v2(Indicator):
         movements = []
         joined_movements = []
 
-        
         cur_min = maxsize
         cur_max = 0.00
         cur_min_time = 00.0
         cur_max_time = 00.0
-        
         
         looking_for_buy = True
         for row in dataset.itertuples():
@@ -69,7 +67,8 @@ class Optimal_v2(Indicator):
         prev_movement = joined_movements[0]
         final_joined_movements = []
         was_join_last = False
-        #Joining movements within certain time period of 600000
+        #Joining movements within certain time period of _ min
+        join_period = 60000 * 30
         for x in joined_movements[1:]:
             prev_buy = prev_movement[0][1][0]
             prev_sell = prev_movement[-1][1][1]
@@ -78,7 +77,7 @@ class Optimal_v2(Indicator):
             cur_buy = x[0][1][0]
             cur_sell = x[-1][1][1]
             cur_enter_time = x[0][0][0]
-            if prev_buy < cur_buy and prev_sell < cur_sell and cur_enter_time - 1800000 < prev_exit_time:
+            if prev_buy < cur_buy and prev_sell < cur_sell and cur_enter_time - join_period < prev_exit_time:
                 final_joined_movements.append(prev_movement + x)
                 prev_movement = prev_movement + x
                 was_join_last = True
@@ -134,5 +133,6 @@ class Optimal_v2(Indicator):
                 return 0.0
         
         dataset[self.name] = dataset.apply(lambda x: fillDatasetHelper(x.time), axis=1)
+        # print(dataset[self.name].unique())
 
         return [self.name]

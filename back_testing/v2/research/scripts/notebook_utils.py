@@ -62,6 +62,7 @@ class notebookUtils:
         -> DO NOT CALL THIS FUNCTION UNLESS YOU ARE DOING SO FROM A NOTEBOOK >:(
     '''
     def fetchIndicators(self, indicator_list, param_specification={}):
+        
         indicator_objects = []
         for indicator, value, appended_name in indicator_list:
             base_dir = 'v2.strategy.indicators.'
@@ -77,14 +78,14 @@ class notebookUtils:
             if indicator_object:
                 ind_obj = indicator_object(_params=[], _value=value, _appended_name=appended_name)
                 ind_obj.setDefaultParams()
-                if indicator in param_specification:
-                    params_to_set = findParams(ind_obj.params, param_specification[indicator].keys())
+                if ind_obj.name in param_specification:
+                    params_to_set = findParams(ind_obj.params, param_specification[ind_obj.name].keys())
                     for p in params_to_set:
-                        p.value = param_specification[indicator][p.name]
+                        p.value = param_specification[ind_obj.name][p.name]
                 indicator_objects.append(ind_obj)
             else:
                 raise Exception(f'Indicator object <{indicator}> could not be found!')
-        
+    
         return indicator_objects
 
 
@@ -129,7 +130,7 @@ class notebookUtils:
         for x in param_values:
             appended_name = f'{column_name}_{param_name}_{x}'
             # grab new instantiated indicator objects corresponding to each name passed, set the param accordingly
-            ind = self.fetchIndicators([[indicator_name, column_name, appended_name]], param_specification={indicator_name:{param_name: x}})[0]
+            ind = self.fetchIndicators([[indicator_name, column_name, appended_name]], param_specification={indicator_name + '_' + appended_name:{param_name: x}})[0]
             
             # generate the data and add it to the dataset
             inds.append(ind)
@@ -153,20 +154,24 @@ class notebookUtils:
             by filtering out scores over a certain threshold
     '''
     def filter_optimal(self, optimal, threshold, mode):
+        min_threshold = threshold[0]
+        max_threshold = sys.maxsize
+        if len(threshold) > 1:
+            max_threshold = threshold[1]
         if mode == 'both':
-            if optimal > threshold:
+            if optimal > min_threshold and optimal < max_threshold:
                 return 1.0
-            elif optimal < -1*threshold:
+            elif optimal < -1*min_threshold and optimal > -1 * max_threshold:
                 return -1.0
             else:
                 return 0.0
         elif mode == 'buy':
-            if optimal > threshold:
+            if optimal > min_threshold and optimal < max_threshold:
                 return 1.0
             else:
                 return 0.0
         elif mode == "sell":
-            if optimal < -1*(threshold):
+            if optimal < -1*min_threshold and optimal > -1 * max_threshold:
                 return 1.0
             else:
                 return 0.0
@@ -196,7 +201,7 @@ class notebookUtils:
         -> returns the generated dataset and a list of the features added
         -> will add optimal features if specified but those will NOT be included in the returned features list
     '''
-    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":0.9}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000):
+    def loadData(self, indicators, param_spec={}, optimal_threshold={"buy":(0.01, 0.05)}, spans={}, test=False, test_coin='BTC', test_freq=1, scale='', minmaxwindowsize=15000, seperate_by_coin=False):
         features = []
         indicator_objs = []
         groups = None
@@ -285,14 +290,18 @@ class notebookUtils:
                 compiling_features = False
 
             coin_dataset = concat(coin_dataset)
-             
+            coin_dataset.reset_index(inplace=True, drop=True)
+            coin_dataset.dropna(inplace=True)
 
             dataset_list.append(coin_dataset)
-            
-        dataset = concat(dataset_list)
-        dataset.reset_index(inplace=True, drop=True)
-        dataset.dropna(inplace=True)
-        return dataset, features, indicator_objs
+        
+        if not seperate_by_coin:
+            dataset = concat(dataset_list)
+            dataset.reset_index(inplace=True, drop=True)
+            dataset.dropna(inplace=True)
+            return dataset, features, indicator_objs
+        else:
+            return dataset_list, features, indicator_objs
 
     '''
     ARGS:
@@ -402,7 +411,7 @@ class notebookUtils:
                 else:
                     classifyingDF["predict"] = clf.predict_proba(dataset.drop("close", axis=1).values)[:,1]
 
-                classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, proba_thresh, "buy"))
+                classifyingDF["classify"] = classifyingDF["predict"].apply(lambda x: self.filter_optimal(x, (proba_thresh,), "buy"))
                 classifyingDF.drop("predict", axis=1, inplace=True)
 
             else:
@@ -690,6 +699,37 @@ class notebookUtils:
         pickle.dump(model_dict, open(f'{model_dir}/{name}_{version_str}.sav', 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 
         return version_str
+
+    def multiProcessSimulateData(self, datasets, strat_obj):
+        process_pool = mp.Pool(mp.cpu_count())
+        params = zip(datasets, repeat(strat_obj))
+        datasets = process_pool.starmap(self.simulate_all_trades, params)
+        process_pool.close()
+        dataset = pd.concat(datasets)
+        return dataset
+
+    def simulate_all_trades(self, dataset, strategy):
+        dataset['is_potential_buy'] = False
+        coin = 'COIN'
+        generic_strategy = strategy([coin])
+        opened_trades = dict()
+        closed_trades = dict()
+        for row in dataset.itertuples():
+            otkeys = list(opened_trades.keys())
+            for tick in otkeys:
+                opened_trades[tick][0].process(row, coin)
+                if opened_trades[tick][0].calc_exit(row, coin):
+                    closed_trades[tick] = (row.close/opened_trades[tick][1]) - 1
+                    del opened_trades[tick]
+            if generic_strategy.calc_entry(row, coin):
+                dataset.loc[(dataset.time == row.time),'is_potential_buy']=True
+                opened_trades[row.time] = (generic_strategy, row.close)
+                generic_strategy = strategy([coin])
+            
+        dataset['simul_profit'] = 0.0
+        for k in closed_trades:
+            dataset.loc[(dataset.time == k),'simul_profit']=closed_trades[k]
+        return dataset
 
     def importModel(self, model, version="latest", is_entry=True):
         #get the correct model

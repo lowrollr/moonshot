@@ -81,12 +81,14 @@ class Trading:
         if self.fee_structure != []:
             self.smaller_fees = self.fee_structure[::-1]
         
-        if config['timespan'] == 'max': # test over entire dataset
+        if config['timespan'] == 'max' or config['timespan'] == ['max']: # test over entire dataset
             self.timespan = [0, sys.maxsize]
         elif '.' in config["timespan"][0]:  # test from date_a to date_b military time (yyyy.mm.dd.hh.mm)
             self.timespan = utils.convertTimespan(config["timespan"])
-        elif len(config['timespan']) == 1: # date_a already defined in unix time, no need to convert
+        elif len(config['timespan']) == 1 or (config['timespan'][1] and config['timespan'][1] == "after"): # date_a already defined in unix time, no need to convert
             self.timespan = [int(config['timespan'][0]), sys.maxsize]
+        elif config['timespan'][1] and config['timespan'][1] == "before":
+            self.timespan = [0, int(config['timespan'][0])]
         else: 
             self.timespan = [int(x) for x in config['timespan']]
         
@@ -96,8 +98,11 @@ class Trading:
         self.df_groups = []
         # Load the appropriate datasets for each currency pair 
         # This happens last, depend on other config parameters
-        if self.currencies[0] == "all":
-            self.currencies = list(set(utils.retrieveAll(self.timespan[0], self.data_source)).difference(set(self.currencies[1:])))
+        if self.currencies[0] == "all" or self.currencies == "all":
+            if len(config['timespan']) > 1 and config['timespan'][1] == "before":
+                self.currencies = list(set(utils.retrieveAll(self.timespan[1], self.data_source)).difference(set(self.currencies[1:])))
+            else:
+                self.currencies = list(set(utils.retrieveAll(self.timespan[0], self.data_source)).difference(set(self.currencies[1:])))
         if get_data:
             self.getDatasets()
 
@@ -155,53 +160,7 @@ class Trading:
                     self.df_groups.append([cur_group, b])
                 
 
-    '''
-    ARGS:
-        -> strategy (String): name of the strategy to import
-        -> version (String): version of the strategy to import
-    RETURN:
-        -> obj (Strategy): Strategy object, or None if the given strategy name does
-            not correspond to a strategy
-    WHAT: 
-        -> finds the object corresponding to the given strategy and version number in the strategies
-            directory, returns a reference(?) to that object which can be used to call the constructor
-    '''
-    def importStrategy(self, strategy):
-        # construct the base directory
-        base_module = 'v2.strategy.strategies.' + strategy['type']
-
-        if strategy['version'] == 'latest': # fetch the latest version of the given strategy
-            base_dir = './v2/strategy/strategies/' + strategy['type']
-            highest_version = [0,0]
-            # find the highest version number
-            for f in [x for x in os.scandir(f'{base_dir}/')]:
-                if f.name[0:len(strategy['type'])] == strategy['type']:
-                    my_file = f.name.split('.py')[0]
-                    my_version = my_file.split('_v')[1]
-                    parts = my_version.split('_')
-                    version = int(parts[0])
-                    subversion = int(parts[1])
-                    if version == highest_version[0]:
-                        if subversion > highest_version[1]:
-                            highest_version = [version, subversion]
-                    elif version > highest_version[0]:
-                        highest_version = [version, subversion]
-                    
-            # set version to be the highest version found
-            version = f'{highest_version[0]}_{highest_version[1]}'
-        else:
-            version = strategy['version']
-        
-        # this code attempts to find the module (strategy) with the given name, 
-        # and gets the corresponding object if it exists
-        module = importlib.import_module(base_module + '.' + strategy['type'] + '_v' + version)
-        for mod in dir(module):
-            obj = getattr(module, mod)
-            if inspect.isclass(obj) and issubclass(obj, Strategy) and obj != Strategy:
-                return obj
-
-        # return None if no object is found
-        return None
+    
     
         
     '''
@@ -474,7 +433,6 @@ class Trading:
                             entries[coin].append((time, coin_info[coin]['last_close_price']))
                             
                         else:
-                            pass
                             current_positions = sorted([(c, utils.getCurrentReturn(coin_info[c], self.fees)) for c in coin_info if coin_info[c]['in_position']], key=lambda x:x[1])
                             for coin_in_position, cur_profit in current_positions:
                                 if cash_allocated <= cash:
@@ -628,9 +586,9 @@ class Trading:
             for m in x['exit_models']:
                 exit_models_info.append([m['name'], m['version']])
             if len(coin_names) > 1:
-                strategy_objs.append(self.importStrategy(x)(coin_names=coin_names, entry_models=entry_models_info, exit_models=exit_models_info))
+                strategy_objs.append(utils.importStrategy(x)(coin_names=coin_names, entry_models=entry_models_info, exit_models=exit_models_info))
             else: 
-                strategy_objs.append(self.importStrategy(x)(entry_models=entry_models_info, exit_models=exit_models_info))
+                strategy_objs.append(utils.importStrategy(x)(entry_models=entry_models_info, exit_models=exit_models_info))
 
         self.strategies = strategy_objs
         # run genetic algorithm if specified by config

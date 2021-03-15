@@ -155,8 +155,9 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 			cashReceived += curOrder.Price * curOrder.Amnt
 		} else {
 			// otherwise, liquidate the remaining part of the position at the given price
-			amntRemaining = 0
 			cashReceived += (amntRemaining * curOrder.Price)
+			amntRemaining = 0
+			
 		}
 
 		// go to the next order
@@ -194,7 +195,6 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 
 		// calculate the average price we sold the coin for
 		averagePrice := cashReceived / amntAvailable
-
 		// log the exited position and the slippage we incurred
 		log.Println("Exited ", coin, ": ", amntFlt, "@", averagePrice)
 		slippage := 100.0 * ((averagePrice / targetPrice) - 1.0)
