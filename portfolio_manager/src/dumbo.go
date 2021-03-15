@@ -70,22 +70,23 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 	return nil, fmt.Errorf("Failed to connect to the database of %d attempts", tries)
 }
 
-func (Local_Dumbo *dumbo) StoreTrade(trade_type, coin string, numCoins, executedValue, price, allocatedValue decimal.Decimal, fees string, profitVal *float64) {
+func (Local_Dumbo *dumbo) StoreTrade(trade_type int, coin string, numCoins, executedValue, price, allocatedValue decimal.Decimal, fees string, profitVal float64) {
 	Local_Dumbo.Lock()
 	defer Local_Dumbo.Unlock()
 
 	first_enter_const := decimal.NewFromInt(-100)
-	first_exit_const := decimal.NewFromInt(-100)
+	first_exit_const := decimal.NewFromInt(100)
 	sec_const := decimal.NewFromInt(-1)
 	//calc slippage
 	var slippage decimal.Decimal
-	var trade_bool bool
-	if trade_type == "enter" {
+	
+	if trade_type == 0 {
 		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_enter_const)
-		trade_bool = false
-	} else if trade_type == "exit" {
+	} else if trade_type == 1 {
 		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_exit_const)
-		trade_bool = true
+		
+	} else if trade_type == 2 {
+		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_exit_const)
 	} else {
 		log.Warn("Trades are either enter or exit. Not: ", trade_type)
 	}
@@ -99,7 +100,7 @@ func (Local_Dumbo *dumbo) StoreTrade(trade_type, coin string, numCoins, executed
 	curTime := time.Now().Unix()
 
 	temp_trade_entry := Trades{
-		TradeType:     trade_bool,
+		TradeType:     trade_type,
 		coinName:      coin,
 		SizeTrade:     sizeTrade,
 		ExecutedValue: execCash,
@@ -107,10 +108,8 @@ func (Local_Dumbo *dumbo) StoreTrade(trade_type, coin string, numCoins, executed
 		CoinPrice:     cPrice,
 		Fees:          feeVal,
 		Slippage:      slipVal,
-		StartTime:          curTime,
-	}
-	if profitVal != nil {
-		temp_trade_entry.Profit = *profitVal
+		StartTime:     curTime,
+		Profit: 	   profitVal,
 	}
 	err := Local_Dumbo.DBInterface.Table(strings.ToLower(coin) + "_trades").Create(&temp_trade_entry).Error
 	if err != nil {
