@@ -26,7 +26,9 @@ from page import (
     createPageContent
 )
 import threading
+import dash_auth
 import json
+import os
 import dash
 import time
 import dash_core_components as dcc
@@ -37,6 +39,10 @@ import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+auth_pair = {
+    os.environ['AUTHUSER']:os.environ['AUTHPASS'],
+}
+
 # First, we'll initialize some data structures. 
 # Then, we'll initialize some socket-listening threads.
 # Finally, we'll initialize the Dash App.
@@ -45,6 +51,7 @@ class GlobalStatus:
     def __init__(self):
         self.isPaperTrading = False
         self.lastTimestampReceived = 0
+
 
 
 glob_status = GlobalStatus()
@@ -117,6 +124,11 @@ app.layout = createPage(
         coins = coins,
         cur_coin='AD LUNAM CAPITAL',
     )
+
+auth = dash_auth.BasicAuth(
+    app,
+    auth_pair
+)
 
 @app.callback(Output('page-content', 'children'),
               Output('session_data', 'data'),
