@@ -268,7 +268,7 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) (*m
 			if temp_coin_candles[i].StartTime+60 < temp_coin_candles[i+1].StartTime {
 				num_gaps := int((temp_coin_candles[i+1].StartTime - temp_coin_candles[i].StartTime) / 60)
 
-				gap_slice := make([]Candlestick, num_gaps-1)
+				gap_slice := make([]Candlestick, num_gaps)
 				for j := 1; j < num_gaps; j++ {
 					ratio := float64(j) / float64(num_gaps)
 					gap_slice[i] = Candlestick{
