@@ -1,0 +1,41 @@
+version: "3.4"
+
+services:
+  portfolio_manager:
+    build: 
+      context: portfolio_manager/.
+      dockerfile: Dockerfile.prod
+    depends_on:
+      - beverly_hills
+      - main_data_consumer
+    restart: "on-failure"
+    env_file: portfolio_manager/.env
+
+  beverly_hills:
+    build: 
+      context: beverly_hills/.
+      dockerfile: Dockerfile.prod
+    depends_on:
+      - main_data_consumer
+    restart: "on-failure"
+    env_file: beverly_hills/.env
+
+  main_data_consumer:
+    build:
+      context: main_data_consumer/.
+      dockerfile: Dockerfile.prod
+    restart: "on-failure"
+    env_file: main_data_consumer/.env
+  
+  frontend:
+    build: 
+      context: frontend/.
+      dockerfile: Dockerfile.prod
+    depends_on: 
+      - main_data_consumer
+      - beverly_hills
+      - portfolio_manager
+    restart: "on-failure"
+    env_file: frontend/.env
+    ports:
+      - "8050:8050"
