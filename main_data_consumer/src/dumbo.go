@@ -214,6 +214,7 @@ func (LocalDumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) e
 func (LocalDumbo *dumbo) StoreAllCandles(event *map[string]*Candlestick, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for coin, candleData := range *event {
+		candleData.StartTime = candleData.StartTime * 60
 		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
 			Create(candleData).Error
 
