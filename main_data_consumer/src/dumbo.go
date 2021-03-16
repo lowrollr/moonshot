@@ -271,7 +271,7 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) (*m
 				gap_slice := make([]Candlestick, num_gaps)
 				for j := 1; j < num_gaps; j++ {
 					ratio := float64(j) / float64(num_gaps)
-					gap_slice[i] = Candlestick{
+					gap_slice[j-1] = Candlestick{
 						Open:      ratio*(temp_coin_candles[i+1].Open-temp_coin_candles[i].Open) + temp_coin_candles[i].Open,
 						High:      ratio*(temp_coin_candles[i+1].High-temp_coin_candles[i].High) + temp_coin_candles[i].High,
 						Low:       ratio*(temp_coin_candles[i+1].Low-temp_coin_candles[i].Low) + temp_coin_candles[i].Low,
