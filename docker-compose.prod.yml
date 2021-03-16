@@ -1,6 +1,13 @@
 version: "3.4"
 
 services:
+  nginx:
+    build: ./nginx
+    restart: always
+    ports:
+      - 80:80
+    depends_on:
+      - frontend
   portfolio_manager:
     build: 
       context: portfolio_manager/.
