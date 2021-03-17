@@ -7,8 +7,11 @@ WHAT:
         -> Per tick computation for indicators and model output
         -> Importing models, indicators, and features
 '''
-
-import pickle
+import sys
+if sys.version_info.minor < 8:
+    import pickle5 as pickle
+else:
+    import pickle as pickle
 import os
 import importlib
 import inspect
