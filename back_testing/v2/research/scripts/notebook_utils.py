@@ -757,5 +757,11 @@ class notebookUtils:
         full_path = base_dir + version + '/' + model + '_' + version + '.sav'
         
         model_data = pickle.load(open(full_path, 'rb'))
+
+        if not model_data["model"]: #means its a neural net and we need to load w/ keras
+            model_path = "/".join(full_path.split("/")[:-1])
+            model_data["model"] = keras.models.load_model(model_path)
+
+
         return model_data
         
