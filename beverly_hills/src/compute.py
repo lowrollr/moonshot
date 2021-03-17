@@ -196,6 +196,10 @@ def importModel(mod_name, version="latest"):
     full_path = base_dir + version_str + '/' + mod_name + '_' + version_str + '.sav'
     mod_obj = pickle.load(open(full_path, 'rb'))
 
+    if mod_obj["model_type"]  == "nn": 
+        model_path = "/".join(full_path.split("/")[:-1])
+        mod_obj["model"] = load_model(model_path)
+
     return mod_obj
 
 '''
