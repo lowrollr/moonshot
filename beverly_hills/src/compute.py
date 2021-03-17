@@ -14,6 +14,7 @@ import importlib
 import inspect
 from time import sleep
 from threading import Lock
+from tensorflow.keras.models import load_model
 import numpy as np
 from indicators.indicator import Indicator
 
@@ -42,13 +43,15 @@ class ComputeEngine:
         self.coins = coins
         for coin in self.coins:
             self.data[coin] = dict()
-        mod_obj = importModel('kingmaker')
+        mod_obj = importModel('strawmaker_plus')
         self.features = mod_obj['features']
         self.probability_threshold = mod_obj['proba_threshold']
         self.indicator_dict = mod_obj['indicators']
+        self.model_type = mod_obj['model_type']
         self.indicators = dict()
         for coin in self.coins:
             self.indicators[coin] = []
+        
         self.model = mod_obj['model']
         self.last_updated = 0
         self.windowSize = 15000
@@ -144,7 +147,10 @@ class ComputeEngine:
                     print(f'Model Input: {model_input}')
                     model_input = np.array(model_input).reshape(1, -1)
                     if self.probability_threshold:
-                        return self.probability_threshold <= self.model.predict_proba(model_input)[0][1]
+                        if self.model_type == "nn":
+                            return self.probability_threshold <= self.model.predict(model_input)[0][1]
+                        else:
+                            return self.probability_threshold <= self.model.predict_proba(model_input)[0][1]
                     else:
                         return 1 == self.model.predict(model_input)[0][1]
             elif self.last_updated > time:
