@@ -238,10 +238,6 @@ func initPM() *PortfolioManager {
 	return pm
 }
 
-
-func (pm *PortfolioManager) SetStrategyState(coin string, trades []Trades){
-
-}
 /*
 	RECEIVER:
 		-> pm (*Portfolio Manager): Portfolio Manager object
