@@ -17,7 +17,7 @@ from v2.strategy.indicators.indicator import Indicator
 from v2.strategy.indicators.optimal import Optimal
 from v2.strategy.indicators.optimal_v2 import Optimal_v2
 import sys
-if sys.version_info.minor == 6:
+if sys.version_info.minor < 8:
     import pickle5 as pickle
 else:
     import pickle as pickle
