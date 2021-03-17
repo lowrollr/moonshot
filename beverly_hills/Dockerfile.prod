@@ -4,6 +4,7 @@ COPY requirements.txt .
 RUN apt-get update && apt-get install --no-install-recommends pkg-config libhdf5-dev wget libopenblas-dev cmake build-essential automake python-dev gcc g++ subversion -y \
   && rm -rf /var/lib/apt/lists/*
 RUN python3 -m pip install --upgrade pip 
+RUN python3 -m pip install pickle5 --no-cache-dir
 RUN python3 -m pip install -r requirements.txt  --no-cache-dir
 RUN python3 -m pip install https://github.com/sanjayseshan/tensorflow-aarch64/releases/download/v2.4.0/tensorflow-2.4.0-cp37-cp37m-linux_aarch64.whl 
 RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \

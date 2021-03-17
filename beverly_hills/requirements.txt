@@ -4,4 +4,3 @@ scikit-learn==0.23.2
 websocket-client==0.57.0
 autobahn==20.12.3
 setuptools==54.1.1
-
