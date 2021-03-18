@@ -56,7 +56,7 @@ class ComputeEngine:
             self.indicators[coin] = []
         
         self.model = mod_obj['model']
-        self.last_updated = 0
+        self.last_updated_minute = 0
         self.windowSize = 15000
         self.minUnstablePeriod = 200
         # print(self.features, self.indicator_dict)
@@ -115,7 +115,7 @@ class ComputeEngine:
                 for item in newData[coin]:
                     for ind in self.indicators[coin]:
                         self.data[coin].update(ind.compute(item))
-            self.last_updated = newData[first_coin][-1]['time']
+            self.last_updated_minute = int(newData[first_coin][-1]['time'] / 60)
 
 
     def allDataPrepare(self, newData):
@@ -136,9 +136,9 @@ class ComputeEngine:
         -> makes sure that data is ready for the given timestamp (it's possible it could still be being computed in another thread)
     '''
     def predict(self, coin, time):
-        
+        time_min = int(time/60)
         while True:
-            if self.last_updated == time:
+            if self.last_updated_minute == time_min:
                 with self.lock:
                     print(f'Data Cols: {self.data[coin].keys()}')
                     model_input = []
@@ -156,7 +156,7 @@ class ComputeEngine:
                             return self.probability_threshold <= self.model.predict_proba(model_input)[0][1]
                     else:
                         return 1 == self.model.predict(model_input)[0][1]
-            elif self.last_updated > time:
+            elif self.last_updated_minute > time:
                 print('Warning: trying to fetch old predictions, this should never happen')
                 break
             else:
