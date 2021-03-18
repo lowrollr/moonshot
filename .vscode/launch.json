@@ -19,13 +19,6 @@
             ]
         },
         {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
-        },
-        {
             "name": "Delve into Main Data Docker",
             "type": "go",
             "request": "attach",
@@ -48,14 +41,6 @@
             "cwd": "${workspaceFolder}/portfolio_manager/src/",
             "showLog": true
             // "stopOnEntry":true
-        },
-        {
-            "name": "Python: Backtest Debug",
-            "type": "python",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/back_testing/",
-            "program": "__main__.py",
-            "console": "integratedTerminal"
         },
         {
             "name": "Beverly Hills",
