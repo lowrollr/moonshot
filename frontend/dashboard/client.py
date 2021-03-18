@@ -6,6 +6,8 @@ import cbpro
 import threading
 from websocket import create_connection
 
+from data import DataStream
+
 from vars import (
     containersToId,
     idToContainer
@@ -55,18 +57,24 @@ def readData(conn, name, port, reconnectFn):
             continue
 
 def retrieveCoinData(dc_socket):
-    coins = ""
+    coins = []
+    candles = dict()
+    trades = dict()
     while True:
-        rawMessage = {'type':'coins', 'msg':'', 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
+        rawMessage = {'type':'pm_data', 'msg':"1440,0", 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
         dc_socket.send(json.dumps(rawMessage).encode('utf-8'))
         dc_socket, coinMsg, _ = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'], DCConnect)
         coins = []
-        if "coins" in coinMsg:
-            coins = json.loads(coinMsg)["msg"]
+        if "pm_data" in coinMsg:
+            msg = json.loads(coinMsg)["msg"]
+            candles = msg['candles']
+            coins = list(candles.keys())
+            
+
         if len(coins) > 0:
             break
-    print("Received coins from data consumer")
-    return coins
+    print("Received coins and previous data from data consumer")
+    return coins, candles
 
 def PMConnect():
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
@@ -179,8 +187,8 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
 
 def getCoins():
     dc_conn = DCConnect()
-    coins = retrieveCoinData(dc_conn)
-    return dc_conn, coins
+    coins, candles = retrieveCoinData(dc_conn)
+    return dc_conn, coins, candles
 
 def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
     auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url="https://api-public.sandbox.pro.coinbase.com")
