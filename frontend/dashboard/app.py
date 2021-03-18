@@ -61,17 +61,27 @@ external_stylesheets = ["./assets/main.css"]
 container_statuses = dict()
 for c in {'Portfolio Manager', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
     container_statuses[c] = Status()
-#PRETEND WE GET THE COINS HERE
-#TODO actually get the coins
-dc_conn, coins = getCoins()
+
 coin_datastreams = dict()
-for coin in coins:
-    coin_datastreams[coin] = DataStream(name=coin)
+
+dc_conn, coins, candles = getCoins()
 
 porfolio_datastream = DataStream(name='portfolio')
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
 plot_positions = PlotPositions(coins)
+
+for coin in coins:
+    coin_datastreams[coin] = DataStream(name=coin)
+    for candle in candles[coin]:
+        close_price = candle['close']
+        timestamp  = candle['time']
+        if coin_datastreams[coin].initialized:
+            coin_datastreams[coin].update(close_price, timestamp)
+        else:
+            coin_datastreams[coin].initialize(close_price, timestamp)
+
+
 
 pm_conn = PMConnect()
 bh_conn = BHConnect()

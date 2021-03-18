@@ -315,6 +315,7 @@ func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entri
 	prev_trades := LocalDumbo.GetTradesAfterExit(coins)
 	all_trades := make(map[string][]float64, len(*coins))
 	for _, coin := range *coins {
+		all_trades[coin] = []float64{}
 		temp_trades := []Trades{}
 		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin)+"_trades").
 			Limit(coin_entries).Where("trade_type = ?", "2").Order("start_time asc").Find(&temp_trades).Error
