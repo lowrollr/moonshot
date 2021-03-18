@@ -127,6 +127,8 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                     portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
                 else:
                     portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
+                for coin in plot_positions.positions_to_plot_year:
+                    plot_positions.removeOldPositions(glob_status.lastTimestampReceived, coin)
             elif data['type'] == 'enter':
                 split_msg = data['msg'].split(',')
                 coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])

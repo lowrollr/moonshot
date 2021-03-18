@@ -151,7 +151,7 @@ class PlotPositions:
         self.positions_to_plot_week[coin].append(new_position)
         self.positions_to_plot_month[coin].append(new_position)
         self.positions_to_plot_year[coin].append(new_position)
-        self.removeOldPositions(now, coin)
+        
 
     def removeOldPositions(self, now, coin):
 
