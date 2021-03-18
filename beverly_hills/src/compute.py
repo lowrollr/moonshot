@@ -99,6 +99,7 @@ class ComputeEngine:
                             found_any = True
                 if not found_any:
                     print('Error importing indicators!')
+
     '''
     ARGS:
         -> newData ({string: {string: float}}): single tick of new data, maps coin to dict of OHCLVT data
@@ -109,6 +110,7 @@ class ComputeEngine:
     '''
     def prepare(self, newData):
         first_coin = self.coins[0]
+
         with self.lock:
             for coin in self.coins:
                 self.data[coin] = dict()
@@ -117,7 +119,15 @@ class ComputeEngine:
                         self.data[coin].update(ind.compute(item))
             self.last_updated_minute = int(newData[first_coin][-1]['time'] / 60)
 
-
+    '''
+    ARGS:
+        -> newData ({string: [{string: float}]}): one or more ticks of past data, mapping coins to lists of dicts with info for each tick
+    RETURN:
+        -> None
+    WHAT: 
+        -> computes indicators for a set of past data ticks
+        -> used at initialization to fill indicator values for past data retrieved from the database
+    '''
     def allDataPrepare(self, newData):
         for coin in newData:
             for candle in newData[coin]:
@@ -177,9 +187,8 @@ def importModel(mod_name, version="latest"):
     base_dir = f'saved_models/{mod_name}/'
     version_str = version
     if version == "latest":
-        # all_files = os.listdir(base_dir)
         highest_version = [0, 0]
-
+        # find the highest model version
         for f in [x for x in os.scandir(f'{base_dir}/')if x.is_dir()]:
             parts = f.name.split('_')
             version_str = int(parts[0])
@@ -193,9 +202,11 @@ def importModel(mod_name, version="latest"):
     # set version to be the highest version found
     version_str = f'{highest_version[0]}_{highest_version[1]}'
 
+    # construct the full path to the desired model to load
     full_path = base_dir + version_str + '/' + mod_name + '_' + version_str + '.sav'
     mod_obj = pickle.load(open(full_path, 'rb'))
 
+    # if the model is a neural net, we need to load the model with keras (otherwise the model won't be loaded into memory as opposed to normal sklearn modelse)
     if mod_obj["model_type"]  == "nn": 
         model_path = "/".join(full_path.split("/")[:-1])
         mod_obj["model"] = load_model(model_path)
