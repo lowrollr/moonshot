@@ -313,7 +313,8 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 	volume, _ := strconv.ParseFloat(msg.LastSize, 64)
 	//send data to the frontend
 	trade_coin := strings.Split(msg.ProductID, "-")[0]
-	now := int64(msg.Time.Unix()) / 60
+	now := int64(msg.Time.Unix())
+	now_minute := now / 60
 
 	messageToFrontend := SocketPriceMessageConstruct(
 		&CoinPrice{
@@ -328,6 +329,10 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 	frontendClient := data.Clients["frontend"]
 	go frontendClient.WriteSocketPriceJSON(messageToFrontend)
 	candle := data.Candlesticks[trade_coin]
+	candle_min := int64(0)
+	if candle != nil {
+		candle_min = candle.StartTime / 60
+	}
 	if candle == nil {
 		data.Candlesticks[trade_coin] = &Candlestick{
 			StartTime: now,
@@ -338,7 +343,7 @@ func (data *DataConsumer) ProcessTick(msg *CoinBaseMessage) {
 			Volume:    volume,
 			NumTrades: 1,
 		}
-	} else if candle.StartTime != now {
+	} else if candle_min != now_minute {
 		wg := new(sync.WaitGroup)
 		//two containers + storing in db
 		wg.Add(3)
@@ -401,7 +406,6 @@ func (data *DataConsumer) SmoothIfNeeded() (*map[string][]Candlestick) {
 		lastCandles := Dumbo.GetLastCandles(data.Coins)
 		for _, coin := range *(*data).Coins {
 			num_gaps := int(( data.Candlesticks[coin].StartTime - (*lastCandles)[coin].StartTime)/60)
-			
 			i :=  0
 			gap_slice := make([]Candlestick, num_gaps + 1)
 			for j := 1; j < num_gaps; j++ {
