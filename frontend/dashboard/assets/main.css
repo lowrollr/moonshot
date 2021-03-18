@@ -10,9 +10,9 @@
   list-style-type: none;
   font-family: Space Mono;
   font-size: 0.9vw;
-  text-align:center;
-  padding:10px;
-
+  position:relative;
+  height:3.5vw;
+  width:100%
 }
 
 #dropdown {
@@ -178,4 +178,44 @@
   
   display:inline-block;
   
+}
+
+.statCoin {
+  font-size: 1.5vw;
+  position:absolute;
+  top:0;
+  left:0.5vw;
+}
+
+.statCurProfit {
+  font-size: 0.75vw;
+  position:absolute;
+  right:0.3vw;
+  top:50%;
+  transform: translateY(-50%);
+  padding:0.2vw;
+}
+
+.statCurPrice {
+  font-size: 0.75vw;
+  position:absolute;
+  bottom:0;
+  left:0.3vw;
+  padding:0.2vw;
+}
+
+.statAmntOwned {
+  font-size: 0.75vw;
+  position:absolute;
+  top:0;
+  right:0.3vw;
+  padding:0.2vw;
+}
+
+.statCurAlloc{
+  font-size: 0.75vw;
+  position:absolute;
+  bottom:0;
+  right:0.3vw;
+  padding:0.2vw;
 }

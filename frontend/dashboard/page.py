@@ -217,14 +217,25 @@ def getPortfolioPositions(positions):
             cur_amnt = round(positions[coin]['amnt'],  4)
             cur_price = positions[coin]['price']
             profit = round(positions[coin]['profit'], 2)
+            style = {'background': 'rgba(239,102,102,0.3)'}
+            if profit > 0:
+                style = {'background': 'rgba(114,228,125,0.3)'}
             if profit > 0:
                 profit = '+' + str(profit) + '%'
             else:
                 profit = str(profit) + '%'
             alloc = round(positions[coin]['alloc'], 3)
+            
             element = html.Li(
                 className='position',
-                children= f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
+                children=[
+                    html.Span(className="statCoin", children=coin),
+                    html.Span(className="statAmntOwned", children=cur_amnt),
+                    html.Span(className="statCurPrice", children=f'${cur_price}'),
+                    html.Span(className="statCurProfit", children=profit),
+                    html.Span(className="statCurAlloc", children=alloc),
+                 ],
+                 style=style,
             )
             elements.append(element)
     return html.Ul(
@@ -240,16 +251,29 @@ def getCoinPositions(coin, cur_position):
         cur_amnt = round(cur_position['amnt'], 4)
         cur_price = cur_position['price']
         profit = round(cur_position['profit'], 2)
+        style = {'background': 'rgba(239,102,102,0.3)'}
+        if profit > 0:
+            style = {'background': 'rgba(114,228,125,0.3)'}
         if profit > 0:
             profit = '+' + str(profit) + '%'
         else:
             profit = str(profit) + '%'
-        alloc = round(cur_position['alloc'], 3)
 
-        elements.append(html.Li(
-            className = 'position',
-            children = f'{cur_amnt} {coin} / ${cur_price} {profit} / {alloc}'
-        ))
+        
+
+        alloc = round(cur_position['alloc'], 3)
+        element = html.Li(
+                className='position',
+                children=[
+                    html.Span(className="statCoin", children=coin),
+                    html.Span(className="statAmntOwned", children=cur_amnt),
+                    html.Span(className="statCurPrice", children=f'${cur_price}'),
+                    html.Span(className="statCurProfit", children=profit),
+                    html.Span(className="statCurAlloc", children=alloc),
+                 ],
+                style=style,
+            )
+        elements.append(element)
 
     return html.Ul(
         className='position_list',
