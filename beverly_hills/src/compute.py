@@ -151,7 +151,7 @@ class ComputeEngine:
                     model_input = np.array(model_input).reshape(1, -1)
                     if self.probability_threshold:
                         if self.model_type == "nn":
-                            return self.probability_threshold <= self.model.predict(model_input)[0][1]
+                            return (self.probability_threshold <= self.model.predict(model_input)[0][1])[0]
                         else:
                             return self.probability_threshold <= self.model.predict_proba(model_input)[0][1]
                     else:
