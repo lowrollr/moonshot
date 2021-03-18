@@ -155,9 +155,9 @@ def getFig(datastream, positions=None):
             else:
                 partial_indices.append(x['datetime'])
                 partial_values.append(x['value'])
-        fig.add_trace(go.Scatter(x=enter_indices, y=enter_values, mode="markers", marker_color="green"))
-        fig.add_trace(go.Scatter(x=exit_indices, y=exit_values, mode="markers", marker_color="red"))
-        fig.add_trace(go.Scatter(x=partial_indices, y=partial_values, mode="markers", marker_color="yellow"))
+        fig.add_trace(go.Scatter(x=enter_indices, y=enter_values, mode="markers", marker_color="green", marker_size=13, marker_symbol="arrow-bar-right"))
+        fig.add_trace(go.Scatter(x=exit_indices, y=exit_values, mode="markers", marker_color="red", marker_size=13, marker_symbol="arrow-bar-left"))
+        fig.add_trace(go.Scatter(x=partial_indices, y=partial_values, mode="markers", marker_color="yellow", marker_size=13, marker_symbol="arrow-left"))
     return fig
 
 
