@@ -75,12 +75,12 @@ for coin in coins:
     coin_datastreams[coin] = DataStream(name=coin)
     for candle in candles[coin]:
         close_price = candle['close']
-        timestamp  = candle['time']
+        timestamp  = int(candle['time'] / 60)
         if coin_datastreams[coin].initialized:
             coin_datastreams[coin].update(close_price, timestamp)
         else:
             coin_datastreams[coin].initialize(close_price, timestamp)
-
+        glob_status.lastTimestampReceived = timestamp
 
 
 pm_conn = PMConnect()
