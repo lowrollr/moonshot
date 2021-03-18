@@ -3,6 +3,8 @@ version: "3.4"
 services:
   nginx:
     build: ./nginx
+    logging:
+      driver: none    
     restart: always
     ports:
       - 80:80
