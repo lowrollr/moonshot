@@ -168,7 +168,7 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
                 coin_name = data['msg']['coin'].upper()
                 close_price = float(data['msg']['price'])
                 
-                timestamp = int(data['msg']['time'])
+                timestamp = int(data['msg']['time'] / 60) 
                 glob_status.lastTimestampReceived = timestamp
                 if coin_datastreams[coin_name].initialized:
                     coin_datastreams[coin_name].update(close_price, timestamp)
