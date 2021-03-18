@@ -214,7 +214,6 @@ func (LocalDumbo *dumbo) StoreCryptoBidAsk(event *binance.WsPartialDepthEvent) e
 func (LocalDumbo *dumbo) StoreAllCandles(event *map[string]*Candlestick, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for coin, candleData := range *event {
-		candleData.StartTime = candleData.StartTime * 60
 		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin) + "_minute_kline").
 			Create(candleData).Error
 
@@ -261,17 +260,18 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) (*m
 		if err != nil {
 			log.Warn("Could not retrieve coin candle data", err)
 		}
-		coin_candles := temp_coin_candles
+		coin_candles := []Candlestick{}
 		//smooth
-		i, gap_index := 0, 0
+		i := 0
 		for i < len(temp_coin_candles)-1 {
 			if temp_coin_candles[i].StartTime+60 < temp_coin_candles[i+1].StartTime {
 				num_gaps := int((temp_coin_candles[i+1].StartTime - temp_coin_candles[i].StartTime) / 60)
 
 				gap_slice := make([]Candlestick, num_gaps)
+				gap_slice[0] = temp_coin_candles[i]
 				for j := 1; j < num_gaps; j++ {
 					ratio := float64(j) / float64(num_gaps)
-					gap_slice[j-1] = Candlestick{
+					gap_slice[j] = Candlestick{
 						Open:      ratio*(temp_coin_candles[i+1].Open-temp_coin_candles[i].Open) + temp_coin_candles[i].Open,
 						High:      ratio*(temp_coin_candles[i+1].High-temp_coin_candles[i].High) + temp_coin_candles[i].High,
 						Low:       ratio*(temp_coin_candles[i+1].Low-temp_coin_candles[i].Low) + temp_coin_candles[i].Low,
@@ -282,23 +282,29 @@ func (LocalDumbo *dumbo) GetAllPreviousCandles(coins *[]string, entries int) (*m
 						coinName:  temp_coin_candles[i].coinName,
 					}
 				}
-				second_half := coin_candles[gap_index+1:]
-				coin_candles = append(coin_candles[:gap_index+1], gap_slice...)
-				coin_candles = append(coin_candles, second_half...)
-				gap_index += num_gaps
+				if num_gaps > 0 {
+					coin_candles = append(coin_candles, gap_slice...)
+				}
+				// second_half := coin_candles[gap_index+1:]
+				// coin_candles = append(coin_candles[:gap_index+1], gap_slice...)
+				// coin_candles = append(coin_candles, second_half...)
+				// gap_index += num_gaps
 			} else {
-				gap_index++
+				coin_candles = append(coin_candles, temp_coin_candles[i])
+				// gap_index++
 			}
 			i++
 		}
-
+		if len(temp_coin_candles) > 0 {
+			coin_candles = append(coin_candles, temp_coin_candles[len(temp_coin_candles)-1])
+		}
+		
 		curTime := time.Now()
 		if len(coin_candles) > 0 {
 			if coin_candles[len(coin_candles)-1].StartTime < curTime.Add(-time.Minute).Unix() {
 				send_more_smoothed = true
 			}
 		}
-
 		all_candles[coin] = coin_candles
 	}
 	return &all_candles, send_more_smoothed
