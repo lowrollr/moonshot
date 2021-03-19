@@ -48,7 +48,7 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
             ]
         )
     ]
-
+    
 def getTopText(data, asset):
     
     cur_value = '$0.00'
