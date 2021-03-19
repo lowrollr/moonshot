@@ -14,5 +14,5 @@ if __name__ == "__main__":
     # initialize Beverly Hills
     beverly = BeverlyHills()
 
-    # start the main loop
-    beverly.loop()
+    # starts compute engine and server thread
+    beverly.start()
