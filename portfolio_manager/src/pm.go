@@ -256,21 +256,7 @@ func (pm *PortfolioManager) StartTrading() {
 	// get initial unrealized portfolio value & liqudity
 	pm.PortfolioValue = pm.CalcPortfolioValue()
 	pm.UpdateLiquidity()
-
-	newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
-		// if there is data, process it
-		if len(newCandleData) > 0 {
-			for _, coin := range *pm.Coins {
-				candles := newCandleData[coin]
-				for _, candle := range candles {
-					pm.CandleDict[coin] = candle
-					pm.Strat.Process(candle, coin)
-
-				}
-			}
-			pm.PMProcess()
-		}
-	pm.paperEnter("BTC", 1000)
+	
 	// loop forever
 	for {
 		// wait for new data to arrive

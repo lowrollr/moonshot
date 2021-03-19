@@ -31,8 +31,6 @@ import (
 		-> walks down the bid order book until the order is filled
 */
 func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64) float64 {
-
-	log.Println(pm.TakerFee, cashAllocated)
 	// calculate the fees paid for entering this position
 	fees := cashAllocated * pm.TakerFee
 
