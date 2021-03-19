@@ -92,7 +92,7 @@ func (LocalDumbo *dumbo) AutoMigrate() error {
 		temp_order := OrderBook{coinName: strings.ToLower(coin) + "_order_book"}
 		temp_min_kline := Candlestick{coinName: strings.ToLower(coin) + "_minute_kline"}
 		temp_custom_kline := OHCLData{coinName: strings.ToLower(coin) + "_custom_kline"}
-		temp_trades := Trades{coinName: strings.ToLower(coin) + "_trades"}
+		temp_trades := Trade{coinName: strings.ToLower(coin) + "_trades"}
 		err := LocalDumbo.DBInterface.AutoMigrate(&temp_order,
 			&temp_min_kline, &temp_custom_kline, &temp_trades).Error
 		if err != nil {
@@ -142,7 +142,7 @@ func (o OrderBook) TableName() string {
     WHAT:
 		-> Returns the name of the coin so that it is a dynamic table names
 */
-func (f Trades) TableName() string {
+func (f Trade) TableName() string {
 	if f.coinName != "" {
 		return strings.ToLower(f.coinName)
 	}
@@ -316,9 +316,9 @@ func (LocalDumbo *dumbo) GetAllPMData(coins *[]string, coin_entries, trade_entri
 	all_trades := make(map[string][]float64, len(*coins))
 	for _, coin := range *coins {
 		all_trades[coin] = []float64{}
-		temp_trades := []Trades{}
+		temp_trades := []Trade{}
 		err := LocalDumbo.DBInterface.Table(strings.ToLower(coin)+"_trades").
-			Limit(coin_entries).Where("trade_type = ?", "2").Order("start_time asc").Find(&temp_trades).Error
+			Limit(coin_entries).Where("type_id = ?", "2").Order("timestamp asc").Find(&temp_trades).Error
 		if err != nil {
 			log.Warn("Could not retrieve trades from coin:", coin, "With error:", err)
 		}
@@ -348,12 +348,12 @@ func (LocalDumbo *dumbo) GetLastCandles(coins *[]string) *map[string]Candlestick
 	return &last_candles
 }
 
-func (LocalDumbo *dumbo) GetTradesAfterExit(coins *[]string) *map[string][]Trades {
-	p_exit_trades := map[string][]Trades{}
+func (LocalDumbo *dumbo) GetTradesAfterExit(coins *[]string) *map[string][]Trade {
+	p_exit_trades := map[string][]Trade{}
 	for _, coin := range *coins {
 		table_name := strings.ToLower(coin) + "_trades"
-		raw_sql := "SELECT * FROM " + table_name + ` WHERE start_time > (SELECT coalesce((SELECT MAX(start_time) FROM ` + table_name + ` WHERE trade_type=2), 0)) ORDER BY start_time DESC;`
-		temp_trades := []Trades{}
+		raw_sql := "SELECT * FROM " + table_name + ` WHERE timestamp > (SELECT coalesce((SELECT MAX(timestamp) FROM ` + table_name + ` WHERE type_id=2), 0)) ORDER BY timestamp DESC;`
+		temp_trades := []Trade{}
 		err := LocalDumbo.DBInterface.Raw(raw_sql).Scan(&temp_trades).Error
 		
 		

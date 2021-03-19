@@ -201,14 +201,14 @@ func initPM() *PortfolioManager {
 					log.Println(currency, " entry: ", entry_trade)
 					pm.CoinDict[currency].InPosition = true
 					pm.CoinDict[currency].CashInvested = entry_trade.ExecutedValue + entry_trade.Fees
-					pm.CoinDict[currency].EnterPrice = decimal.NewFromFloat(entry_trade.CoinPrice)
-					pm.CoinDict[currency].EnterPriceFl = entry_trade.CoinPrice
-					pm.CoinDict[currency].AmntOwned = decimal.NewFromFloat(entry_trade.SizeTrade)
+					pm.CoinDict[currency].EnterPrice = decimal.NewFromFloat(entry_trade.ExecutedValue).Div(decimal.NewFromFloat(entry_trade.Units))
+					pm.CoinDict[currency].EnterPriceFl, _ = pm.CoinDict[currency].EnterPrice.Float64()
+					pm.CoinDict[currency].AmntOwned = decimal.NewFromFloat(entry_trade.Units)
 				}
 				for i := 0; i < len(open_trades) - 1; i++ {
 					log.Println(currency, " partial exit: ", open_trades[i])
-					pm.CoinDict[currency].IntermediateCash += (open_trades[i].ExecutedValue - open_trades[i].Fees)
-					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decimal.NewFromFloat(open_trades[i].RealizedValue))
+					pm.CoinDict[currency].IntermediateCash += open_trades[i].ExecutedValue
+					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decimal.NewFromFloat(open_trades[i].Units))
 				}
 			}
 		}
@@ -255,6 +255,21 @@ func (pm *PortfolioManager) StartTrading() {
 	// get initial unrealized portfolio value & liqudity
 	pm.PortfolioValue = pm.CalcPortfolioValue()
 	pm.UpdateLiquidity()
+
+	newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+		// if there is data, process it
+		if len(newCandleData) > 0 {
+			for _, coin := range *pm.Coins {
+				candles := newCandleData[coin]
+				for _, candle := range candles {
+					pm.CandleDict[coin] = candle
+					pm.Strat.Process(candle, coin)
+
+				}
+			}
+			pm.PMProcess()
+		}
+	pm.paperEnter("BTC", 1000)
 	// loop forever
 	for {
 		// wait for new data to arrive
@@ -303,7 +318,7 @@ func (pm *PortfolioManager) PMProcess() {
 			if pm.Strat.CalcExit(candle, coin) {
 				// these signals are acted upon immediately no matter the PM state, so exit the position
 				if pm.IsPaperTrading {
-					pm.FreeCash += pm.paperExit(coin, pm.CoinDict[coin].AmntOwned, pm.CandleDict[coin].Close)
+					pm.FreeCash += pm.paperExit(coin, pm.CoinDict[coin].AmntOwned)
 				} else {
 					pm.FreeCash += pm.exitPosition(coin, pm.CoinDict[coin].AmntOwned)
 				}
@@ -341,7 +356,7 @@ func (pm *PortfolioManager) PMProcess() {
 		// if our portfolio has enough liquid cash to open the position, open the position
 		if cashToAllocate < pm.FreeCash {
 			if pm.IsPaperTrading {
-				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate, pm.CandleDict[coin].Close)
+				pm.FreeCash -= pm.paperEnter(coin, cashToAllocate)
 			} else {
 				pm.FreeCash -= pm.enterPosition(coin, cashToAllocate)
 			}
@@ -369,7 +384,7 @@ func (pm *PortfolioManager) PMProcess() {
 					// close all of it if we need all or more of the cash than the position provides
 					if cashNeeded >= curCashValue {
 						if pm.IsPaperTrading {
-							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned, pm.CandleDict[coinIn].Close)
+							pm.FreeCash += pm.paperExit(coinIn, pm.CoinDict[coinIn].AmntOwned)
 						} else {
 							pm.FreeCash += pm.exitPosition(coinIn, pm.CoinDict[coinIn].AmntOwned)
 						}
@@ -379,7 +394,7 @@ func (pm *PortfolioManager) PMProcess() {
 						// note: this will never be exact (due to unknown slippage we'll incur) but will be pretty close
 						amntToSell := (cashNeeded / curCashValue) * amntOwnedFlt
 						if pm.IsPaperTrading {
-							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell), pm.CandleDict[coinIn].Close)
+							pm.FreeCash += pm.paperExit(coinIn, decimal.NewFromFloat(amntToSell))
 						} else {
 							pm.FreeCash += pm.exitPosition(coinIn, decimal.NewFromFloat(amntToSell))
 						}
@@ -394,7 +409,7 @@ func (pm *PortfolioManager) PMProcess() {
 			if pm.FreeCash > 0 {
 				amntToAllocate := math.Min(pm.FreeCash, cashToAllocate)
 				if pm.IsPaperTrading {
-					pm.FreeCash -= pm.paperEnter(coin, amntToAllocate, pm.CandleDict[coin].Close)
+					pm.FreeCash -= pm.paperEnter(coin, amntToAllocate)
 				} else {
 					pm.FreeCash -= pm.enterPosition(coin, amntToAllocate)
 				}
@@ -641,10 +656,9 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 		info.EnterPriceFl = enterPriceFl
 		info.AmntOwned = fillSize
 
-		allocatedValueDec := decimal.NewFromFloat(cashAllocated)
-
+		feesDec, _ := decimal.NewFromString(filledOrder.FillFees)
 		// store the trade in the database
-		go Dumbo.StoreTrade(0, coin, fillSize, execValue, info.EnterPrice, allocatedValueDec, filledOrder.FillFees, 0)
+		go Dumbo.StoreTrade(0, coin, fillSize, execValue, feesDec, pm.CandleDict[coin].Close, 0.0)
 
 		// send a message to frontend with information about the opened position
 		sendEnter(pm.FrontendSocket, coin, filledOrder.FilledSize, info.EnterPrice.String())
@@ -680,7 +694,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 
 	// if the order settles, updated the coin's CoinInfo object
 	if filledOrder.Settled {
-		// retrieve the execValue (cash size of trade (not including fees)), and filled size (amount of the coin we received)
+		// retrieve the execValue (cash size of trade (not including fees)), and filled size (amount of the coin we sold)
 		fillSize, _ := decimal.NewFromString(filledOrder.FilledSize)
 		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fees, _ := decimal.NewFromString(filledOrder.FillFees)
@@ -691,7 +705,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 			info.IntermediateCash += newCash
 			info.AmntOwned = info.AmntOwned.Sub(portionToSell)
 			// store the trade in the database
-			go Dumbo.StoreTrade(1, coin, fillSize, execValue, execValue, portionToSell, filledOrder.FillFees, 0.0)
+			go Dumbo.StoreTrade(1, coin, fillSize, execValue, fees, pm.CandleDict[coin].Close, 0.0)
 		} else {
 			// otherwise set the position to closed
 			info.InPosition = false
@@ -703,7 +717,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 			info.IntermediateCash = 0.0
 
 			// store the trade in the database
-			go Dumbo.StoreTrade(2, coin, fillSize, execValue, execValue, portionToSell, filledOrder.FillFees, profitPercentage)
+			go Dumbo.StoreTrade(2, coin, fillSize, execValue, fees, pm.CandleDict[coin].Close, profitPercentage)
 
 		}
 

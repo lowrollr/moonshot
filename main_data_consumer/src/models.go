@@ -38,18 +38,15 @@ type Candlestick struct {
 	StartTime int64   `gorm:"type:bigint;not null" json:"time"`
 }
 
-type Trades struct {
-	//0 for entry 1 for exit
-	TradeType     int    `gorm:"not null;"`
-	coinName      string  `gorm:"-"`
-	SizeTrade     float64 `gorm:"Type:real;not null;"`
-	ExecutedValue float64 `gorm:"Type:real;not null;"`
-	RealizedValue float64 `gorm:"Type:real;not null;"`
-	CoinPrice     float64 `gorm:"Type:real;not null;"`
-	Fees          float64 `gorm:"Type:real;not null;"`
-	Profit        float64 `gorm:"Type:real;"`
-	Slippage      float64 `gorm:"Type:real; not null;"`
-	StartTime     int64   `gorm:"Type:bigint;not null"`
+type Trade struct {
+	TypeId     int   `gorm:"not null;"`  // id corresponding to type of trade, 0 = enter, 1 = partial exit, 2 = exit
+	coinName      string  `gorm:"-"` // coin traded
+	Units     float64 `gorm:"Type:real;not null;"` // units of coin traded
+	ExecutedValue float64 `gorm:"Type:real;not null;"` // cash we spent or receieved purshasing/selling the asset (excl. fees)
+	Fees          float64 `gorm:"Type:real;not null;"` // cash we spent on paying transaction fees
+	Profit        float64 `gorm:"Type:real;"` // percentage profit made on trade (only on full exits)
+	Slippage      float64 `gorm:"Type:real; not null;"` // percent difference between desired price and actual average fill price
+	Timestamp     int64   `gorm:"Type:bigint;not null"` // time this trade occured (in unix)
 }
 
 type OHCLData struct {

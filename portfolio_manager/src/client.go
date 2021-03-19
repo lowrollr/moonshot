@@ -166,7 +166,7 @@ func GetPrediction(bevConn *Client, coin string, timestamp int) bool {
 	return false
 }
 
-func (client *Client) GetPreviousData(dest string, trades_num int) (*[]string, *map[string][]Trades, *map[string][]CandlestickData, *map[string][]float64) {
+func (client *Client) GetPreviousData(dest string, trades_num int) (*[]string, *map[string][]Trade, *map[string][]CandlestickData, *map[string][]float64) {
 	if dest != "main_data_consumer" {
 		log.Warn("dont try and get coins from something thats not main data consumer")
 	}

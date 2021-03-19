@@ -117,7 +117,7 @@ type SocketPMDataMessage struct {
 }
 
 type TradesAndCandles struct {
-	TradeHistory map[string][]Trades      `json:"trade_history"`
+	TradeHistory map[string][]Trade     `json:"trade_history"`
 	Profits      map[string][]float64     `json:"profits"`
 	Coins        map[string][]Candlestick `json:"candles"`
 }

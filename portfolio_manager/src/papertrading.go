@@ -22,14 +22,16 @@ import (
 	ARGS:
 		-> coin (string): coin to enter a position in
 		-> cashAllocaetd (float64): cash allocated to entering this position
-		-> targetPrice (float64): last close price of the asset, price we are targeting to enter at (used for calculating slippage)
+		
     RETURN:
         -> cashAllocated (float64): the amount of cash spent to open the resultant position
     WHAT:
 		-> simulates opening a position using the live order book
 		-> walks down the bid order book until the order is filled
 */
-func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targetPrice float64) float64 {
+func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64) float64 {
+
+	log.Println(pm.TakerFee, cashAllocated)
 	// calculate the fees paid for entering this position
 	fees := cashAllocated * pm.TakerFee
 
@@ -95,11 +97,14 @@ func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targe
 
 		// log the entered position and the slippage we incurred
 		log.Println("Entered ", coin, ": ", totalAmnt, "@", info.EnterPriceFl)
-		slippage := -100.0 * ((info.EnterPriceFl / targetPrice) - 1.0)
+		slippage := -100.0 * ((info.EnterPriceFl / pm.CandleDict[coin].Close) - 1.0)
 		log.Println("Slippage: ", slippage)
 
 		// send a message with the entered position's information to frontend
 		sendEnter(pm.FrontendSocket, coin, info.AmntOwned.String(), fmt.Sprintf("%f", info.EnterPriceFl))
+
+		// store the trade in the database
+		go Dumbo.StoreTrade(0, coin, info.AmntOwned, decimal.NewFromFloat(cashAvailable), decimal.NewFromFloat(fees), pm.CandleDict[coin].Close, 0.0)
 
 		// return the cash we spent on this position
 		return cashAllocated
@@ -116,15 +121,14 @@ func (pm *PortfolioManager) paperEnter(coin string, cashAllocated float64, targe
 	ARGS:
 		-> coin (string): coin to exit a position in
 		-> portionToSell (decimal.Decimal): portion of the position to exit
-		-> targetPrice (float64): last close price of the asset, price we are targeting to exit at (used for calculating slippage)
+		
     RETURN:
         -> cashAllocated (float64): the amount of cash received from closing all/part of the position
     WHAT:
 		-> simulates closing a position using the live order book
 		-> walks up the ask order book until the order is filled
 */
-func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal, targetPrice float64) float64 {
-
+func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal) float64 {
 	// get portionToSell as a float
 	amntStr := portionToSell.String()
 	amntFlt, _ := strconv.ParseFloat(amntStr, 64)
@@ -175,16 +179,18 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 	// update the given coin's CoinInfo object with the trade information if we were able to liquidate part/all of our position
 	info := pm.CoinDict[coin]
 	if cashReceived > 0.0 {
-
+		tradeTypeId := 2
+		profitPercentage := 0.0
 		// if we are not selling all of our position, increment IntermediateCash
 		if portionToSell != info.AmntOwned {
 			info.IntermediateCash += cashReceived
 		} else {
 			// otherwise, update the profit percentage and other CoinInfo information
 			info.InPosition = false
-			profitPercentage := ((cashReceived + info.IntermediateCash) / info.CashInvested) - 1.0
+			profitPercentage = ((cashReceived + info.IntermediateCash) / info.CashInvested) - 1.0
 			info.IntermediateCash = 0.0
 			info.updateProfitInfo(profitPercentage)
+			tradeTypeId = 1
 		}
 
 		// add the new volume to the PM's running total
@@ -197,11 +203,14 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 		averagePrice := cashReceived / amntAvailable
 		// log the exited position and the slippage we incurred
 		log.Println("Exited ", coin, ": ", amntFlt, "@", averagePrice)
-		slippage := 100.0 * ((averagePrice / targetPrice) - 1.0)
+		slippage := 100.0 * ((averagePrice / pm.CandleDict[coin].Close) - 1.0)
 		log.Println("Slippage: ", slippage)
 
 		// send a message with the exited position's information to frontend
 		sendExit(pm.FrontendSocket, coin, portionToSell.String(), fmt.Sprintf("%f", averagePrice))
+
+		// store the trade in the database
+		go Dumbo.StoreTrade(tradeTypeId, coin, decimal.NewFromFloat(amntAvailable), decimal.NewFromFloat(cashReceived), decimal.NewFromFloat(fees), pm.CandleDict[coin].Close, profitPercentage)
 
 		// return the cash we received from liquidation
 		return cashReceived

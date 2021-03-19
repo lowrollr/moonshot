@@ -11,7 +11,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -70,47 +69,34 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 	return nil, fmt.Errorf("Failed to connect to the database of %d attempts", tries)
 }
 
-func (Local_Dumbo *dumbo) StoreTrade(trade_type int, coin string, numCoins, executedValue, price, allocatedValue decimal.Decimal, fees string, profitVal float64) {
+func (Local_Dumbo *dumbo) StoreTrade(typeId int, coin string, units decimal.Decimal, execValue decimal.Decimal, fees decimal.Decimal, targetPrice float64, profit float64) {
 	Local_Dumbo.Lock()
 	defer Local_Dumbo.Unlock()
 
-	first_enter_const := decimal.NewFromInt(-100)
-	first_exit_const := decimal.NewFromInt(100)
-	sec_const := decimal.NewFromInt(-1)
-	//calc slippage
-	var slippage decimal.Decimal
-	
-	if trade_type == 0 {
-		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_enter_const)
-	} else if trade_type == 1 {
-		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_exit_const)
-		
-	} else if trade_type == 2 {
-		slippage = executedValue.Div(allocatedValue).Add(sec_const).Mul(first_exit_const)
-	} else {
-		log.Warn("Trades are either enter or exit. Not: ", trade_type)
+	unitsFl, _ := units.Float64()
+	execValueFl, _ := execValue.Float64()
+	avgFillPriceFl, _ := (execValue.Div(units)).Float64()
+	feesFl, _ := fees.Float64()
+
+	slipCoef := 100.0
+	if typeId == 0 {
+		slipCoef = -100.0
 	}
-	//convert to float64
-	sizeTrade, _ := numCoins.Float64()
-	execCash, _ := executedValue.Float64()
-	actualCash, _ := allocatedValue.Float64()
-	cPrice, _ := price.Float64()
-	feeVal, _ := strconv.ParseFloat(fees, 64)
-	slipVal, _ := slippage.Float64()
+
+	slippage := ((avgFillPriceFl / targetPrice) - 1.0) * slipCoef
 	curTime := time.Now().Unix()
 
-	temp_trade_entry := Trades{
-		TradeType:     trade_type,
-		coinName:      coin,
-		SizeTrade:     sizeTrade,
-		ExecutedValue: execCash,
-		RealizedValue: actualCash,
-		CoinPrice:     cPrice,
-		Fees:          feeVal,
-		Slippage:      slipVal,
-		StartTime:     curTime,
-		Profit: 	   profitVal,
+	temp_trade_entry := Trade{
+		TypeId:			typeId,
+		coinName:      	coin,
+		Units:     		unitsFl,
+		ExecutedValue: 	execValueFl,
+		Fees:          	feesFl,
+		Slippage:      	slippage,
+		Timestamp:     	curTime,
+		Profit: 	   	profit,
 	}
+
 	err := Local_Dumbo.DBInterface.Table(strings.ToLower(coin) + "_trades").Create(&temp_trade_entry).Error
 	if err != nil {
 		log.Warn("Was not able to store trade. Err:", err)
