@@ -1,8 +1,8 @@
 '''
 FILE: server.py
 AUTHORS:
-    -> Ross Copeland (rhcopeland101@gmail.com)
     -> Jacob Marshall (marshingjay@gmail.com)
+    -> Ross Copeland (rhcopeland101@gmail.com)
 WHAT:
     -> This file contains functionality that implements the following:
         -> Per tick computation for indicators and model output
