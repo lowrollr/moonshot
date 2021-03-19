@@ -216,6 +216,7 @@ func initPM() *PortfolioManager {
 	} else {
 		pm.PortfolioValue = 30000.00
 		pm.FreeCash = 30000.00
+		pm.Volume = 0.0
 		pm.calcFees()
 	}
 

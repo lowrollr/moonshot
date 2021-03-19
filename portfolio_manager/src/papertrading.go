@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"sort"
 
 	decimal "github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
@@ -233,10 +234,15 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 */
 func (pm *PortfolioManager) calcFees() {
 	foundTier := false
-
+	keys := make([]float64, 0)
+	for k, _ := range coinbaseTakerFees {
+		keys = append(keys, k)
+	}
+	sort.Float64s(keys)
 	// walk down the fee tiers until our volume is less than the threshold
-	for amnt, fee := range coinbaseTakerFees {
-		if amnt > pm.Volume {
+	for _, key := range keys {
+		fee := coinbaseTakerFees[key]
+		if key > pm.Volume {
 			pm.TakerFee = fee
 			foundTier = true
 			break
