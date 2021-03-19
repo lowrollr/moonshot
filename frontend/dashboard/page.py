@@ -48,7 +48,7 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
             ]
         )
     ]
-    
+
 def getTopText(data, asset):
     
     cur_value = '$0.00'
@@ -62,8 +62,8 @@ def getTopText(data, asset):
             first_value = round(first_value, 2)
         delta = cur_value - first_value
         perc_change = ((cur_value - first_value) / first_value) * 100
-        split_first = str(first_value).split('.')[1]
-        split_cur = str(cur_value).split('.')[1]
+        split_first = str(first_value).split('.')
+        split_cur = str(cur_value).split('.')
         precision = 2
         if len(split_first) == 2:
             if len(split_cur) == 2:
