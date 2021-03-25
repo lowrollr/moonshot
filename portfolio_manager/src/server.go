@@ -1,25 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
+	"encoding/json"
 
 	ws "github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
-func (client *ServerClient) Receive() string {
-	message := &SocketMessage{}
-	err := client.conn.ReadJSON(message)
-
+func (client *ServerClient) Receive() *map[string]json.RawMessage {
+	message := WebsocketMessage{}
+	err := client.conn.ReadJSON(&message)
 	if err != nil {
-		if err.Error() == "EOF" {
-			return ""
-		}
-		log.Warn("Not able to read data type: " + err.Error())
+		log.Warn("Was not able to read json data from socket because", err)
 	}
-	return message.Msg
+	return &message.Content
 }
 
 func NewServerClient(connection *ws.Conn) *ServerClient {
@@ -29,22 +25,8 @@ func NewServerClient(connection *ws.Conn) *ServerClient {
 	return serverClient
 }
 
-func (client *ServerClient) ReceiveInit() bool {
-	message := &SocketMessage{}
-	err := client.GetConn().ReadJSON(message)
-	if err != nil {
-		log.Warn("Was not able to read init message because", err)
-	}
-	if message.Type == "init" {
-		return true
-	}
-	return false
-}
-
 func (client *ServerClient) SetConn(conn *ws.Conn) {
 	client.Lock()
-	log.Println(client.conn)
-	log.Println(conn)
 	client.conn = conn
 	client.Unlock()
 }
@@ -65,38 +47,37 @@ func (pm *PortfolioManager) StartServer() {
 }
 func (client *ServerClient) handleFrontendPing(pm *PortfolioManager) {
 	for {
-		message := SocketMessage{}
-		err := client.conn.ReadJSON(&message)
-		if err == nil {
-			if message.Type == "ping" {
-				client.Lock()
-				if pm.IsPaperTrading {
-
-					pongMsg := SocketMessage{
-						Msg:         fmt.Sprintf("%f", pm.PortfolioValue),
-						Type:        "portfolio_value",
-						Source:      containerToId["portfolio_manager"],
-						Destination: containerToId["frontend"]}
-
-					client.conn.WriteJSON(pongMsg)
-				} else {
-					pongMsg := SocketMessage{
-						Msg:         "fuck you too",
-						Type:        "pong",
-						Source:      containerToId["portfolio_manager"],
-						Destination: containerToId["frontend"]}
-
-					client.conn.WriteJSON(pongMsg)
-				}
-
-				client.Unlock()
-
+		
+		messageContent := *client.Receive()
+		
+		if _, ok := messageContent["ping"]; ok {
+			msgContent := make(map[string]interface{})
+			client.Lock()
+			if pm.IsPaperTrading {
+				
+				msgContent["portfolio_value"] = pm.PortfolioValue
+				pongMsg := WebsocketMessage{
+					Content:	 *InterfaceToRawJSON(&msgContent),
+					Source:      containerToId["portfolio_manager"],
+					Destination: containerToId["frontend"]}
+				
+				client.conn.WriteJSON(pongMsg)
 			} else {
-				log.Warn("Invalid message received from frontend")
+				msgContent["pong"] = true
+				pongMsg := WebsocketMessage{
+					Content: 	*InterfaceToRawJSON(&msgContent),
+					Source:      containerToId["portfolio_manager"],
+					Destination: containerToId["frontend"]}
+				
+				client.conn.WriteJSON(pongMsg)
 			}
+
+			client.Unlock()
+
 		} else {
-			log.Warn("Error reading frontend socket")
+			log.Warn("Invalid message received from frontend")
 		}
+		
 	}
 }
 
@@ -105,23 +86,12 @@ func (pm *PortfolioManager) HandleConnections(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		log.Warn("error %v", err)
 	}
-	message := SocketMessage{}
-	err = ws.ReadJSON(&message)
-	if message.Type == "start" {
+	message := WebsocketMessage{}
+	ws.ReadJSON(&message)
+	if _, ok := message.Content["ready"]; ok {
 		if idToContainer[message.Source] == "frontend" {
 			pm.FrontendSocket = NewServerClient(ws)
 			go pm.FrontendSocket.handleFrontendPing(pm)
-		} else {
-			log.Warn("Wrong source sent, source sent:", idToContainer[message.Source])
 		}
-	} else if message.Type == "init" {
-		if idToContainer[message.Source] == "frontend" {
-			pm.FrontendSocket.SetConn(ws)
-		} else {
-			log.Warn("Wrong source sent, source sent:", idToContainer[message.Source])
-		}
-	} else {
-		log.Warn("Wrong msg type send, type sent:", message.Type)
 	}
-	return
 }

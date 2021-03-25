@@ -9,7 +9,7 @@ from client import (
     PMSocket,
     BHSocket,
     DCSocket,
-    getCoins,
+    retrieveDCData,
     startInit,
     PMConnect,
     DCConnect,
@@ -59,28 +59,20 @@ external_stylesheets = ["./assets/main.css"]
 
 # Initialize Data Structures
 container_statuses = dict()
-for c in {'Portfolio Manager', 'Beverly Hills', 'Data Consumer', 'Coinbase'}:
+for c in {'Portfolio Manager', 'Compute Engine', 'Data Consumer', 'Coinbase'}:
     container_statuses[c] = Status()
 
 coin_datastreams = dict()
 
-dc_conn, coins, candles = getCoins()
+dc_conn = DCConnect()
+retrieveDCData(dc_conn, coin_datastreams, glob_status)
+coins = list(coin_datastreams.keys())
 
 porfolio_datastream = DataStream(name='portfolio')
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
 plot_positions = PlotPositions(coins)
 
-for coin in coins:
-    coin_datastreams[coin] = DataStream(name=coin)
-    for candle in candles[coin]:
-        close_price = candle['close']
-        timestamp  = int(candle['time'] / 60)
-        if coin_datastreams[coin].initialized:
-            coin_datastreams[coin].update(close_price, timestamp)
-        else:
-            coin_datastreams[coin].initialize(close_price, timestamp)
-        glob_status.lastTimestampReceived = timestamp
 
 
 pm_conn = PMConnect()
@@ -94,7 +86,7 @@ dc_socket_thread = threading.Thread(target=DCSocket, args=(
     cur_positions,
     ))
 
-bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Beverly Hills'], bh_conn))
+bh_socket_thread = threading.Thread(target=BHSocket, args=(container_statuses['Compute Engine'], bh_conn))
 
 pm_socket_thread = threading.Thread(target=PMSocket, args=(
     glob_status,

@@ -2,6 +2,7 @@
 FILE: main.go
 AUTHORS:
     -> Ross Copeland <rhcopeland101@gmail.com>
+	-> Jacob Marshall <marshingjay@gmail.com>
 WHAT:
 	-> Entry point for the main consumer container
 	-> This will collect all information on coins (price, volume, time)
@@ -18,12 +19,19 @@ package main
 		-> Consumes data and stores in the DB
 */
 func main() {
-	Dumbo = &dumbo{}
-	dataConsumer := initDC()
-	dataConsumer.DBSetUp()
+
+	// Initialize the Data Consumer
+	dataConsumer := InitDataConsumer()
+
+	// Initialize tables in the database
+	dataConsumer.InitializeDB()
+
+	// listen for client connections
 	go dataConsumer.WsHTTPListen()
 
-	dataConsumer.ServerListen()
+	// listen for 'ready' messages
+	go dataConsumer.WaitForAllConnections()
 
-	dataConsumer.StartConsume()
+	// Start consuming data
+	dataConsumer.StartConsumption()
 }
