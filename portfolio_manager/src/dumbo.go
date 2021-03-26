@@ -8,9 +8,7 @@ WHAT:
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -69,6 +67,21 @@ func (*dumbo) ConnectDB(database string, dbType string) (*gorm.DB, error) {
 	return nil, fmt.Errorf("Failed to connect to the database of %d attempts", tries)
 }
 
+func (Local_Dumbo *dumbo) StorePortfolioValue(portfolioValue float64){
+	Local_Dumbo.Lock()
+	defer Local_Dumbo.Unlock()
+
+	portfolioBalance := PortfolioBalance{
+		Timestamp: time.Now().Unix(),
+		Balance: portfolioValue,
+	}
+
+	err := Local_Dumbo.DBInterface.Table("balance_history").Create(&portfolioBalance).Error
+	if err != nil {
+		log.Warn("Was not able to store portfolio balance. Err:", err)
+	}
+}
+
 func (Local_Dumbo *dumbo) StoreTrade(typeId int, coin string, units decimal.Decimal, execValue decimal.Decimal, fees decimal.Decimal, targetPrice float64, profit float64) {
 	Local_Dumbo.Lock()
 	defer Local_Dumbo.Unlock()
@@ -104,39 +117,3 @@ func (Local_Dumbo *dumbo) StoreTrade(typeId int, coin string, units decimal.Deci
 
 }
 
-/*
-	ARGS:
-		-> n (int): Number of coins you want to select from indexed coins
-			-> use -1 if you want all coins in db
-    RETURN:
-        -> (*[]string): returns pointer to slice of coin abrevs
-    WHAT:
-		-> Retrieves coin abrevs from database but only n
-*/
-func (*dumbo) SelectCoins(n int) *[]string {
-	f, err := os.Open("./coins.csv")
-	if err != nil {
-		panic(err)
-	}
-
-	defer f.Close()
-	var coin_abr []string
-	scanner := bufio.NewScanner(f)
-	if n == -1 {
-		for scanner.Scan() {
-			coin_abr = append(coin_abr, scanner.Text())
-		}
-	} else {
-		counter := 0
-		for scanner.Scan() {
-			if counter < n {
-				coin_abr = append(coin_abr, scanner.Text())
-				counter += 1
-			} else {
-				break
-			}
-
-		}
-	}
-	return &coin_abr
-}

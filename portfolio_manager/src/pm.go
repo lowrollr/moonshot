@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"encoding/json"
 
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
 	decimal "github.com/shopspring/decimal"
@@ -66,7 +67,7 @@ type PortfolioManager struct {
 	PortfolioValue    float64                    // current unrealized value of the portfolio (incl. open positions)
 	CoinbaseClient    *coinbasepro.Client        // coinbase websocket client
 	TradesToCalibrate int                        // amount of trades needed before kelly criterion is used to determine allocation size
-	CandleDict        map[string]CandlestickData // maps coins/assets to their most recently received candlesticks
+	CandleDict        map[string]Candlestick // maps coins/assets to their most recently received candlesticks
 	IsPaperTrading    bool                       // tracks if we are paper trading (true) or live trading (false)
 	TargetSlippage    float64                    // the maximum amount of slippage to allow for when calculating liquidity
 }
@@ -93,7 +94,6 @@ func initPM() *PortfolioManager {
 
 	// retrieve previous data from main data consumer to fill data queues
 	coins, open_position_trades, prev_candles, prev_profits := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer", trades_to_cal)
-	log.Println(coins)
 	// initialize strategy
 	strategy := initAtlas(coins)
 
@@ -101,7 +101,7 @@ func initPM() *PortfolioManager {
 	client := coinbasepro.NewClient()
 
 	//initialize candlestick map
-	candleDict := make(map[string]CandlestickData)
+	candleDict := make(map[string]Candlestick)
 
 	// initialize CoinInfo objects for each coin
 	coinInfoDict := make(map[string]*CoinInfo)
@@ -228,10 +228,6 @@ func initPM() *PortfolioManager {
 		}
 	}
 
-	// send start messages to beverly hills and data consumer websocket  servers
-	mapDomainConnection[domainToUrl["beverly_hills"]].StartRemoteServer("beverly_hills")
-	mapDomainConnection[domainToUrl["main_data_consumer"]].StartRemoteServer("main_data_consumer")
-
 	// store websocket connections
 	pm.ClientConnections = mapDomainConnection
 
@@ -253,6 +249,8 @@ func initPM() *PortfolioManager {
 */
 func (pm *PortfolioManager) StartTrading() {
 	time.Sleep(5 * time.Second)
+	//send ready message to data consumer
+	pm.ClientConnections[domainToUrl["main_data_consumer"]].SendReadyMsg("main_data_consumer")
 	// get initial unrealized portfolio value & liqudity
 	pm.PortfolioValue = pm.CalcPortfolioValue()
 	pm.UpdateLiquidity()
@@ -260,18 +258,25 @@ func (pm *PortfolioManager) StartTrading() {
 	// loop forever
 	for {
 		// wait for new data to arrive
-		newCandleData := *pm.ClientConnections[domainToUrl["main_data_consumer"]].ReceiveCandleData()
+		content := *pm.ClientConnections[domainToUrl["main_data_consumer"]].Receive()
 		// if there is data, process it
-		if len(newCandleData) > 0 {
-			for _, coin := range *pm.Coins {
-				candles := newCandleData[coin]
-				for _, candle := range candles {
-					pm.CandleDict[coin] = candle
-					pm.Strat.Process(candle, coin)
-
-				}
+		if newCandles, ok := content["candles"]; ok {
+			var newCandleData map[string][]Candlestick
+			err := json.Unmarshal(newCandles, &newCandleData)
+			if err != nil {
+				log.Panic("Error unmarshaling received candle data")
 			}
-			pm.PMProcess()
+			if len(newCandleData) > 0 {
+				for _, coin := range *pm.Coins {
+					candles := newCandleData[coin]
+					for _, candle := range candles {
+						pm.CandleDict[coin] = candle
+						pm.Strat.Process(candle, coin)
+
+					}
+				}
+				pm.PMProcess()
+			}
 		}
 		// update portfolio value & liquidity
 		pm.PortfolioValue = pm.CalcPortfolioValue()

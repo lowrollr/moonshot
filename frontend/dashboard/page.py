@@ -197,8 +197,8 @@ def getStatusElems(container_statuses):
                 getStatusDiv(container_statuses['Portfolio Manager'])
             ], className = 'statuspair'),
             html.Li([
-                html.Div('Beverly Hills', className='statustext'),
-                getStatusDiv(container_statuses['Beverly Hills'])
+                html.Div('Compute Engine', className='statustext'),
+                getStatusDiv(container_statuses['Compute Engine'])
             ], className = 'statuspair'),
             html.Li([
                 html.Div('Coinbase', className='statustext'),

@@ -63,7 +63,6 @@ class ComputeEngine:
         # print(self.features, self.indicator_dict)
         self.createIndicators()
         
-        
     '''
     ARGS:
         -> None
@@ -111,14 +110,14 @@ class ComputeEngine:
     '''
     def prepare(self, newData):
         first_coin = self.coins[0]
-
         with self.lock:
             for coin in self.coins:
                 self.data[coin] = dict()
-                for item in newData[coin]:
-                    for ind in self.indicators[coin]:
-                        self.data[coin].update(ind.compute(item))
-            self.last_updated_minute = int(newData[first_coin][-1]['time'] / 60)
+                if newData[coin]:
+                    for item in newData[coin]:
+                        for ind in self.indicators[coin]:
+                            self.data[coin].update(ind.compute(item))
+                    self.last_updated_minute = int(newData[coin][-1]['time'] / 60)
 
     '''
     ARGS:
@@ -151,14 +150,12 @@ class ComputeEngine:
         while True:
             if self.last_updated_minute == time_min:
                 with self.lock:
-                    print(f'Data Cols: {self.data[coin].keys()}')
                     model_input = []
                     for f in self.features:
                         if f not in self.data[coin]:
                             print('Not all features present, cannot predict!')
                             return False
                         model_input.append(self.data[coin][f])
-                    print(f'Model Input: {model_input}')
                     model_input = np.array(model_input).reshape(1, -1)
                     if self.probability_threshold:
                         if self.model_type == "nn":
