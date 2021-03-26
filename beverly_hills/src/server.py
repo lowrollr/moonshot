@@ -76,7 +76,7 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
                 prediction_result = self.factory.computeEngine.predict(coin, int(timestamp))
 
                 # build the response body with the prediction result
-                rawMsg = {'content':{'prediction': prediction_result}, 'src':containersToId['beverly_hills'], 'dest':containersToId['portfolio_manager']}
+                rawMsg = {'content':{'prediction': bool(prediction_result)}, 'src':containersToId['beverly_hills'], 'dest':containersToId['portfolio_manager']}
                 # send the result back to PM
                 self.sendMessage(json.dumps(rawMsg).encode('utf-8'))
                 print(f'Sent prediction  message: {rawMsg}')
