@@ -80,8 +80,8 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 coin_datastreams[coin].initialize(close_price, timestamp)
             glob_status.lastTimestampReceived = timestamp
     for balance in balance_history:
-        value = balance['balance']
-        timestamp = balance['timestamp']
+        value = balance['Balance']
+        timestamp = balance['Timestamp']
         if portfolio_datastream.initialized:
             portfolio_datastream.update(value, timestamp)
         else:
