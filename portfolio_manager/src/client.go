@@ -1,58 +1,22 @@
 package main
 
 import (
-	"errors"
-	"strconv"
 	"time"
+	"encoding/json"
 
 	ws "github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
-func (client *Client) Receive() string {
-	message := SocketMessage{}
+func (client *Client) Receive() *map[string]json.RawMessage {
+	message := WebsocketMessage{}
 	err := client.conn.ReadJSON(&message)
 	if err != nil {
 		log.Warn("Was not able to read json data from socket because", err)
 	}
-	return message.Msg
+	return &message.Content
 }
 
-func (client *Client) ReceiveSingleCandleData() *map[string]CandlestickData {
-	message := SocketSingleCandleMessage{}
-
-	err := client.conn.ReadJSON(&message)
-	if err != nil {
-		log.Warn("Was not able to read json data from socket because", err)
-	}
-
-	return &message.Msg
-}
-
-func (client *Client) ReceiveCandleData() *map[string][]CandlestickData {
-	message := SocketCandleMessage{}
-
-	err := client.conn.ReadJSON(&message)
-	if err != nil {
-		log.Warn("Was not able to read json data from socket because: ", err)
-		client.conn = ConnectServer(domainToUrl["main_data_consumer"])
-	}
-
-	return &message.Msg
-}
-
-func (client *Client) ReceiveCandleTradeData() (*TradesAndCandles, error) {
-	message := SocketPMDataMessage{}
-
-	err := client.conn.ReadJSON(&message)
-	if err != nil {
-		log.Warn("Was not able to read json data from socket because", err)
-	}
-	if message.Error != "nil" {
-		return &TradesAndCandles{}, errors.New(message.Error)
-	}
-	return &message.Msg, nil
-}
 
 func NewInternalClient(connection *ws.Conn) *Client {
 	client := &Client{
@@ -75,51 +39,27 @@ func ConnectServer(dest string) *ws.Conn {
 
 func StartClients() map[string]*Client {
 	mapDomainConnection := make(map[string]*Client)
-	for hostname, fullUrl := range domainToUrl {
+	for _, fullUrl := range domainToUrl {
 		mapDomainConnection[fullUrl] = NewInternalClient(ConnectServer(fullUrl))
-		if hostname == "beverly_hills" {
-			StartInit(mapDomainConnection[fullUrl])
-		}
 	}
 	return mapDomainConnection
 }
 
-func (client *Client) StartRemoteServer(dest string) {
-	startMessage := SocketMessage{Msg: "",
-		Type:        "start",
-		Source:      containerToId["portfolio_manager"],
-		Destination: containerToId[dest]}
-
-	for {
-		err := client.conn.WriteJSON(startMessage)
-		if err != nil {
-			log.Warn("Was not able to connect/write to", dest)
-			time.Sleep(time.Second * 3)
-		} else {
-			return
-		}
-	}
-}
-
-func StartInit(bevConn *Client) {
-	initMsg := SocketMessage{Msg: "",
-		Type:        "init",
-		Source:      containerToId["portfolio_manager"],
-		Destination: containerToId["beverly_hills"]}
-	err := bevConn.conn.WriteJSON(initMsg)
-
-	if err != nil {
-		log.Panic("Was not able to send init message to beverly hills", err)
-	}
-}
-
 func sendEnter(frontendConn *ServerClient, coin string, amnt string, price string) {
+	
+	
+	msgContent := make(map[string]interface{})
+	msgContent["enter"] = make(map[string]interface{})
+	enterContent := msgContent["enter"].(map[string]interface{})
+	enterContent["coin"] = coin
+	enterContent["amnt"] = amnt
+	enterContent["price"] = price
 	frontendConn.RLock()
-	msg := SocketMessage{
-		Msg:         coin + "," + amnt + "," + price,
-		Type:        "enter",
+	msg := WebsocketMessage{
+		Content:     *InterfaceToRawJSON(&msgContent),
 		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId["frontend"]}
+	
 	err := frontendConn.conn.WriteJSON(msg)
 	if err != nil {
 		log.Panic("Error sending enter msg to Frontend")
@@ -128,12 +68,19 @@ func sendEnter(frontendConn *ServerClient, coin string, amnt string, price strin
 }
 
 func sendExit(frontendConn *ServerClient, coin string, amnt string, price string) {
+	msgContent := make(map[string]interface{})
+	msgContent["exit"] = make(map[string]interface{})
+	exitContent := msgContent["exit"].(map[string]interface{})
+	exitContent["coin"] = coin
+	exitContent["amnt"] = amnt
+	exitContent["price"] = price
 	frontendConn.RLock()
-	msg := SocketMessage{
-		Msg:         coin + "," + amnt + "," + price,
-		Type:        "exit",
+	
+	msg := WebsocketMessage{
+		Content:     *InterfaceToRawJSON(&msgContent),
 		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId["frontend"]}
+	
 	err := frontendConn.conn.WriteJSON(msg)
 	if err != nil {
 		log.Panic("Error sending exit msg to Frontend")
@@ -142,86 +89,114 @@ func sendExit(frontendConn *ServerClient, coin string, amnt string, price string
 }
 
 func GetPrediction(bevConn *Client, coin string, timestamp int) bool {
-	msg := SocketMessage{
-		Msg:         coin + "," + strconv.Itoa(timestamp),
-		Type:        "predict",
+	msgContent := make(map[string]interface{})
+	msgContent["predict"] = make(map[string]interface{})
+	predictContent := msgContent["predict"].(map[string]interface{})
+	predictContent["coin"] = coin
+	predictContent["timestamp"] = timestamp
+
+	msg := WebsocketMessage{
+		Content:     *InterfaceToRawJSON(&msgContent),
 		Source:      containerToId["portfolio_manager"],
-		Destination: containerToId["beverly_hills"],
-	}
+		Destination: containerToId["frontend"]}
+	
 	err := bevConn.conn.WriteJSON(msg)
 	if err != nil {
 		log.Warn("Error sending predict message to Beverly Hills")
 	}
-	response := SocketMessage{}
 
-	err = bevConn.conn.ReadJSON(&response)
+	responseContent := *bevConn.Receive()
 	if err == nil {
-		if response.Type == "prediction" {
-			result, _ := strconv.ParseBool(response.Msg)
-			return result
+		if result, ok := responseContent["prediction"]; ok{
+			var resultBool bool
+			err := json.Unmarshal(result, &resultBool)
+			if err != nil {
+				log.Panic("Error unmarshaling prediction")
+			}
+			return resultBool
 		} else {
-			log.Warn("Error: BH sent incorrect message type when asked for prediction!")
+			log.Warn("Error: BH sent incorrect message content when asked for prediction!")
 		}
 	}
 	return false
 }
 
-func (client *Client) GetPreviousData(dest string, trades_num int) (*[]string, *map[string][]Trade, *map[string][]CandlestickData, *map[string][]float64) {
-	if dest != "main_data_consumer" {
-		log.Warn("dont try and get coins from something thats not main data consumer")
-	}
-	dataMessage := SocketMessage{
-		Msg:         "150," + strconv.Itoa(trades_num),
-		Type:        "pm_data",
+func (client *Client) GetPreviousData(dest string, numTrades int) (*[]string, *map[string][]Trade, *map[string][]Candlestick, *map[string][]float64) {
+	
+	msgContent := make(map[string]interface{})
+	msgContent["coins"] = true
+	msgContent["trade_profits"] = numTrades
+	msgContent["candles"] = 150
+	msgContent["open_trades"] = true
+
+	msg := WebsocketMessage{
+		Content:	 *InterfaceToRawJSON(&msgContent),
 		Source:      containerToId["portfolio_manager"],
 		Destination: containerToId[dest],
 	}
-	log.Println("data consumer message", dataMessage)
-	for {
-		err := client.conn.WriteJSON(dataMessage)
-		if err != nil {
-			log.Warn("Was not able to send data message to", dest, ". With error:", err)
-		}
-		trade_candle_data, err := client.ReceiveCandleTradeData()
-		log.Println("trade candle data:", trade_candle_data)
-		coin_labels := make([]string, len(trade_candle_data.Coins))
+	
+	
+	err := client.conn.WriteJSON(msg)
+	if err != nil {
+		log.Warn("Was not able to send data message to", dest, ". With error:", err)
+	} 
+	responseContent := *client.Receive()
 
-		i := 0
-		for coin, _ := range trade_candle_data.Coins {
-			coin_labels[i] = coin
-			i++
-		}
-		return &coin_labels, &trade_candle_data.OpenPositionTrades, &trade_candle_data.Coins, &trade_candle_data.Profits
+	
+	var coins []string
+	err = json.Unmarshal(responseContent["coins"], &coins)
+	if err != nil {
+		log.Panic("Error unmarshaling coins message content")
 	}
+
+	var openTrades map[string][]Trade
+	err = json.Unmarshal(responseContent["open_trades"], &openTrades)
+	if err != nil {
+		log.Panic("Error unmarshaling open_trades message content")
+	}
+
+	var candles map[string][]Candlestick
+	err = json.Unmarshal(responseContent["candles"], &candles)
+	if err != nil {
+		log.Panic("Error unmarshaling candles message content")
+	}
+
+	var tradeProfits map[string][]float64
+	err = json.Unmarshal(responseContent["trade_profits"], &tradeProfits)
+	if err != nil {
+		log.Panic("Error unmarshaling trade_profits message content")
+	}
+	
+	return &coins, &openTrades, &candles, &tradeProfits
+	
 }
 
-func (client *Client) GetCoins(dest string) *[]string {
-	if dest != "main_data_consumer" {
-		log.Warn("dont try and get coins from something thats not main data consumer")
-	}
-	coinKeyWord := SocketMessage{Msg: "",
-		Type:        "coins",
+func (client *Client) SendReadyMsg(dest string) {
+	msgContent := make(map[string]interface{})
+	msgContent["ready"] = true
+	msg := WebsocketMessage {
+		Content: *InterfaceToRawJSON(&msgContent),
 		Source:      containerToId["portfolio_manager"],
-		Destination: containerToId["main_data_consumer"]}
-	for {
-		err := client.conn.WriteJSON(coinKeyWord)
-		if err != nil {
-			log.Warn("Was not able to send coin message to data consumer", err)
-		}
-		message := SocketCoinsMessage{}
-		err = client.conn.ReadJSON(&message)
-
-		if err == nil {
-			// noHeaderMsg, messageType := ParseMessage(&response)
-			if message.Type == "coins" {
-				return &message.Msg
-			} else {
-				log.Panic("Did not send the correct message type")
-			}
-		} else {
-			log.Warn("Could not get coins from DC because", err)
-		}
-		log.Println("Could not get coins from main data consumer. Trying again... ")
-		time.Sleep(3 * time.Second)
+		Destination: containerToId[dest],
 	}
+	
+	err := client.conn.WriteJSON(msg)
+	if err != nil {
+		log.Warn("Was not able to send data message to", dest, ". With error:", err)
+	} 
+}
+
+func InterfaceToRawJSON(inter *map[string]interface{}) *map[string]json.RawMessage {
+	rawJSONMap := make(map[string]json.RawMessage)
+	for key, val := range *inter {
+		valJSON, err := json.Marshal(&val)
+		if err != nil {
+			log.Panic("Could not marshal json: ", val)
+		} else {
+			rawJSONMap[key] = valJSON
+		}
+	}
+	
+
+	return &rawJSONMap
 }

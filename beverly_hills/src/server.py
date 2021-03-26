@@ -66,26 +66,24 @@ class BeverlyWebSocketProtocol(WebSocketServerProtocol):
             msg = json.loads(payload.decode('utf8'))
 
             # if the message is a prediction request from PM, process the request
-            if msg['src'] == containersToId['portfolio_manager'] and msg['type'] == 'predict':
-                print(f'Received prediction request: {msg["msg"]}')
+            if msg['src'] == containersToId['portfolio_manager'] and msg['content'].get('predict'):
+                print(f'Received prediction request: {msg["content"]["predict"]}')
 
                 # extract the coin and timestamp from the request
-                coin, timestamp = msg['msg'].split(',')
+                coin, timestamp = msg["content"]["predict"]["coin"], msg["content"]["predict"]["timestamp"]
 
                 # get the prediction for the given coin from the compute engine
                 prediction_result = self.factory.computeEngine.predict(coin, int(timestamp))
 
                 # build the response body with the prediction result
-                rawMsg = {'type': 'prediction', 'msg':str(prediction_result), 'src':containersToId['beverly_hills'], 'dest':containersToId['portfolio_manager']}
-
+                rawMsg = {'content':{'prediction': prediction_result}, 'src':containersToId['beverly_hills'], 'dest':containersToId['portfolio_manager']}
                 # send the result back to PM
                 self.sendMessage(json.dumps(rawMsg).encode('utf-8'))
                 print(f'Sent prediction  message: {rawMsg}')
 
-            elif msg['src'] == containersToId['frontend'] and msg['type'] == 'ping':
+            elif msg['src'] == containersToId['frontend'] and msg['content'].get('ping'):
                 # if the message is a pong from frontend, send a ping back!
-                # TODO: make this less rude
-                rawMsg = {'type': 'ping', 'msg':'fuck you too', 'src':containersToId['beverly_hills'], 'dest':containersToId['frontend']}
+                rawMsg = {'content': {'ping': True}, 'src':containersToId['beverly_hills'], 'dest':containersToId['frontend']}
                 self.sendMessage(json.dumps(rawMsg).encode('utf-8'))
                 
     '''

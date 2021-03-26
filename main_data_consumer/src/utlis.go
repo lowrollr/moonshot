@@ -1,78 +1,105 @@
-// /*
-// FILE: utils.go
-// AUTHORS:
-//     -> Ross Copeland <rhcopeland101@gmail.com>
-// WHAT:
-// 	-> Random functions that would muddy other files
-// */
+/*
+FILE: utils.go
+AUTHORS:
+	-> Jacob Marshall <marshingjay@gmail.com>
+    -> Ross Copeland <rhcopeland101@gmail.com>
+WHAT:
+	-> Utility functions that don't have another home
+*/
 package main
 
 import (
-	"time"
+	"encoding/json"
+	"os"
+	"bufio"
+	log "github.com/sirupsen/logrus"
 )
 
 /*
 	ARGS:
-		-> x (float32): number
-		-> y (float32): number
+		-> candleA (*Candlestick): older candle to smooth values after
+		-> candleB (*Candlestick): newer candle to smooth values before
     RETURN:
-        -> (float32): number
+        -> smoothedCandles (*[]Candlestick): list of candles to fill missing spaces between candleA and candleB 
     WHAT:
-		-> returns larger number
+		-> Fills gap between two candles with generated candles, such that the values for each candle field are smoothed linearly between candleA and candleB
 */
-func Float32Max(x, y float32) float32 {
-	if x > y {
-		return x
+func SmoothBetweenCandles(candleA *Candlestick, candleB *Candlestick) *[]Candlestick {
+	// calculate how many candles need to be generated (amount of missing minutes between candle A and candle B)
+	candlesNeeded := float64((candleB.Timestamp / 60) - (candleA.Timestamp / 60) - 1)
+	smoothedCandles := []Candlestick{}
+	if candlesNeeded > 0 {
+		// we'll use this to store the generated candles
+		smoothedCandles := make([]Candlestick, int(candlesNeeded))
+		// calculated the difference between each field for candleA & candleB
+		dClose := candleB.Close - candleA.Close
+		dOpen := candleB.Open - candleA.Open
+		dHigh := candleB.High - candleA.High
+		dLow := candleB.Low - candleA.Low
+		dVolume := candleB.Volume - candleA.Volume
+		dTrades := float64(candleB.Trades - candleA.Trades)
+
+		// fill in the missing fields
+		// each field value can be calculated by (i * diff) / numGaps
+		for i := float64(1); i <= candlesNeeded; i++ {
+			smoothedCandles[int(i)-1] = Candlestick {
+				Close: (i * dClose) / (candlesNeeded + 1),
+				Open: (i * dOpen) / (candlesNeeded + 1),
+				High: (i * dHigh) / (candlesNeeded + 1),
+				Low: (i * dLow) / (candlesNeeded + 1),
+				Volume: (i * dVolume) / (candlesNeeded + 1),
+				Trades: int((i * dTrades) / (candlesNeeded + 1)),
+				Timestamp: int64(float64(candleA.Timestamp) + (i * 60)),
+			}
+		}
 	}
-	return y
+	// return the smoothed candles
+	return &smoothedCandles
 }
 
 /*
 	ARGS:
-		-> price (*CoinPrice):
-		-> src (int): id of the src of data consumer container (0)
-		-> dest (int): destinition id for container
+		-> N/A
     RETURN:
-        -> (float32): number
+        -> coins (*[]string): a list of coin tickers
     WHAT:
-		-> returns smaller number
+		-> Retrieves coin tickers from 'coins.csv' and returns them in a slice
 */
-func Float32Min(x, y float32) float32 {
-	if x < y {
-		return x
+func RetrieveCoins() *[]string {
+
+	// open the csv file containing the coins we'll be trading
+	f, err := os.Open("./coins.csv")
+	if err != nil {
+		log.Panic("Could not access coins csv file: ", err)
 	}
-	return y
+
+	// close the file when we're done here
+	defer f.Close()
+
+	// store the coins in this slice
+	var coins []string
+
+	// read in coins from the csv
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		coins = append(coins, scanner.Text())
+	}
+
+	// return the list of coins
+	return &coins
 }
 
-/*
-	ARGS:
-		-> candlesticks (*map[string]*Candlestick): pointer to map of coin name and pointer to candlestick data
-    RETURN:
-        -> (*map[string]Candlestick): Something that can be sent to other containers
-    WHAT:
-		-> Creates candlestick message that can be sent to other containers
-*/
-func packageToSend(candlesticks *map[string]*Candlestick) *map[string]Candlestick {
-	time_now := time.Now().Unix()
-	packagedCandles := make(map[string]Candlestick)
-	for coin, candle := range *candlesticks {
-		candle.StartTime = time_now
-		packagedCandles[coin] = *candle
+func InterfaceToRawJSON(inter *map[string]interface{}) *map[string]json.RawMessage {
+	rawJSONMap := make(map[string]json.RawMessage)
+	for key, val := range *inter {
+		valJSON, err := json.Marshal(&val)
+		if err != nil {
+			log.Panic("Could not marshal json: ", val)
+		} else {
+			rawJSONMap[key] = valJSON
+		}
 	}
-	return &packagedCandles
-}
+	
 
-func CompressByteArray(uncompressed []byte) {
-	// b, err := json.Marshal(all_coin_candle)
-	// if err != nil {
-	// 	log.Warn("Was not able to marshall data to json. Error:", err)
-	// }
-	// var z bytes.Buffer
-	// gz := zlib.NewWriter(&z)
-	// if _, err := gz.Write(b); err != nil {
-	// 	log.Warn(err)
-	// }
-	// if err := gz.Close(); err != nil {
-	// 	log.Warn(err)
-	// }
+	return &rawJSONMap
 }

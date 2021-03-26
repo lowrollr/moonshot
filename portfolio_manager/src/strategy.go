@@ -104,7 +104,7 @@ func initAtlas(coins *[]string) *Atlas {
 	RECEIVER:
 		-> atlas (*Atlas): Atlas object
 	ARGS:
-		-> data (CandlestickData): CandlestickData object holding most recent candlestick for the given coin
+		-> data (Candlestick): Candlestick object holding most recent candlestick for the given coin
 		-> coinName (string): the coin that the candle belongs to
     RETURN:
         -> N/A
@@ -113,7 +113,7 @@ func initAtlas(coins *[]string) *Atlas {
 		-> computes things that need to be update every tick (like indicators)
 		-> also updates the trailing stop loss
 */
-func (atlas *Atlas) Process(data CandlestickData, coinName string) {
+func (atlas *Atlas) Process(data Candlestick, coinName string) {
 	// compute indicators that require base candlestick values (like Close) as input
 	atlas.SMAShort[coinName].Update(data.Close)
 	atlas.SMAGoal[coinName].Update(data.Close)
@@ -132,7 +132,7 @@ func (atlas *Atlas) Process(data CandlestickData, coinName string) {
 	RECEIVER:
 		-> atlas (*Atlas): Atlas object
 	ARGS:
-		-> data (CandlestickData): CandlestickData object holding most recent candlestick for the given coin
+		-> data (Candlestick): Candlestick object holding most recent candlestick for the given coin
 		-> coinName (string): the coin that the candle belongs to
 		-> bhconn (*Client): websocket connection to beverly hills, used to request model prediction
     RETURN:
@@ -141,13 +141,13 @@ func (atlas *Atlas) Process(data CandlestickData, coinName string) {
 		-> Calculates whether or not a position in the coin should be entered
 		-> if other conditions are met, requests a prediction from Beverly Hills (where the models live)
 */
-func (atlas *Atlas) CalcEnter(data CandlestickData, coinName string, bhconn *Client) bool {
+func (atlas *Atlas) CalcEnter(data Candlestick, coinName string, bhconn *Client) bool {
 
 	//  if the Close price is 3% below the given SMA, check for a prediction
 	if data.Close < atlas.SMAGoal[coinName].GetVal()*0.97 {
 
 		// get the prediction from Beverly Hills
-		prediction := GetPrediction(bhconn, coinName, data.StartTime)
+		prediction := GetPrediction(bhconn, coinName, data.Timestamp)
 
 		// if the prediction comes back positive, return true
 		if prediction {
@@ -163,14 +163,14 @@ func (atlas *Atlas) CalcEnter(data CandlestickData, coinName string, bhconn *Cli
 	RECEIVER:
 		-> atlas (*Atlas): Atlas object
 	ARGS:
-		-> data (CandlestickData): CandlestickData object holding most recent candlestick for the given coin
+		-> data (Candlestick): Candlestick object holding most recent candlestick for the given coin
 		-> coinName (string): the coin that the candle belongs to
     RETURN:
         -> (bool): true if it is determined the position should be exited, false if not
     WHAT:
 		-> Calculates whether or not the position in the coin should be exited
 */
-func (atlas *Atlas) CalcExit(data CandlestickData, coinName string) bool {
+func (atlas *Atlas) CalcExit(data Candlestick, coinName string) bool {
 
 	// calculate how far above the SMA to increase the threshold to given the current rate of change (from RateOfChangeShort)
 	amntAbove := math.Max(-0.01, atlas.RateOfChangeShort[coinName].GetVal())

@@ -19,7 +19,7 @@
             ]
         },
         {
-            "name": "Delve into Main Data Docker",
+            "name": "Data Consumer",
             "type": "go",
             "request": "attach",
             "mode": "remote",
@@ -28,10 +28,9 @@
             "host": "127.0.0.1",
             "cwd": "${workspaceFolder}/main_data_consumer/src/",
             "showLog": true
-            // "stopOnEntry":true
         },
         {
-            "name": "Delve into PM Docker",
+            "name": "Portfolio Manager",
             "type": "go",
             "request": "attach",
             "mode": "remote",

@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 	"time"
-
+	"encoding/json"
 	"github.com/jinzhu/gorm"
 
 	ws "github.com/gorilla/websocket"
@@ -91,62 +91,29 @@ type Client struct {
 	conn *ws.Conn
 }
 
-type SocketMessage struct {
-	Type        string `json:"type"`
-	Msg         string `json:"msg"`
+type WebsocketMessage struct {
+	Content     map[string]json.RawMessage `json:"content"`
 	Source      int    `json:"src"`
 	Destination int    `json:"dest"`
 }
 
-type SocketCoinsMessage struct {
-	Type        string   `json:"type"`
-	Msg         []string `json:"msg"`
-	Source      int      `json:"src"`
-	Destination int      `json:"dest"`
-}
-
-type CandlestickData struct {
-	StartTime int     `json:"time"`
+type Candlestick struct {
+	Timestamp int     `json:"time"`
 	Open      float64 `json:"open"`
 	High      float64 `json:"high"`
 	Low       float64 `json:"low"`
 	Close     float64 `json:"close"`
 	Volume    float64 `json:"volume"`
-	NumTrades int     `json:"trades"`
+	Trades int     `json:"trades"`
 }
 
-type SocketCandleMessage struct {
-	Type        string                       `json:"type"`
-	Msg         map[string][]CandlestickData `json:"msg"`
-	Source      int                          `json:"src"`
-	Destination int                          `json:"dest"`
-}
 
-type SocketSingleCandleMessage struct {
-	Type        string                     `json:"type"`
-	Msg         map[string]CandlestickData `json:"msg"`
-	Source      int                        `json:"src"`
-	Destination int                        `json:"dest"`
-}
 
 type MessageChannel struct {
 	Name       string   `json:"name"`
 	ProductIds []string `json:"product_ids"`
 }
 
-type SocketPMDataMessage struct {
-	Type        string           `json:"type"`
-	Msg         TradesAndCandles `json:"msg"`
-	Source      int              `json:"src"`
-	Destination int              `json:"dest"`
-	Error       string           `json:"error"`
-}
-
-type TradesAndCandles struct {
-	OpenPositionTrades map[string][]Trade		`json:"trade_history"`
-	Profits map[string][]float64         `json:"profits"`
-	Coins   map[string][]CandlestickData `json:"candles"`
-}
 
 type SnapshotChange struct {
 	Side  string
@@ -205,4 +172,9 @@ type Trade struct {
 	Profit        float64 `gorm:"Type:real;"` // percentage profit made on trade (only on full exits)
 	Slippage      float64 `gorm:"Type:real; not null;"` // percent difference between desired price and actual average fill price
 	Timestamp     int64   `gorm:"Type:bigint;not null"` // time this trade occured
+}
+
+type PortfolioBalance struct { // stores the balance of the portfolio at a given timestamp
+	Balance float64 `gorm:"Type:real;not null;"` // portfolio balance
+	Timestamp     int64   `gorm:"Type:bigint;not null"` // timestamp of balance
 }

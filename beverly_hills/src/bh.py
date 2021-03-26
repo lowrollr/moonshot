@@ -98,39 +98,27 @@ class BeverlyHills():
         print('Requesting coins and previous data...')
         coins = ""
 
-        # perpetually try to send data requests until a correct response is received
-        # should only loop once
-        while True:
-            # construct the data request message  (requesting 150000 mins of prev data)
-            rawMsg = {'type': 'data', 'msg':'15000', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+        
+        # construct the data request message  (requesting 1000 mins of prev data)
+        rawMsg = {'content': {'candles': 1000}, 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
 
-            # send the data request message
-            conn.send(json.dumps(rawMsg).encode('utf-8'))
+        # send the data request message
+        conn.send(json.dumps(rawMsg).encode('utf-8'))
 
-            # load the response
-            coins = json.loads(readData(conn, 'main_data_consumer', os.environ["DATAPORT"]))
+        # load the response
+        response = json.loads(readData(conn, 'main_data_consumer', os.environ["DATAPORT"]))
+        candles = response["content"]["candles"]
+        # read in the appropriate data according to the type of response receieved
+        if "candles" in response["content"]:
+            self.previous_data = candles
+            self.coins = list(candles.keys())
+        else:
+            # raise an exception if an unexpeceted message type was received
+            raise Exception(f"Invalid response from data consumer")
 
-            # read in the appropriate data according to the type of response receieved
-            coin_labels = []
-            if coins["type"] == "coins":
-                # store the list of coins sent
-                coin_labels = coins['msg']
-                break
-            elif coins['type'] == "all_data":
-                # store the candle data received
-                self.previous_data = coins["msg"]
-
-                # the coins the DC operating on are each key in the dict of candles 
-                coin_labels = list(self.previous_data.keys())
-                print(self.previous_data)
-                break
-            else:
-                # raise an exception if an unexpeceted message type was received
-                raise Exception(f"Unexpected coin/data request response received: {coins['type']}")
-
-        print("Received coins from data consumer")
+        print("Received coins and previous data from data consumer")
         # set coins to the list of coins received
-        self.coins = coin_labels
+        
 
 
     '''
@@ -147,9 +135,8 @@ class BeverlyHills():
         if self.previous_data != {}:
             self.computeEngine.allDataPrepare(self.previous_data)
         
-        # send the start message to the data consumer
-        print('sending start message')
-        rawMsg = {'type': 'start', 'msg':'', 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
+        
+        rawMsg = {'content': {'ready': True}, 'src':containersToId['beverly_hills'], 'dest':containersToId['main_data_consumer']}
         self.connections['main_data_consumer'].send(json.dumps(rawMsg).encode('utf-8'))
 
     '''
@@ -166,9 +153,9 @@ class BeverlyHills():
         while True:
             # read data from the websocket
             data = json.loads(readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"]))
-
-            # send the message content to the compute engine
-            self.computeEngine.prepare(data["msg"])
+            if "candles" in data["content"]:
+                # send the message content to the compute engine
+                self.computeEngine.prepare(data["content"]["candles"])
             
     '''
     ARGS:

@@ -6,6 +6,7 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 WORKDIR /go/src
 COPY src .
+RUN go get "gorm.io/gorm"
 RUN go get -d -v
 RUN chmod +x wait-for-it.sh
 

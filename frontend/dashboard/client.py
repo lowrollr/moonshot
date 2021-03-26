@@ -35,7 +35,7 @@ def startClient(name, port, reconnect=False):
 def startInit(conn, dest, port):
     while True:
         try:
-            rawMessage = {'type':'start', "msg": "", "src":containersToId["frontend"], "dest": containersToId[dest]}
+            rawMessage = {'content': {'ready': True}, "src":containersToId["frontend"], "dest": containersToId[dest]}
             conn.send(json.dumps(rawMessage).encode('utf-8'))
             return
         except ConnectionResetError:
@@ -56,49 +56,57 @@ def readData(conn, name, port, reconnectFn):
             conn = reconnectFn()
             continue
 
-def retrieveCoinData(dc_socket):
+def retrieveDCData(dc_socket, coin_datastreams, glob_status):
     coins = []
     candles = dict()
     trades = dict()
-    while True:
-        rawMessage = {'type':'pm_data', 'msg':"1440,0", 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
-        dc_socket.send(json.dumps(rawMessage).encode('utf-8'))
-        dc_socket, coinMsg, _ = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'], DCConnect)
-        coins = []
-        if "pm_data" in coinMsg:
-            msg = json.loads(coinMsg)["msg"]
-            candles = msg['candles']
-            coins = list(candles.keys())
+    
+    dc_socket, coinMsg, _ = readData(dc_socket, 'main_data_consumer', os.environ['DC_PORT'], DCConnect)
+    coins = []
+    
+    content = json.loads(coinMsg)["content"]
+    candles = content['candles']
+    coins = list(candles.keys())
+    
+    for coin in coins:
+        coin_datastreams[coin] = DataStream(name=coin)
+        for candle in candles[coin]:
+            close_price = candle['close']
+            timestamp  = int(candle['time'] / 60)
+            if coin_datastreams[coin].initialized:
+                coin_datastreams[coin].update(close_price, timestamp)
+            else:
+                coin_datastreams[coin].initialize(close_price, timestamp)
+            glob_status.lastTimestampReceived = timestamp
             
-
-        if len(coins) > 0:
-            break
     print("Received coins and previous data from data consumer")
-    return coins, candles
+    startInit(dc_socket, "main_data_consumer", os.environ["DC_PORT"])
 
 def PMConnect():
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
     startInit(pm_conn, "portfolio_manager", os.environ["PM_PORT"])
-    rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['portfolio_manager']}
+    rawMsg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['portfolio_manager']}
     pm_conn.send(json.dumps(rawMsg).encode('utf-8'))
     return pm_conn
 
 def BHConnect():
     bh_conn = startClient('beverly_hills', os.environ['BH_PORT'])
     startInit(bh_conn, "beverly_hills", os.environ["BH_PORT"])
-    rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
+    rawMsg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
     bh_conn.send(json.dumps(rawMsg).encode('utf-8'))
     return bh_conn
 
 def DCConnect():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
+    rawMessage = {'content': {'candles': 1440, 'coins': True}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
+    dc_conn.send(json.dumps(rawMessage).encode('utf-8'))
     return dc_conn
 
 
 def PMPing(pm_conn):
     
     while True:
-        ping_msg = {'type':'ping', 'msg':'fuck you lol', 'src':containersToId["frontend"], 'dest':containersToId['portfolio_manager']}
+        ping_msg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['portfolio_manager']}
 
         try:
             pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
@@ -123,13 +131,13 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
             pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
             pm_ping_thread.start()
         if data:
-            data = json.loads(data)
+            content = json.loads(data)["content"]
             pm_status.ping()
-            if data['type'] == 'pong':
+            if content.get("pong"):
                 glob_status.isPaperTrading = False
-            elif data['type'] == 'portfolio_value':
+            elif content.get("portfolio_value"):
                 glob_status.isPaperTrading = True
-                account_value = float(data['msg'])
+                account_value = float(content['portfolio_value'])
                 current_positions.p_value = account_value
                 if portfolio_datastream.initialized:
                     portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
@@ -137,15 +145,14 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                     portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
                 for coin in plot_positions.positions_to_plot_year:
                     plot_positions.removeOldPositions(glob_status.lastTimestampReceived, coin)
-            elif data['type'] == 'enter':
-                split_msg = data['msg'].split(',')
-                coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
+            elif content.get("enter"):
+                
+                coin, amnt, price = content["enter"]["coin"], content["enter"]["amnt"], content["enter"]["price"]
                 current_positions.openPosition(coin, amnt, price, glob_status.lastTimestampReceived)
                 plot_positions.addNewPosition(coin, price, 'enter', glob_status.lastTimestampReceived)
 
-            elif data['type'] == 'exit':
-                split_msg = data['msg'].split(',')
-                coin, amnt, price = split_msg[0], float(split_msg[1]), float(split_msg[2])
+            elif content.get("exit"):
+                coin, amnt, price = content["enter"]["coin"], content["enter"]["amnt"], content["enter"]["price"]
                 closed_position = current_positions.closePosition(coin, amnt, price, glob_status.lastTimestampReceived)
                 if closed_position:
                     all_positions.append(closed_position)
@@ -158,7 +165,7 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
 def BHSocket(bh_status, reconnectFn=BHConnect):
     bh_conn = BHConnect()
     while True:
-        rawMsg = {'type': 'ping', 'msg':'fuck you lol', 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
+        rawMsg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
         bh_conn.send(json.dumps(rawMsg).encode('utf-8'))
         bh_conn, data, _ = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'], reconnectFn)
         if data:
@@ -166,17 +173,38 @@ def BHSocket(bh_status, reconnectFn=BHConnect):
         time.sleep(2)
 
 def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_positions, reconnectFn=DCConnect):
+    startInit(dc_conn, "main_data_consumer", os.environ["DC_PORT"])
     while True:
-        dc_conn, data, _= readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'], reconnectFn)
-        if data:
-            data = json.loads(data)
-            # print(data)
-            if data['type'] == 'curPrice' and data:
-                dc_status.ping()
-                coin_name = data['msg']['coin'].upper()
-                close_price = float(data['msg']['price'])
+        dc_conn, data, reconnected = readData(dc_conn, 'main_data_consumer', os.environ['DC_PORT'], reconnectFn)
+        if reconnected:
+            if data:
+                content = json.loads(data)["content"]
+                candles = content['candles']
+                coins = list(candles.keys())
                 
-                timestamp = int(data['msg']['time'] / 60) 
+                for coin in coins:
+                    coin_datastreams[coin] = DataStream(name=coin)
+                    for candle in candles[coin]:
+                        close_price = candle['close']
+                        timestamp  = int(candle['time'] / 60)
+                        if coin_datastreams[coin].initialized:
+                            coin_datastreams[coin].update(close_price, timestamp)
+                        else:
+                            coin_datastreams[coin].initialize(close_price, timestamp)
+                        glob_status.lastTimestampReceived = timestamp
+                        
+                print("Received coins and previous data from data consumer")
+                startInit(dc_conn, "main_data_consumer", os.environ["DC_PORT"])
+
+        if data:
+            content = json.loads(data)["content"]
+            # print(data)
+            if content.get("price"):
+                dc_status.ping()
+                coin_name = content["price"]["coin"].upper()
+                close_price = float(content["price"]["price"])
+                
+                timestamp = int(content["price"]["time"] / 60) 
                 glob_status.lastTimestampReceived = timestamp
                 if coin_datastreams[coin_name].initialized:
                     coin_datastreams[coin_name].update(close_price, timestamp)
@@ -184,11 +212,6 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
                     coin_datastreams[coin_name].initialize(close_price, timestamp)
                 current_positions.updatePosition(coin_name, close_price)
 
-
-def getCoins():
-    dc_conn = DCConnect()
-    coins, candles = retrieveCoinData(dc_conn)
-    return dc_conn, coins, candles
 
 def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
     auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url="https://api-public.sandbox.pro.coinbase.com")
