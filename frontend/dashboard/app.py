@@ -121,12 +121,12 @@ app = dash.Dash(__name__)
 flask_server = app.server
 
 app.layout = createPage(
-        toptext = getTopText(porfolio_datastream.day_data, 'AD LUNAM CAPITAL'),
+        toptext = getTopText(porfolio_datastream.day_data, 'PORTFOLIO'),
         status_elems = getStatusElems(container_statuses), 
         position_elems = getPortfolioPositions(cur_positions.positions),
         plot = getFig(porfolio_datastream.day_data),
         coins = coins,
-        cur_coin='AD LUNAM CAPITAL',
+        cur_coin='PORTFOLIO',
     )
 
 auth = dash_auth.BasicAuth(
@@ -144,7 +144,7 @@ def intervalUpdate(n, value, data):
     ctx = dash.callback_context
     if not data:
         data = dict()
-        data['asset'] = 'AD LUNAM CAPITAL'
+        data['asset'] = 'PORTFOLIO'
         data['timespan'] = 'd'
     for trig in ctx.triggered:
         if trig['prop_id'] == 'dropdown.value':
@@ -153,7 +153,7 @@ def intervalUpdate(n, value, data):
     asset = data['asset'].upper()
     timespan = data['timespan']
             
-    if asset == 'AD LUNAM CAPITAL':
+    if asset == 'PORTFOLIO':
         return createPageContent(
             toptext = getTopText(porfolio_datastream.day_data, asset),
             status_elems = getStatusElems(container_statuses), 

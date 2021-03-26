@@ -57,7 +57,7 @@ def getTopText(data, asset):
     if data:
         cur_value = data[-1][0]
         first_value = data[0][0]
-        if asset == 'AD LUNAM CAPITAL':
+        if asset == 'PORTFOLIO':
             cur_value = round(cur_value, 2)
             first_value = round(first_value, 2)
         delta = cur_value - first_value
@@ -69,7 +69,7 @@ def getTopText(data, asset):
             if len(split_cur) == 2:
                 precision = max(len(split_first[1]), len(split_cur[1]))
             else:
-                precision = split_first[1]
+                precision = len(split_first[1])
         delta = round(delta, precision)
         perc_change = round(perc_change, 2)
             
@@ -103,7 +103,7 @@ def getTopText(data, asset):
     )
 
 def getDropdown(coins, cur_coin):
-    options = [{'label': 'AD LUNAM CAPITAL', 'value': 'AD LUNAM CAPITAL'}]
+    options = [{'label': 'PORTFOLIO', 'value': 'PORTFOLIO'}]
     for x in coins:
         options.append({'label': x, 'value': x})
     return dcc.Dropdown(id='dropdown', options=options, value=cur_coin)
