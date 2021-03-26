@@ -490,7 +490,7 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 			total_value += amntOwnedFlt * pm.CandleDict[coin].Close
 		}
 	}
-
+	go Dumbo.StorePortfolioValue(total_value)
 	// return the portfolio's current unrealized cash value
 	return total_value
 }

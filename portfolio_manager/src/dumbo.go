@@ -76,7 +76,7 @@ func (Local_Dumbo *dumbo) StorePortfolioValue(portfolioValue float64){
 		Balance: portfolioValue,
 	}
 
-	err := Local_Dumbo.DBInterface.Table("balance_history").Create(&portfolioBalance).Error
+	err := Local_Dumbo.DBInterface.Table("portfolio_balances").Create(&portfolioBalance).Error
 	if err != nil {
 		log.Warn("Was not able to store portfolio balance. Err:", err)
 	}
