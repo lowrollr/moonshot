@@ -10,7 +10,6 @@ package main
 
 import (
 	"strings"
-	"sync"
 	"time"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -96,8 +95,7 @@ func (dc *DataConsumer) AutoMigrate() {
     WHAT:
 		-> Inserts ohcl data into db
 */
-func (dc *DataConsumer) StoreCandles(event *map[string]*Candlestick, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (dc *DataConsumer) StoreCandles(event *map[string]*Candlestick) {
 	for coin, candleData := range *event {
 		err := dc.Database.Table(strings.ToLower(coin) + "_1m_candles").
 			Create(candleData).Error

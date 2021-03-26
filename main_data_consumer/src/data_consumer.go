@@ -288,7 +288,7 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 	}
 	if candle == nil {
 		dc.Candlesticks[coinInMessage] = &Candlestick{
-			Timestamp: now,
+			Timestamp: (now / 60) * 60,
 			Open:      tradePrice,
 			High:      tradePrice,
 			Low:       tradePrice,
@@ -298,7 +298,7 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 		}
 	} else if candle_min != now_minute {
 		newCandle := &Candlestick{
-			Timestamp: now,
+			Timestamp: (now / 60) * 60,
 			Open:      tradePrice,
 			High:      tradePrice,
 			Low:       tradePrice,
@@ -307,7 +307,6 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 			Trades: 1,
 		}
 		wg := new(sync.WaitGroup)
-		wg.Add(1)
 		if dc.ConnectionsReady == 3 {
 			wg.Add(2)
 			candlesToSend := make(map[string][]Candlestick)
@@ -345,14 +344,14 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 		
 		
 		//store in db
-		go dc.StoreCandles(&dc.Candlesticks, wg)
+		dc.StoreCandles(&dc.Candlesticks)
 
 		wg.Wait()
 
 		dc.Candlesticks[coinInMessage] = newCandle
 		for _, coin := range *dc.Coins {
 			dc.Candlesticks[coin] = &Candlestick{
-				Timestamp: now,
+				Timestamp: (now / 60) * 60,
 				Open:      dc.Candlesticks[coin].Close,
 				High:      dc.Candlesticks[coin].Close,
 				Low:       dc.Candlesticks[coin].Close,
