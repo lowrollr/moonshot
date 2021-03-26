@@ -84,7 +84,7 @@ type PortfolioManager struct {
 */
 func initPM() *PortfolioManager {
 	// declate amount of trades necessary to compute allocation size with kelly criterion
-	trades_to_cal := 10
+	trades_to_cal := 1
 
 	// initialize database connection
 	Dumbo.InitializeDB()
@@ -758,7 +758,7 @@ func (info *CoinInfo) updateProfitInfo(profitPercentage float64) {
 	}
 
 	// if the queue has gone over its max size, pop the leftmost element and update the totals accordingly
-	if profitQueue.Results.Size() > 20 {
+	if profitQueue.Results.Size() > 10 {
 		// pop the leftmost element
 		oldVal := float64(profitQueue.Results.PopLeft().(float64))
 
