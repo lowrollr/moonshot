@@ -56,7 +56,7 @@ def readData(conn, name, port, reconnectFn):
             conn = reconnectFn()
             continue
 
-def retrieveDCData(dc_socket, coin_datastreams, glob_status):
+def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_status):
     coins = []
     candles = dict()
     trades = dict()
@@ -66,7 +66,8 @@ def retrieveDCData(dc_socket, coin_datastreams, glob_status):
     
     content = json.loads(coinMsg)["content"]
     candles = content['candles']
-    coins = list(candles.keys())
+    coins = content['coins']
+    balance_history = content['balance_history']
     
     for coin in coins:
         coin_datastreams[coin] = DataStream(name=coin)
@@ -78,6 +79,13 @@ def retrieveDCData(dc_socket, coin_datastreams, glob_status):
             else:
                 coin_datastreams[coin].initialize(close_price, timestamp)
             glob_status.lastTimestampReceived = timestamp
+    for balance in balance_history:
+        value = balance['balance']
+        timestamp = balance['timestamp']
+        if portfolio_datastream.initialized:
+            portfolio_datastream.update(value, timestamp)
+        else:
+            portfolio_datastream.initialize(value, timestamp)
             
     print("Received coins and previous data from data consumer")
     startInit(dc_socket, "main_data_consumer", os.environ["DC_PORT"])
@@ -98,7 +106,7 @@ def BHConnect():
 
 def DCConnect():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
-    rawMessage = {'content': {'candles': 1440, 'coins': True}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
+    rawMessage = {'content': {'candles': 1440, 'coins': True, 'balance_history':1440}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
     dc_conn.send(json.dumps(rawMessage).encode('utf-8'))
     return dc_conn
 

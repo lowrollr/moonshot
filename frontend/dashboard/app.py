@@ -63,12 +63,13 @@ for c in {'Portfolio Manager', 'Compute Engine', 'Data Consumer', 'Coinbase'}:
     container_statuses[c] = Status()
 
 coin_datastreams = dict()
+porfolio_datastream = DataStream(name='portfolio')
 
 dc_conn = DCConnect()
-retrieveDCData(dc_conn, coin_datastreams, glob_status)
+retrieveDCData(dc_conn, coin_datastreams, porfolio_datastream, glob_status)
 coins = list(coin_datastreams.keys())
 
-porfolio_datastream = DataStream(name='portfolio')
+
 cur_positions = Positions(coins)
 position_history = PositionStream(coins)
 plot_positions = PlotPositions(coins)
