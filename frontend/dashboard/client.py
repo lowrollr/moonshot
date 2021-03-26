@@ -81,7 +81,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             glob_status.lastTimestampReceived = timestamp
     for balance in balance_history:
         value = balance['Balance']
-        timestamp = balance['Timestamp']
+        timestamp = int(balance['Timestamp'] / 60)
         if portfolio_datastream.initialized:
             portfolio_datastream.update(value, timestamp)
         else:
