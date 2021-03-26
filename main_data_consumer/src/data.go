@@ -287,7 +287,7 @@ func (dc *DataConsumer) GetCandleData(prevCandles int64) *map[string][]Candlesti
 				}
 			}
 			// store the last candle in memory
-			dc.Candlesticks[coin] = &retrievedCandles[len(retrievedCandles) - 1]
+			dc.LastCandleRetrieved[coin] = &retrievedCandles[len(retrievedCandles) - 1]
 		} else {
 			// smoothing the entire period (or more) is pretty silly, we just won't return any data for this coin and let the user know
 			log.Warn("No candles retrieved for coin ", coin, " within the last ", prevCandles, " periods, data may be missing!")

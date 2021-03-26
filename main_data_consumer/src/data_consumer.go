@@ -36,8 +36,8 @@ type DataConsumer struct {
 	Clients        map[string]*Client
 	Coins          *[]string
 	Candlesticks   map[string]*Candlestick
-	CandlesticksQueue map[string][]Candlestick
-	CandlesInQueue bool
+	LastCandleRetrieved map[string]*Candlestick
+	CheckedLastRetrieved bool
 	Database	   *gorm.DB
 	ConnectionsReady int
 }
@@ -59,9 +59,9 @@ func InitDataConsumer() *DataConsumer {
 		Coins: 			RetrieveCoins(),
 		Clients:        clients,
 		ConnectionsReady: 0,
-		CandlesInQueue: false,
-		CandlesticksQueue: make(map[string][]Candlestick),
+		CheckedLastRetrieved: false,
 		Candlesticks: make(map[string]*Candlestick),
+		LastCandleRetrieved: make(map[string]*Candlestick),
 	}
 	
 }
@@ -262,12 +262,12 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 	//send data to the frontend
 	coinInMessage := strings.Split(msg.ProductID, "-")[0]
 	now := int64(msg.Time.Unix())
-	now_minute := now / 60
+	nowMinute := now / 60
 	msgContent := make(map[string]interface{})
 	msgContent["price"] = CoinPrice{
 		Coin:  coinInMessage,
 		Price: tradePrice,
-		Time:  now,
+		Time:  nowMinute * 60,
 	}
 	
 	messageToFrontend := &WebsocketMessage{
@@ -277,14 +277,14 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 	}
 
 	frontendClient := dc.Clients["frontend"]
-	if dc.ConnectionsReady == 3 {
-		go frontendClient.WriteMessage(messageToFrontend, nil)
-	}
+	
+	go frontendClient.WriteMessage(messageToFrontend, nil)
+	
 	
 	candle := dc.Candlesticks[coinInMessage]
-	candle_min := int64(0)
+	candleMinute := int64(0)
 	if candle != nil {
-		candle_min = candle.Timestamp / 60
+		candleMinute = candle.Timestamp / 60
 	}
 	if candle == nil {
 		dc.Candlesticks[coinInMessage] = &Candlestick{
@@ -296,70 +296,73 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 			Volume:    volume,
 			Trades: 1,
 		}
-	} else if candle_min != now_minute {
-		newCandle := &Candlestick{
-			Timestamp: (now / 60) * 60,
-			Open:      tradePrice,
-			High:      tradePrice,
-			Low:       tradePrice,
-			Close:     tradePrice,
-			Volume:    volume,
-			Trades: 1,
-		}
-		wg := new(sync.WaitGroup)
-		if dc.ConnectionsReady == 3 {
-			wg.Add(2)
-			candlesToSend := make(map[string][]Candlestick)
-			if dc.CandlesInQueue {
-				for _, coin := range *dc.Coins {
-					candlesToSend[coin] = dc.CandlesticksQueue[coin]
-					dc.CandlesticksQueue[coin] = []Candlestick{}
-				}
-				dc.CandlesInQueue = false
-			}
+		// create a new candle and store it
+	} else if candleMinute < nowMinute {
+		candlesToSend := make(map[string][]Candlestick)
+		// check if we need to smooth between last retrieved candles
+		if !dc.CheckedLastRetrieved {
 			for _, coin := range *dc.Coins {
-				candlesToSend[coin] = append(candlesToSend[coin], *dc.Candlesticks[coin])
-			}
-			msgContent := make(map[string]interface{})
-			msgContent["candles"] = candlesToSend
-			for destinationStr, client := range dc.Clients {
-				if destinationStr != "frontend" {
-					candleMessage := WebsocketMessage{
-						Source:      containerToId["main_data_consumer"],
-						Destination: containerToId[destinationStr],
-						Content:     *InterfaceToRawJSON(&msgContent),
-					}
-					go client.WriteMessage(&candleMessage, wg)
+				if lastCandle, ok := dc.LastCandleRetrieved[coin]; ok {
+					candlesToSend[coin] = *SmoothBetweenCandles(lastCandle, dc.Candlesticks[coin])
 				}
+				
 			}
-		} else {
-			if !dc.CandlesInQueue {
-				// do any smoothing that needs to occur
-				smoothedCandles := SmoothBetweenCandles(candle, newCandle)
-				dc.CandlesticksQueue[coinInMessage] = *smoothedCandles
-				dc.CandlesInQueue = true
+			dc.CheckedLastRetrieved = true
+		}
+		for _, coin := range *dc.Coins {
+			if coinCandles, ok := candlesToSend[coin]; ok {
+				candlesToSend[coin] = append(coinCandles, *dc.Candlesticks[coin])
+			} else {
+				candlesToSend[coin] = []Candlestick{*dc.Candlesticks[coin]}
 			}
-			dc.CandlesticksQueue[coinInMessage] = append(dc.CandlesticksQueue[coinInMessage], *newCandle)
+			
+		}
+		// if all connections are ready, send the candles
+		wg := new(sync.WaitGroup)
+		
+		wg.Add(2)
+		msgContent := make(map[string]interface{})
+		msgContent["candles"] = candlesToSend
+		for destinationStr, client := range dc.Clients {
+			if destinationStr != "frontend" {
+				candleMessage := WebsocketMessage{
+					Source:      containerToId["main_data_consumer"],
+					Destination: containerToId[destinationStr],
+					Content:     *InterfaceToRawJSON(&msgContent),
+				}
+				go client.WriteMessage(&candleMessage, wg)
+			}
 		}
 		
-		
-		//store in db
 		dc.StoreCandles(&dc.Candlesticks)
 
 		wg.Wait()
-
-		dc.Candlesticks[coinInMessage] = newCandle
+		// create new candle objects for each coin
 		for _, coin := range *dc.Coins {
-			dc.Candlesticks[coin] = &Candlestick{
-				Timestamp: (now / 60) * 60,
-				Open:      dc.Candlesticks[coin].Close,
-				High:      dc.Candlesticks[coin].Close,
-				Low:       dc.Candlesticks[coin].Close,
-				Close:     dc.Candlesticks[coin].Close,
-				Volume:    volume,
-				Trades: 1,
+			if coin == coinInMessage {
+				dc.Candlesticks[coin] = &Candlestick{
+					Timestamp: (now / 60) * 60,
+					Open:      tradePrice,
+					High:      tradePrice,
+					Low:       tradePrice,
+					Close:     tradePrice,
+					Volume:    volume,
+					Trades: 1,
+				}
+			} else {
+				dc.Candlesticks[coin] = &Candlestick{
+					Timestamp: (now / 60) * 60,
+					Open:      dc.Candlesticks[coin].Close,
+					High:      dc.Candlesticks[coin].Close,
+					Low:       dc.Candlesticks[coin].Close,
+					Close:     dc.Candlesticks[coin].Close,
+					Volume:    0,
+					Trades:    0,
+				}
 			}
+			
 		}
+
 	} else {
 		candle.Close = tradePrice
 		candle.High = math.Max(candle.High, tradePrice)
@@ -367,7 +370,6 @@ func (dc *DataConsumer) ProcessTick(msg *CoinbaseMessage) {
 		candle.Trades++
 		candle.Volume += volume
 	}
-	return
 }
 
 /*

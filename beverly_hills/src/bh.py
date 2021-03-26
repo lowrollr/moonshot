@@ -151,6 +151,7 @@ class BeverlyHills():
     def compute(self):
         # read data forever
         while True:
+            
             # read data from the websocket
             data = json.loads(readData(self.connections["main_data_consumer"], "main_data_consumer", os.environ["DATAPORT"]))
             if "candles" in data["content"]:

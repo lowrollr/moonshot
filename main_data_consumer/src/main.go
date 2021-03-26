@@ -30,7 +30,7 @@ func main() {
 	go dataConsumer.WsHTTPListen()
 
 	// listen for 'ready' messages
-	go dataConsumer.WaitForAllConnections()
+	dataConsumer.WaitForAllConnections()
 
 	// Start consuming data
 	dataConsumer.StartConsumption()
