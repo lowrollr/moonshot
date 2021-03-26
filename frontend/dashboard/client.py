@@ -86,7 +86,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             portfolio_datastream.update(value, timestamp)
         else:
             portfolio_datastream.initialize(value, timestamp)
-            
+
     print("Received coins and previous data from data consumer")
     startInit(dc_socket, "main_data_consumer", os.environ["DC_PORT"])
 
@@ -222,7 +222,10 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
 
 
 def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
-    auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url="https://api-public.sandbox.pro.coinbase.com")
+    coinbase_url = "https://api-public.sandbox.pro.coinbase.com"
+    if int(os.environ('PRODUCTION')) == 1:
+        coinbase_url = "https://api.pro.coinbase.com"
+    auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url=coinbase_url)
     accounts = auth_client.get_accounts()
     coins = set(coins)
     while True:
