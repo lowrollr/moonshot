@@ -122,8 +122,8 @@ func (dc *DataConsumer) GetBalanceHistory(prevMinutes int64) *[]PortfolioBalance
 	dc.Database.Table("portfolio_balances").Limit(int(prevMinutes)).Order("timestamp desc").Find(&balances)
 	for i := 0; i < len(balances) / 2; i++ {
 		temp := balances[i]
-		balances[i] = balances[len(balances) - i]
-		balances[len(balances) - i] = temp
+		balances[i] = balances[len(balances) - i - 1]
+		balances[len(balances) - i - 1] = temp
 	}
 	return &balances
 }
