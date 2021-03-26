@@ -223,7 +223,7 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
 
 def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
     coinbase_url = "https://api-public.sandbox.pro.coinbase.com"
-    if int(os.environ('PRODUCTION')) == 1:
+    if int(os.environ['PRODUCTION']) == 1:
         coinbase_url = "https://api.pro.coinbase.com"
     auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url=coinbase_url)
     accounts = auth_client.get_accounts()
