@@ -56,23 +56,22 @@ def getTopText(data, asset):
     perc_change = '+0.00%'
     if data:
         cur_value = data[-1][0]
+        cur_value = round(cur_value, 6)
         first_value = data[0][0]
         if asset == 'PORTFOLIO':
             cur_value = round(cur_value, 2)
             first_value = round(first_value, 2)
         delta = cur_value - first_value
         perc_change = ((cur_value - first_value) / first_value) * 100
-        split_first = str(first_value).split('.')
+        
         split_cur = str(cur_value).split('.')
         precision = 2
-        if len(split_first) == 2:
-            if len(split_cur) == 2:
-                precision = max(len(split_first[1]), len(split_cur[1]))
-            else:
-                precision = len(split_first[1])
+        if len(split_cur) == 2:
+            precision = max(6, len(split_cur[1]))
+            
         delta = round(delta, precision)
         perc_change = round(perc_change, 2)
-            
+         
         if delta >= 0:
             delta = f'+${delta}'
         else:

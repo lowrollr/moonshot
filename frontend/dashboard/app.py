@@ -129,10 +129,10 @@ app.layout = createPage(
         cur_coin='PORTFOLIO',
     )
 
-auth = dash_auth.BasicAuth(
-    app,
-    auth_pair
-)
+# auth = dash_auth.BasicAuth(
+#     app,
+#     auth_pair
+# )
 
 @app.callback(Output('page-content', 'children'),
               Output('session_data', 'data'),
