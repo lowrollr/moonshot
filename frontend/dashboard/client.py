@@ -6,7 +6,13 @@ import cbpro
 import threading
 from websocket import create_connection
 
-from data import DataStream
+from data import (
+    DataStream,
+    Positions,
+    PositionStream,
+    Status, 
+    PlotPositions
+)
 
 from vars import (
     containersToId,
@@ -68,7 +74,11 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
     candles = content['candles']
     coins = content['coins']
     balance_history = content['balance_history']
-    
+    open_position_trades = content['open_trades']
+    cur_positions = Positions(coins)
+    position_history = PositionStream(coins)
+    plot_positions = PlotPositions(coins)
+
     for coin in coins:
         coin_datastreams[coin] = DataStream(name=coin)
         for candle in candles[coin]:
@@ -86,10 +96,22 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             portfolio_datastream.update(value, timestamp)
         else:
             portfolio_datastream.initialize(value, timestamp)
+    for coin in coins:
+        for trade in open_position_trades[coin]:
+            timestamp = int(trade['Timestamp'] / 60)
+            if int(trade['TypeId']) == 0:
+                enter_price = trade['ExecutedValue']/trade['Units']
+                cur_positions[coin].openPosition(coin, trade['Units'], enter_price, timestamp)
+                plot_positions.addNewPosition(coin, enter_price, 'enter', timestamp)
+            elif int(trade['TypeId']) == 1:
+                exit_price = trade['ExecutedValue']/trade['Units']
+                cur_positions.closePosition(coin, trade['Units'], exit_price, timestamp)
+                plot_positions.addNewPositions(coin, exit_price, 'partial_exit', timestamp)
 
     print("Received coins and previous data from data consumer")
     startInit(dc_socket, "main_data_consumer", os.environ["DC_PORT"])
-
+    return cur_positions, position_history, plot_positions
+    
 def PMConnect():
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
     startInit(pm_conn, "portfolio_manager", os.environ["PM_PORT"])
@@ -106,7 +128,7 @@ def BHConnect():
 
 def DCConnect():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
-    rawMessage = {'content': {'candles': 1440, 'coins': True, 'balance_history':1440}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
+    rawMessage = {'content': {'candles': 1440, 'coins': True, 'balance_history':1440, 'open_trades': True}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
     dc_conn.send(json.dumps(rawMessage).encode('utf-8'))
     return dc_conn
 

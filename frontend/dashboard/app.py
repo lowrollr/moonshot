@@ -66,13 +66,11 @@ coin_datastreams = dict()
 porfolio_datastream = DataStream(name='portfolio')
 
 dc_conn = DCConnect()
-retrieveDCData(dc_conn, coin_datastreams, porfolio_datastream, glob_status)
+
+cur_positions, position_history, plot_positions = retrieveDCData(dc_conn, coin_datastreams, porfolio_datastream, glob_status)
 coins = list(coin_datastreams.keys())
 
 
-cur_positions = Positions(coins)
-position_history = PositionStream(coins)
-plot_positions = PlotPositions(coins)
 
 
 
