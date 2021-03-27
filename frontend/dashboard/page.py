@@ -16,11 +16,34 @@ def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin):
         dcc.Store(id='session_data', storage_type='session'),
         html.Div(
             id='page-content', 
-            children=createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin))
+            children=createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, 'd'))
     ])
         
 
-def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin):
+def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, timespan):
+    main_div_children = [toptext, dcc.Graph(
+                    id='main_plot', 
+                    className='asset_plot',
+                    figure=plot,
+                    config={'showTips': False, 
+                            'displaylogo': False,
+                            'watermark': False,
+                            'staticPlot': True,}
+                    ),]
+    for timeformat in {'d', 'w', 'm', 'y'}:
+        if timeformat == timespan:
+            main_div_children.append(html.Span(
+                id=timeformat + '_button',
+                className=timeformat + '_button',
+                children=timeformat.upper(),
+                style = {'font-weight': 'Bold', 'color': '#ebf5ff'}
+            ))
+        else:
+            main_div_children.append(html.Span(
+                id=timeformat + '_button',
+                className=timeformat + '_button',
+                children=timeformat.upper()
+            ))
     return [
         
         html.Div(className='background'),
@@ -34,18 +57,7 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
         ),
         html.Div(
             className='main',
-            children=[
-                toptext,
-                dcc.Graph(
-                    id='main_plot', 
-                    className='asset_plot',
-                    figure=plot,
-                    config={'showTips': False, 
-                            'displaylogo': False,
-                            'watermark': False,
-                            'staticPlot': True,}
-                    )
-            ]
+            children=main_div_children
         )
     ]
 

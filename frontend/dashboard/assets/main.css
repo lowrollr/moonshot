@@ -28,7 +28,7 @@
 }
 
 .position{
-  color:#ebf5ff;;
+  color:#ebf5ff;
   list-style-type: none;
   font-family: Space Mono;
   font-size: 0.9vw;
@@ -240,4 +240,39 @@
   bottom:0;
   right:0.3vw;
   padding:0.2vw;
+}
+.d_button{
+  color:#636567;
+  position:absolute;
+  font-family: Space Mono;
+  left:64.5%;
+  bottom:80%;
+  font-size: 2vw;
+}
+
+.w_button{
+  color:#636567;
+  position:absolute;
+  font-family: Space Mono;
+  left:66.5%;
+  bottom:80%;
+  font-size: 2vw;
+}
+
+.m_button{
+  color:#636567;
+  position:absolute;
+  font-family: Space Mono;
+  left:68.5%;
+  bottom:80%;
+  font-size: 2vw;
+}
+
+.y_button{
+  color:#636567;
+  position:absolute;
+  font-family: Space Mono;
+  left:70.5%;
+  bottom:80%;
+  font-size: 2vw;
 }

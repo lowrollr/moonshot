@@ -137,8 +137,12 @@ app.layout = createPage(
               Output('session_data', 'data'),
               Input('auto_update', 'n_intervals'),
               Input('dropdown', 'value'),
+              Input('d_button', 'n_clicks'),
+              Input('w_button', 'n_clicks'),
+              Input('m_button', 'n_clicks'),
+              Input('y_button', 'n_clicks'),
               State('session_data', 'data'))
-def intervalUpdate(n, value, data):
+def intervalUpdate(n, value, d_clicks, w_clicks, m_clicks, y_clicks, data):
     
     ctx = dash.callback_context
     if not data:
@@ -148,6 +152,14 @@ def intervalUpdate(n, value, data):
     for trig in ctx.triggered:
         if trig['prop_id'] == 'dropdown.value':
             data['asset'] = trig['value']
+        if trig['prop_id'] == 'd_button.n_clicks':
+            data['timespan'] = 'd'
+        elif trig['prop_id'] == 'w_button.n_clicks':
+            data['timespan'] = 'w'
+        elif trig['prop_id'] == 'm_button.n_clicks':
+            data['timespan'] = 'm'
+        elif trig['prop_id'] == 'y_button.n_clicks':
+            data['timespan'] = 'y'
 
     asset = data['asset'].upper()
     timespan = data['timespan']
@@ -168,6 +180,7 @@ def intervalUpdate(n, value, data):
             plot = getFig(portfolio_data),
             coins=coins,
             cur_coin=asset,
+            timespan=timespan,
         ), data
     else:
         coin_data = coin_datastreams[asset].year_data
@@ -188,6 +201,7 @@ def intervalUpdate(n, value, data):
                 plot = getFig(coin_data, coin_positions),
                 coins=coins,
                 cur_coin=asset,
+                timespan=timespan,
             ), data
 
 
