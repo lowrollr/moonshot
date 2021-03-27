@@ -244,7 +244,7 @@ def getPortfolioPositions(positions, past_positions):
                  style=style,
             )
             elements.append(element)
-    for position in past_positions:
+    for position in reversed(past_positions):
         amnt = round(position.amnt, 4)
         profit = round(((position.exit_price / position.enter_price) - 1) * 100, 2)
         style = {'background': 'rgba(239,102,102,0.15)'}
@@ -303,7 +303,7 @@ def getCoinPositions(coin, cur_position, past_positions):
                 style=style,
             )
         elements.append(element)
-    for position in past_positions:
+    for position in reversed(past_positions):
         amnt = round(position.amnt, 4)
         profit = round(((position.exit_price / position.enter_price) - 1) * 100, 2)
         style = {'background': 'rgba(239,102,102,0.15)'}

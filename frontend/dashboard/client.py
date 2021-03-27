@@ -110,6 +110,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 exit_price = trade['ExecutedValue']/trade['Units']
                 cur_positions.closePosition(coin, trade['Units'], exit_price, timestamp)
                 plot_positions.addNewPosition(coin, exit_price, 'partial_exit', timestamp)
+    all_past_positions = []
     for coin in coins:
         enter_price = 0.0
         time_entered = 0
@@ -128,10 +129,11 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             else:
                 plot_positions.addNewPosition(coin, price, 'exit', timestamp)
                 past_position = Position(coin, time_entered, enter_price, price, amnt, alloc, timestamp)
-                position_history.all_positions.append(past_position)
+                all_past_positions.append(past_position)
                 position_history.coin_positions[coin].append(past_position)
-           
-
+    all_past_positions.sort(key=lambda x: x.exit_time, reverse=False)
+    for position in all_past_positions:
+        position_history.all_positions.append(position)
 
     print("Received coins and previous data from data consumer")
     startInit(dc_socket, "main_data_consumer", os.environ["DC_PORT"])
