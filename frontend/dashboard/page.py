@@ -216,7 +216,7 @@ def getStatusDiv(status):
 
 # TODO: make this display past positions
 # TODO: sort positions by amnt of time held?
-def getPortfolioPositions(positions):
+def getPortfolioPositions(positions, past_positions):
     elements = []
     for coin in positions:
         if positions[coin]:
@@ -244,6 +244,29 @@ def getPortfolioPositions(positions):
                  style=style,
             )
             elements.append(element)
+    for position in past_positions:
+        amnt = round(position.amnt, 4)
+        profit = round(((position.exit_price / position.enter_price) - 1) * 100, 2)
+        style = {'background': 'rgba(239,102,102,0.45)'}
+        if profit > 0:
+            style = {'background': 'rgba(114,228,125,0.45)'}
+        if profit > 0:
+            profit = '+' + str(profit) + '%'
+        else:
+            profit = str(profit) + '%'
+        element = html.Li(
+            className='position',
+            children=[
+                html.Span(className="statCoin", children=coin),
+                html.Span(className="statAmntOwned", children=amnt),
+                html.Span(className="statCurPrice", children='CLOSED'),
+                html.Span(className="statCurProfit", children=profit),
+                html.Span(className="statCurAlloc", children=''),
+                ],
+                style=style,
+        )
+        elements.append(element)
+        
     return html.Ul(
         className='position_list',
         children=elements

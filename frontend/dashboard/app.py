@@ -122,7 +122,7 @@ flask_server = app.server
 app.layout = createPage(
         toptext = getTopText(porfolio_datastream.day_data, 'PORTFOLIO'),
         status_elems = getStatusElems(container_statuses), 
-        position_elems = getPortfolioPositions(cur_positions.positions),
+        position_elems = getPortfolioPositions(cur_positions.positions, position_history.all_positions),
         plot = getFig(porfolio_datastream.day_data),
         coins = coins,
         cur_coin='PORTFOLIO',
@@ -156,7 +156,7 @@ def intervalUpdate(n, value, data):
         return createPageContent(
             toptext = getTopText(porfolio_datastream.day_data, asset),
             status_elems = getStatusElems(container_statuses), 
-            position_elems = getPortfolioPositions(cur_positions.positions),
+            position_elems = getPortfolioPositions(cur_positions.positions, position_history.all_positions),
             plot = getFig(porfolio_datastream.day_data),
             coins=coins,
             cur_coin=asset,
@@ -165,7 +165,7 @@ def intervalUpdate(n, value, data):
         return createPageContent(
                 toptext = getTopText(coin_datastreams[asset].day_data, asset),
                 status_elems = getStatusElems(container_statuses), 
-                position_elems = getCoinPositions(asset, cur_positions.positions[asset]),
+                position_elems = getCoinPositions(asset, cur_positions.positions[asset], position_history.coin_positions[asset]),
                 plot = getFig(coin_datastreams[asset].day_data, plot_positions.positions_to_plot_day[asset]),
                 coins=coins,
                 cur_coin=asset,
