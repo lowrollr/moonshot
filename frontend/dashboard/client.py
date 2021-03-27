@@ -155,7 +155,7 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                     plot_positions.removeOldPositions(glob_status.lastTimestampReceived, coin)
             elif content.get("enter"):
                 
-                coin, amnt, price = content["enter"]["coin"], content["enter"]["amnt"], content["enter"]["price"]
+                coin, amnt, price = content["enter"]["coin"], float(content["enter"]["amnt"]), float(content["enter"]["price"])
                 current_positions.openPosition(coin, amnt, price, glob_status.lastTimestampReceived)
                 plot_positions.addNewPosition(coin, price, 'enter', glob_status.lastTimestampReceived)
 
