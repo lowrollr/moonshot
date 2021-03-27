@@ -277,10 +277,11 @@ func (pm *PortfolioManager) StartTrading() {
 				}
 				pm.PMProcess()
 			}
+			// update portfolio value & liquidity
+			pm.PortfolioValue = pm.CalcPortfolioValue()
+			pm.UpdateLiquidity()
 		}
-		// update portfolio value & liquidity
-		pm.PortfolioValue = pm.CalcPortfolioValue()
-		pm.UpdateLiquidity()
+		
 	}
 
 }
