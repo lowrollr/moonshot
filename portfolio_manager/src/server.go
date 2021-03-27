@@ -75,7 +75,7 @@ func (client *ServerClient) handleFrontendPing(pm *PortfolioManager) {
 			client.Unlock()
 
 		} else {
-			log.Warn("Invalid message received from frontend")
+			log.Warn("Invalid message received from frontend: ", messageContent)
 		}
 		
 	}
