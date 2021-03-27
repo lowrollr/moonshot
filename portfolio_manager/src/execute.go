@@ -10,7 +10,8 @@ package main
 
 import (
 	"time"
-
+	"math"
+	"fmt"
 	coinbasepro "github.com/preichenberger/go-coinbasepro"
 	decimal "github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
@@ -33,11 +34,14 @@ func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, 
 	// construct the ProductID (<coin>USD)
 	product := coin + "-USD"
 
+	amntFlt, _ := amnt.Float64()
+	//ensure amnt precision is not too high
+	amntFlt = math.Round(amntFlt*10000)/10000
 	// construct the appopriate Coinbase order object
 	var myOrder coinbasepro.Order
 	if buy {
 		myOrder = coinbasepro.Order{
-			Funds:     amnt.String(),
+			Funds:     fmt.Sprintf("%f", amntFlt),
 			ProductID: product,
 			Side:      "buy",
 			Type:      "market",
