@@ -257,7 +257,7 @@ def getPortfolioPositions(positions, past_positions):
         element = html.Li(
             className='position',
             children=[
-                html.Span(className="statCoin", children=coin),
+                html.Span(className="statCoin", children=position.coin),
                 html.Span(className="statAmntOwned", children=amnt),
                 html.Span(className="statCurPrice", children='CLOSED'),
                 html.Span(className="statCurProfit", children=profit),
