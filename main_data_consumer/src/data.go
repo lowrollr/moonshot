@@ -120,7 +120,8 @@ func (dc *DataConsumer) StoreCandles(event *map[string]*Candlestick) {
 */
 func (dc *DataConsumer) GetBalanceHistory(prevMinutes int64) *[]PortfolioBalance {
 	balances := []PortfolioBalance{}
-	dc.Database.Table("portfolio_balances").Limit(int(prevMinutes)).Order("timestamp desc").Find(&balances)
+	howFarToGoBack := time.Now().Add(-1 * time.Minute * time.Duration(prevMinutes)).Unix()
+	dc.Database.Table("portfolio_balances").Where("timestamp >= ?", howFarToGoBack).Order("timestamp desc").Find(&balances)
 	for i := 0; i < len(balances) / 2; i++ {
 		temp := balances[i]
 		balances[i] = balances[len(balances) - i - 1]
