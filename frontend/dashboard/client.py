@@ -182,7 +182,7 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                 plot_positions.addNewPosition(coin, price, 'enter', glob_status.lastTimestampReceived)
 
             elif content.get("exit"):
-                coin, amnt, price = content["enter"]["coin"], content["enter"]["amnt"], content["enter"]["price"]
+                coin, amnt, price = content["exit"]["coin"], content["exit"]["amnt"], content["exit"]["price"]
                 closed_position = current_positions.closePosition(coin, amnt, price, glob_status.lastTimestampReceived)
                 if closed_position:
                     all_positions.append(closed_position)
