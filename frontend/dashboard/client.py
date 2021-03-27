@@ -101,7 +101,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             timestamp = int(trade['Timestamp'] / 60)
             if int(trade['TypeId']) == 0:
                 enter_price = trade['ExecutedValue']/trade['Units']
-                cur_positions[coin].openPosition(coin, trade['Units'], enter_price, timestamp)
+                cur_positions.openPosition(coin, trade['Units'], enter_price, timestamp)
                 plot_positions.addNewPosition(coin, enter_price, 'enter', timestamp)
             elif int(trade['TypeId']) == 1:
                 exit_price = trade['ExecutedValue']/trade['Units']
@@ -111,7 +111,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
     print("Received coins and previous data from data consumer")
     startInit(dc_socket, "main_data_consumer", os.environ["DC_PORT"])
     return cur_positions, position_history, plot_positions
-    
+
 def PMConnect():
     pm_conn = startClient('portfolio_manager', os.environ["PM_PORT"])
     startInit(pm_conn, "portfolio_manager", os.environ["PM_PORT"])
