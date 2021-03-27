@@ -63,11 +63,11 @@ for c in {'Portfolio Manager', 'Compute Engine', 'Data Consumer', 'Coinbase'}:
     container_statuses[c] = Status()
 
 coin_datastreams = dict()
-porfolio_datastream = DataStream(name='portfolio')
+portfolio_datastream = DataStream(name='portfolio')
 
 dc_conn = DCConnect()
 
-cur_positions, position_history, plot_positions = retrieveDCData(dc_conn, coin_datastreams, porfolio_datastream, glob_status)
+cur_positions, position_history, plot_positions = retrieveDCData(dc_conn, coin_datastreams, portfolio_datastream, glob_status)
 coins = list(coin_datastreams.keys())
 
 
@@ -94,7 +94,7 @@ pm_socket_thread = threading.Thread(target=PMSocket, args=(
     position_history.all_positions,
     position_history.coin_positions,
     cur_positions,
-    porfolio_datastream,
+    portfolio_datastream,
     plot_positions,
     ))
 
@@ -102,7 +102,7 @@ pm_socket_thread = threading.Thread(target=PMSocket, args=(
 
 cb_socket_thread = threading.Thread(target=CBSocket, args=(
     glob_status,
-    porfolio_datastream, 
+    portfolio_datastream, 
     coin_datastreams,
     cur_positions,
     container_statuses['Coinbase'],
@@ -120,10 +120,10 @@ app = dash.Dash(__name__)
 flask_server = app.server
 
 app.layout = createPage(
-        toptext = getTopText(porfolio_datastream.day_data, 'PORTFOLIO'),
+        toptext = getTopText(portfolio_datastream.day_data, 'PORTFOLIO'),
         status_elems = getStatusElems(container_statuses), 
         position_elems = getPortfolioPositions(cur_positions.positions, position_history.all_positions),
-        plot = getFig(porfolio_datastream.day_data),
+        plot = getFig(portfolio_datastream.day_data),
         coins = coins,
         cur_coin='PORTFOLIO',
     )
@@ -153,20 +153,39 @@ def intervalUpdate(n, value, data):
     timespan = data['timespan']
             
     if asset == 'PORTFOLIO':
+        portfolio_data = portfolio_datastream.year_data
+        if timespan == 'd':
+            portfolio_data = portfolio_datastream.day_data
+        elif timespan == 'w':
+            portfolio_data = portfolio_datastream.week_data
+        elif timespan == 'm':
+            portfolio_data = portfolio_datastream.month_data
+
         return createPageContent(
-            toptext = getTopText(porfolio_datastream.day_data, asset),
+            toptext = getTopText(portfolio_data, asset),
             status_elems = getStatusElems(container_statuses), 
             position_elems = getPortfolioPositions(cur_positions.positions, position_history.all_positions),
-            plot = getFig(porfolio_datastream.day_data),
+            plot = getFig(portfolio_data),
             coins=coins,
             cur_coin=asset,
         ), data
     else:
+        coin_data = coin_datastreams[asset].year_data
+        coin_positions = plot_positions.positions_to_plot_year[asset]
+        if timespan == 'd':
+            coin_data = coin_datastreams[asset].day_data
+            coin_positions = plot_positions.positions_to_plot_day[asset]
+        elif timespan == 'w':
+            coin_data = coin_datastreams[asset].week_data
+            coin_positions = plot_positions.positions_to_plot_week[asset]
+        elif timespan == 'm':
+            coin_data = coin_datastreams[asset].month_data
+            coin_positions = plot_positions.positions_to_plot_month[asset]
         return createPageContent(
-                toptext = getTopText(coin_datastreams[asset].day_data, asset),
+                toptext = getTopText(coin_data, asset),
                 status_elems = getStatusElems(container_statuses), 
                 position_elems = getCoinPositions(asset, cur_positions.positions[asset], position_history.coin_positions[asset]),
-                plot = getFig(coin_datastreams[asset].day_data, plot_positions.positions_to_plot_day[asset]),
+                plot = getFig(coin_data, coin_positions),
                 coins=coins,
                 cur_coin=asset,
             ), data

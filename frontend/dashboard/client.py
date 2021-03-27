@@ -270,7 +270,7 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
                 current_positions.updatePosition(coin_name, close_price)
 
 
-def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
+def CBSocket(glob_status, portfolio_datastream, coin_datastreams, cur_positions, cb_status, coins):
     coinbase_url = "https://api-public.sandbox.pro.coinbase.com"
     if int(os.environ['PRODUCTION']) == 1:
         coinbase_url = "https://api.pro.coinbase.com"
@@ -286,10 +286,10 @@ def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, 
                     account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1][0]
                 elif x['currency'] == 'USD':
                     account_value += float(x['balance'])
-            if porfolio_datastream.initialized:
-                porfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
+            if portfolio_datastream.initialized:
+                portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
             else:
-                porfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
+                portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
             cur_positions.p_value = account_value
         cb_status.ping()
         time.sleep(0.2)
