@@ -9,6 +9,7 @@ from websocket import create_connection
 from data import (
     DataStream,
     Positions,
+    Position,
     PositionStream,
     Status, 
     PlotPositions
@@ -75,6 +76,8 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
     coins = content['coins']
     balance_history = content['balance_history']
     open_position_trades = content['open_trades']
+    past_trades = content['trade_history']
+
     cur_positions = Positions(coins)
     position_history = PositionStream(coins)
     plot_positions = PlotPositions(coins)
@@ -106,7 +109,29 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             elif int(trade['TypeId']) == 1:
                 exit_price = trade['ExecutedValue']/trade['Units']
                 cur_positions.closePosition(coin, trade['Units'], exit_price, timestamp)
-                plot_positions.addNewPositions(coin, exit_price, 'partial_exit', timestamp)
+                plot_positions.addNewPosition(coin, exit_price, 'partial_exit', timestamp)
+    for coin in coins:
+        enter_price = 0.0
+        time_entered = 0
+        amnt = 0
+        alloc = 0
+        for trade in past_trades[coin]:
+            price = trade['ExecutedValue']/trade['Units']
+            timestamp = int(trade['Timestamp'] / 60)
+            if trade['TypeId'] == 0:
+                plot_positions.addNewPosition(coin, price, 'enter', timestamp)
+                enter_price = price
+                time_entered = timestamp
+                amnt = trade['Units']
+            elif trade['TypeId'] == 1:
+                plot_positions.addNewPosition(coin, price, 'partial_exit', timestamp)
+            else:
+                plot_positions.addNewPosition(coin, price, 'exit', timestamp)
+                past_position = Position(coin, time_entered, enter_price, price, amnt, alloc, timestamp)
+                position_history.all_positions.append(past_position)
+                position_history.coin_positions.append(past_position)
+           
+
 
     print("Received coins and previous data from data consumer")
     startInit(dc_socket, "main_data_consumer", os.environ["DC_PORT"])
@@ -128,7 +153,7 @@ def BHConnect():
 
 def DCConnect():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
-    rawMessage = {'content': {'candles': 1440, 'coins': True, 'balance_history':1440, 'open_trades': True}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
+    rawMessage = {'content': {'candles': 1440, 'coins': True, 'balance_history':1440, 'open_trades': True, 'trade_history': 20}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
     dc_conn.send(json.dumps(rawMessage).encode('utf-8'))
     return dc_conn
 
@@ -266,3 +291,4 @@ def CBSocket(glob_status, porfolio_datastream, coin_datastreams, cur_positions, 
             cur_positions.p_value = account_value
         cb_status.ping()
         time.sleep(0.2)
+

@@ -152,6 +152,9 @@ func (dc *DataConsumer) HandleConnections(w http.ResponseWriter, r *http.Request
 		case "balance_history":
 			// val -> maximum number of previous portfolio balances to return 
 			responseContent[key] = dc.GetBalanceHistory(int64(val.(float64)))
+		case "trade_history":
+			// val -> maximum number of completed trades to retrieve
+			responseContent[key] = dc.GetTradeHistory(int64(val.(float64)))
 		default:
 			// the default case means that this key is not a recognized type of data request
 			// meaning the received message was not valid

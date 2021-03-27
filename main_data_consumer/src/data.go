@@ -9,6 +9,7 @@ WHAT:
 package main
 
 import (
+	"strconv"
 	"strings"
 	"time"
 	"gorm.io/driver/postgres"
@@ -129,6 +130,32 @@ func (dc *DataConsumer) GetBalanceHistory(prevMinutes int64) *[]PortfolioBalance
 }
 
 
+func (dc *DataConsumer) GetTradeHistory(numTrades int64) *map[string][]Trade {
+	trades := make(map[string][]Trade)
+	for _, coin := range *dc.Coins {
+		exits := []Trade{}
+		enters := []Trade{}
+		all := []Trade{}
+
+		dc.Database.Table(strings.ToLower(coin) + "_trades").Where("type_id = ?", "2").Limit(int(numTrades)).Order("timestamp asc").Find(&exits)
+		if len(exits) > 0 {
+			// get timestamp of last exit
+			lastExitTimestamp := exits[len(exits) - 1].Timestamp
+
+			dc.Database.Table(strings.ToLower(coin) + "_trades").Where("type_id = ? AND timestamp < ?", "0", strconv.FormatInt(lastExitTimestamp, 10)).Limit(int(numTrades)).Order("timestamp asc").Find(&enters)
+			if len(enters) > 0 {
+				firstEnterTimestamp := enters[0].Timestamp
+
+				dc.Database.Table(strings.ToLower(coin) + "_trades").Where("timestamp <= ? AND timestamp >= ?", strconv.FormatInt(lastExitTimestamp, 10), strconv.FormatInt(firstEnterTimestamp, 10)).Order("timestamp asc").Find(&all)
+			}
+			
+		}
+		trades[coin] = all
+	}
+
+	return &trades
+}
+
 
 /*
 	RECEIVER:
@@ -176,7 +203,7 @@ func (dc *DataConsumer) GetTradeProfits(numTrades int64) *map[string][]float64 {
 		trades := []Trade{}
 
 		// query the database for the <numTrades> most recent trades
-		dc.Database.Table(strings.ToLower(coin) + "_trades").Limit(int(numTrades)).Order("timestamp desc").Find(&trades)
+		dc.Database.Table(strings.ToLower(coin) + "_trades").Where("type_id = ?", "2").Limit(int(numTrades)).Order("timestamp desc").Find(&trades)
 
 		// create an array to store the profit percentages in
 		profits := make([]float64, numTrades)
