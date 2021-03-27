@@ -72,7 +72,7 @@ func (Local_Dumbo *dumbo) StorePortfolioValue(portfolioValue float64){
 	defer Local_Dumbo.Unlock()
 
 	portfolioBalance := PortfolioBalance{
-		Timestamp: time.Now().Unix(),
+		Timestamp: (time.Now().Unix() /60) * 60,
 		Balance: portfolioValue,
 	}
 
