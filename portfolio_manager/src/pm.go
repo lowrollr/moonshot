@@ -93,7 +93,7 @@ func initPM() *PortfolioManager {
 	mapDomainConnection := StartClients()
 
 	// retrieve previous data from main data consumer to fill data queues
-	coins, open_position_trades, prev_candles, prev_profits := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer", trades_to_cal)
+	coins, open_position_trades, prev_candles, prev_profits := mapDomainConnection[domainToUrl["main_data_consumer"]].GetPreviousData("main_data_consumer", 10)
 	// initialize strategy
 	strategy := initAtlas(coins)
 
