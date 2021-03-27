@@ -139,7 +139,7 @@ func initPM() *PortfolioManager {
 		}
 		// store profit history retrieved from database
 		for _, profit := range (*prev_profits)[coin] {
-			coinInfoDict[coin].ProfitHistory.Results.PushRight(profit)
+			coinInfoDict[coin].updateProfitInfo(profit)
 		}
 	}
 
@@ -778,8 +778,18 @@ func (info *CoinInfo) updateProfitInfo(profitPercentage float64) {
 	}
 
 	// calculate the new averages and win rate
-	info.AvgLoss = profitQueue.SumNeg / float64(profitQueue.NumNeg)
-	info.AvgWin = profitQueue.SumPos / float64(profitQueue.NumPos)
+	
+	if profitQueue.NumNeg > 0 {
+		info.AvgLoss = profitQueue.SumNeg / float64(profitQueue.NumNeg)
+	} else {
+		info.AvgLoss = 0.0
+	}
+	if profitQueue.NumPos > 0 {
+		info.AvgWin = profitQueue.SumPos / float64(profitQueue.NumPos)
+	} else {
+		info.AvgWin = 0.0
+	}
+	
 	info.AvgProfit = profitQueue.SumOvr / float64(profitQueue.NumOvr)
 	info.WinRate = float64(profitQueue.NumPos) / float64(profitQueue.NumOvr)
 }
