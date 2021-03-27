@@ -712,11 +712,10 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 			go Dumbo.StoreTrade(2, coin, fillSize, execValue, fees, pm.CandleDict[coin].Close, profitPercentage)
 
 		}
-
+		exitPrice := execValue.Div(fillSize)
 		
-
 		// send a message to frontend with information about the position we exited
-		sendExit(pm.FrontendSocket, coin, portionToSell.String(), filledOrder.ExecutedValue)
+		sendExit(pm.FrontendSocket, coin, filledOrder.FilledSize, exitPrice.String())
 
 		// return the amount of cash we received from closing the position
 		return newCash

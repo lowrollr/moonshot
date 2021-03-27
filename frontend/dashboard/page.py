@@ -306,9 +306,9 @@ def getCoinPositions(coin, cur_position, past_positions):
     for position in past_positions:
         amnt = round(position.amnt, 4)
         profit = round(((position.exit_price / position.enter_price) - 1) * 100, 2)
-        style = {'background': 'rgba(239,102,102,0.45)'}
+        style = {'background': 'rgba(239,102,102,0.15)'}
         if profit > 0:
-            style = {'background': 'rgba(114,228,125,0.45)'}
+            style = {'background': 'rgba(114,228,125,0.15)'}
         if profit > 0:
             profit = '+' + str(profit) + '%'
         else:
