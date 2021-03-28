@@ -40,7 +40,7 @@ func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, 
 	//ensure amnt precision is not too high
 	
 	factor := math.Pow10(sigDigits)
-	amntFlt = math.Round(amntFlt*factor)/factor
+	amntFlt = math.Floor(amntFlt*factor)/factor
 
 	
 	// construct the appopriate Coinbase order object

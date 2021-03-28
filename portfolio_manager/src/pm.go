@@ -208,8 +208,8 @@ func initPM() *PortfolioManager {
 					factorBase := math.Pow10(pm.CoinDict[currency].BaseSigDigits)
 					factorQuote := math.Pow10(pm.CoinDict[currency].QuoteSigDigits)
 					entry_trade := open_trades[len(open_trades) - 1]
-					entry_trade.Units = math.Round(entry_trade.Units*factorBase)/factorBase
-					entry_trade.ExecutedValue = math.Round(entry_trade.ExecutedValue*factorQuote)/factorQuote
+					entry_trade.Units = math.Floor(entry_trade.Units*factorBase)/factorBase
+					entry_trade.ExecutedValue = math.Floor(entry_trade.ExecutedValue*factorQuote)/factorQuote
 					log.Println(currency, " entry: ", entry_trade)
 					pm.CoinDict[currency].InPosition = true
 					pm.CoinDict[currency].CashInvested = entry_trade.ExecutedValue + entry_trade.Fees
@@ -222,8 +222,8 @@ func initPM() *PortfolioManager {
 				for i := 0; i < len(open_trades) - 1; i++ {
 					factorBase := math.Pow10(pm.CoinDict[currency].BaseSigDigits)
 					factorQuote := math.Pow10(pm.CoinDict[currency].QuoteSigDigits)
-					open_trades[i].Units = math.Round(open_trades[i].Units*factorBase)/factorBase
-					open_trades[i].ExecutedValue = math.Round(open_trades[i].ExecutedValue*factorQuote)/factorQuote
+					open_trades[i].Units = math.Floor(open_trades[i].Units*factorBase)/factorBase
+					open_trades[i].ExecutedValue = math.Floor(open_trades[i].ExecutedValue*factorQuote)/factorQuote
 					log.Println(currency, " partial exit: ", open_trades[i])
 					pm.CoinDict[currency].IntermediateCash += open_trades[i].ExecutedValue
 					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decimal.NewFromFloat(open_trades[i].Units))
