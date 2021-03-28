@@ -130,6 +130,13 @@ func (dc *DataConsumer) GetBalanceHistory(prevMinutes int64) *[]PortfolioBalance
 	return &balances
 }
 
+// func (dc *DataConsumer) GetDWMYClosePrices() *map[string][][]ClosePrice {
+// 	allResults := make(map[string][][]ClosePrice)
+// 	for _, coin := range *dc.Coins {
+		
+// 	}
+// }
+
 
 func (dc *DataConsumer) GetTradeHistory(numTrades int64) *map[string][]Trade {
 	trades := make(map[string][]Trade)
@@ -174,7 +181,7 @@ func (dc *DataConsumer) GetOpenTrades() *map[string][]Trade {
 	for _, coin := range *dc.Coins {
 		tableName := strings.ToLower(coin) + "_trades"
 		// I don't know how to write this query with gorm functions so here's the raw query
-		rawSql := "SELECT * FROM " + tableName + ` WHERE timestamp > (SELECT coalesce((SELECT MAX(timestamp) FROM ` + tableName + ` WHERE type_id=2), 0)) ORDER BY timestamp DESC;`
+		rawSql := "SELECT * FROM " + tableName + ` WHERE timestamp > (SELECT coalesce((SELECT MAX(timestamp) FROM ` + tableName + ` WHERE type_id=2), 0)) ORDER BY timestamp ASC;`
 		
 		trades := []Trade{}
 

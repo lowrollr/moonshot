@@ -207,7 +207,7 @@ func initPM() *PortfolioManager {
 				if len(open_trades) > 0 {
 					factorBase := math.Pow10(pm.CoinDict[currency].BaseSigDigits)
 					factorQuote := math.Pow10(pm.CoinDict[currency].QuoteSigDigits)
-					entry_trade := open_trades[len(open_trades) - 1]
+					entry_trade := open_trades[0]
 					entry_trade.Units = math.Floor(entry_trade.Units*factorBase)/factorBase
 					entry_trade.ExecutedValue = math.Floor(entry_trade.ExecutedValue*factorQuote)/factorQuote
 					log.Println(currency, " entry: ", entry_trade)
@@ -219,7 +219,7 @@ func initPM() *PortfolioManager {
 					
 					pm.CoinDict[currency].AmntOwned = decimal.NewFromFloat(entry_trade.Units)
 				}
-				for i := 0; i < len(open_trades) - 1; i++ {
+				for i := 1; i < len(open_trades); i++ {
 					factorBase := math.Pow10(pm.CoinDict[currency].BaseSigDigits)
 					factorQuote := math.Pow10(pm.CoinDict[currency].QuoteSigDigits)
 					open_trades[i].Units = math.Floor(open_trades[i].Units*factorBase)/factorBase
