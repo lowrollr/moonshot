@@ -170,9 +170,10 @@ func initPM() *PortfolioManager {
 		log.Println("PM is paper trading!")
 		pm.IsPaperTrading = true
 	}
-
+	pm.PortfolioValue = pm.CalcPortfolioValue(false)
 	// retrieve necessary account information from coinbase if we are not paper trading
 	if !pm.IsPaperTrading {
+		
 		accounts, err := client.GetAccounts()
 		if err != nil {
 			println(err.Error())
@@ -200,16 +201,25 @@ func initPM() *PortfolioManager {
 			} else {
 				open_trades := (*open_position_trades)[currency]
 				if len(open_trades) > 0 {
-					
+					factorBase := math.Pow10(pm.CoinDict[currency].BaseSigDigits)
+					factorQuote := math.Pow10(pm.CoinDict[currency].QuoteSigDigits)
 					entry_trade := open_trades[len(open_trades) - 1]
+					entry_trade.Units = math.Round(entry_trade.Units*factorBase)/factorBase
+					entry_trade.ExecutedValue = math.Round(entry_trade.ExecutedValue*factorQuote)/factorQuote
 					log.Println(currency, " entry: ", entry_trade)
 					pm.CoinDict[currency].InPosition = true
 					pm.CoinDict[currency].CashInvested = entry_trade.ExecutedValue + entry_trade.Fees
 					pm.CoinDict[currency].EnterPrice = decimal.NewFromFloat(entry_trade.ExecutedValue).Div(decimal.NewFromFloat(entry_trade.Units))
 					pm.CoinDict[currency].EnterPriceFl, _ = pm.CoinDict[currency].EnterPrice.Float64()
+					
+					
 					pm.CoinDict[currency].AmntOwned = decimal.NewFromFloat(entry_trade.Units)
 				}
 				for i := 0; i < len(open_trades) - 1; i++ {
+					factorBase := math.Pow10(pm.CoinDict[currency].BaseSigDigits)
+					factorQuote := math.Pow10(pm.CoinDict[currency].QuoteSigDigits)
+					open_trades[i].Units = math.Round(open_trades[i].Units*factorBase)/factorBase
+					open_trades[i].ExecutedValue = math.Round(open_trades[i].ExecutedValue*factorQuote)/factorQuote
 					log.Println(currency, " partial exit: ", open_trades[i])
 					pm.CoinDict[currency].IntermediateCash += open_trades[i].ExecutedValue
 					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decimal.NewFromFloat(open_trades[i].Units))
@@ -223,7 +233,7 @@ func initPM() *PortfolioManager {
 		pm.Volume = 0.0
 		pm.calcFees()
 	}
-
+	
 	for _, coin := range *pm.Coins {
 		
 		// process previous data retrieved from database (fills up data queues in strategy object)
@@ -256,7 +266,7 @@ func (pm *PortfolioManager) StartTrading() {
 	//send ready message to data consumer
 	pm.ClientConnections[domainToUrl["main_data_consumer"]].SendReadyMsg("main_data_consumer")
 	// get initial unrealized portfolio value & liqudity
-	pm.PortfolioValue = pm.CalcPortfolioValue()
+	
 	pm.UpdateLiquidity()
 	
 	// loop forever
@@ -282,7 +292,7 @@ func (pm *PortfolioManager) StartTrading() {
 				pm.PMProcess()
 			}
 			// update portfolio value & liquidity
-			pm.PortfolioValue = pm.CalcPortfolioValue()
+			pm.PortfolioValue = pm.CalcPortfolioValue(true)
 			pm.UpdateLiquidity()
 		}
 		
@@ -465,7 +475,7 @@ func (pm *PortfolioManager) GetCoinsInPosition(coins []string) *[]string {
 		-> then, calculates the current cash value of all positions we have open
 		-> returns the sum of the two previous items
 */
-func (pm *PortfolioManager) CalcPortfolioValue() float64 {
+func (pm *PortfolioManager) CalcPortfolioValue(save bool) float64 {
 
 	// if we're not paper trading, fetch our current cash balance from Coinbase
 	if !pm.IsPaperTrading {
@@ -521,7 +531,10 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 			total_value += amntOwnedFlt * pm.CandleDict[coin].Close
 		}
 	}
-	go Dumbo.StorePortfolioValue(total_value)
+	if save {
+		go Dumbo.StorePortfolioValue(total_value)
+	}
+	
 	// return the portfolio's current unrealized cash value
 	return total_value
 }
