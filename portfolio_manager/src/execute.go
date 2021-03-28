@@ -57,7 +57,7 @@ func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, 
 		}
 	} else {
 		myOrder = coinbasepro.Order{
-			Size:      amnt.String(),
+			Size:      fmt.Sprintf("%f", amntFlt),
 			ProductID: product,
 			Side:      "sell",
 			Type:      "market",
