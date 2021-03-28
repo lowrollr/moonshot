@@ -650,7 +650,7 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 	info := pm.CoinDict[coin]
 
 	// create a market buy order for the given coin
-	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true, info.QuoteSigDigits)
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true, info.QuoteSigDigits, false)
 
 	// if the order settles, updated the coin's CoinInfo object
 	if filledOrder.Settled {
@@ -701,7 +701,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 	info := pm.CoinDict[coin]
 
 	// create a market sell order for the given coin
-	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.QuoteSigDigits)
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.QuoteSigDigits, portionToSell != info.AmntOwned)
 
 	// if the order settles, updated the coin's CoinInfo object
 	if filledOrder.Settled {

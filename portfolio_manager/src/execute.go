@@ -29,14 +29,14 @@ import (
 		-> interfaces with the Coinbase client to place a market order
 		-> waits for the order to settle and then returns
 */
-func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, buy bool, sigDigits int) *coinbasepro.Order {
+func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, buy bool, sigDigits int, partial bool) *coinbasepro.Order {
 
 	// construct the ProductID (<coin>USD)
 	product := coin + "-USD"
 
 	amntFlt, _ := amnt.Float64()
 	//ensure amnt precision is not too high
-	if buy {
+	if buy || partial {
 		factor := float64(10 * sigDigits)
 		amntFlt = math.Round(amntFlt*factor)/factor
 	}
