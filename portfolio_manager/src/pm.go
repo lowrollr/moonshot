@@ -508,6 +508,8 @@ func (pm *PortfolioManager) CalcPortfolioValue(save bool) float64 {
 					zeroes := strings.Split(afterDecimals, "1")[0]
 					if info, ok := pm.CoinDict[coin]; ok {
 						info.QuoteSigDigits = len(zeroes) + 1
+						info.MinBaseOrder, _ = strconv.ParseFloat(product.BaseMinSize, 64)
+						info.MinQuoteOrder, _ = strconv.ParseFloat(product.MinMarketFunds, 64)
 					}
 				}
 				baseIncrement := product.BaseIncrement
@@ -519,8 +521,7 @@ func (pm *PortfolioManager) CalcPortfolioValue(save bool) float64 {
 						info.BaseSigDigits = len(zeroes) + 1
 					}
 				}
-				pm.CoinDict[coin].MinBaseOrder, _ = strconv.ParseFloat(product.BaseMinSize, 64)
-				pm.CoinDict[coin].MinQuoteOrder, _ = strconv.ParseFloat(product.MinMarketFunds, 64)
+				
 			}
 		}
 	}
