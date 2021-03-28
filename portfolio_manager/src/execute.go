@@ -67,7 +67,7 @@ func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, 
 
 	// if there was an error, log it
 	if err != nil {
-		log.Println(err)
+		log.Println(coin, err)
 	} else {
 		// if no errors, wait until the order is filled
 		log.Println("Waiting for order to fill...")
