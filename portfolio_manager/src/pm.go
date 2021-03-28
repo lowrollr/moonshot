@@ -487,17 +487,26 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 			if product.QuoteCurrency == "USD" {
 				coin := product.BaseCurrency
 				quoteIncrement := product.QuoteIncrement
-				decimals := strings.Split(quoteIncrement, ".")[1]
-				zeroes := strings.Split(decimals, "1")[0]
-				if info, ok := pm.CoinDict[coin]; ok {
-					info.QuoteSigDigits = len(zeroes)
+				decimals := strings.Split(quoteIncrement, ".")
+				
+				if len(decimals) > 1 {
+					afterDecimals := decimals[1]
+					zeroes := strings.Split(afterDecimals, "1")[0]
+					if info, ok := pm.CoinDict[coin]; ok {
+						info.QuoteSigDigits = len(zeroes)
+					}
 				}
 				baseIncrement := product.BaseIncrement
-				decimals = strings.Split(baseIncrement, ".")[1]
-				zeroes = strings.Split(decimals, "1")[0]
-				if info, ok := pm.CoinDict[coin]; ok {
-					info.BaseSigDigits = len(zeroes)
+				decimals = strings.Split(baseIncrement, ".")
+				if len(decimals) > 1 {
+					afterDecimals := decimals[1]
+					zeroes := strings.Split(afterDecimals, "1")[0]
+					if info, ok := pm.CoinDict[coin]; ok {
+						info.BaseSigDigits = len(zeroes)
+						log.Println(coin, quoteIncrement, baseIncrement, info.QuoteSigDigits, info.BaseSigDigits)
+					}
 				}
+				
 			}
 		}
 	}
