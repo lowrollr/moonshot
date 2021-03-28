@@ -39,10 +39,13 @@ func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, 
 	
 	//ensure amnt precision is not too high
 	if buy || partial {
-		factor := float64(math.Pow10 * sigDigits)
+		factor := math.Pow10(sigDigits)
 		amntFlt = math.Round(amntFlt*factor)/factor
 	}
-	amntFlt = math.Min(5.0, amntFlt)
+	if buy {
+		amntFlt = math.Min(5.0, amntFlt)
+	}
+	
 	// construct the appopriate Coinbase order object
 	var myOrder coinbasepro.Order
 	if buy {

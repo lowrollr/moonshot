@@ -52,6 +52,7 @@ type CoinInfo struct {
 	BidLiquidity     *SMA            // a moving average of liquidity snapshots for bids
 	AskLiquidity     *SMA            // a moving average of liquidity snapshots for asks
 	QuoteSigDigits   int
+	BaseSigDigits int
 }
 
 // holds information concerning the state of the Portfolio Manager
@@ -128,6 +129,7 @@ func initPM() *PortfolioManager {
 			IntermediateCash: 0.0,
 			CoinOrderBook:    nil,
 			QuoteSigDigits: 0,
+			BaseSigDigits:  0,
 			AskLiquidity: &SMA{
 				Values: deque.New(),
 				MaxLen: 60,
@@ -490,6 +492,12 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 				if info, ok := pm.CoinDict[coin]; ok {
 					info.QuoteSigDigits = len(zeroes)
 				}
+				baseIncrement := product.BaseIncrement
+				decimals = strings.Split(baseIncrement, ".")[1]
+				zeroes = strings.Split(decimals, "1")[0]
+				if info, ok := pm.CoinDict[coin]; ok {
+					info.BaseSigDigits = len(zeroes)
+				}
 			}
 		}
 	}
@@ -701,7 +709,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 	info := pm.CoinDict[coin]
 
 	// create a market sell order for the given coin
-	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.QuoteSigDigits, portionToSell != info.AmntOwned)
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.BaseSigDigits, portionToSell != info.AmntOwned)
 
 	// if the order settles, updated the coin's CoinInfo object
 	if filledOrder.Settled {
