@@ -190,6 +190,8 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
         if data:
             content = json.loads(data)["content"]
             pm_status.ping()
+            for coin in plot_positions.positions_to_plot_year:
+                plot_positions.removeOldPositions(glob_status.lastTimestampReceived, coin)
             if content.get("pong"):
                 glob_status.isPaperTrading = False
             elif content.get("portfolio_value"):
@@ -200,8 +202,7 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                     portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
                 else:
                     portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
-                for coin in plot_positions.positions_to_plot_year:
-                    plot_positions.removeOldPositions(glob_status.lastTimestampReceived, coin)
+                
             elif content.get("enter"):
                 
                 coin, amnt, price = content["enter"]["coin"], float(content["enter"]["amnt"]), float(content["enter"]["price"])
