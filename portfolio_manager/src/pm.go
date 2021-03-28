@@ -53,6 +53,8 @@ type CoinInfo struct {
 	AskLiquidity     *SMA            // a moving average of liquidity snapshots for asks
 	QuoteSigDigits   int
 	BaseSigDigits int
+	MinBaseOrder float64
+	MinQuoteOrder float64
 }
 
 // holds information concerning the state of the Portfolio Manager
@@ -515,7 +517,8 @@ func (pm *PortfolioManager) CalcPortfolioValue(save bool) float64 {
 						info.BaseSigDigits = len(zeroes) + 1
 					}
 				}
-				
+				pm.CoinDict[coin].MinBaseOrder, _ = strconv.ParseFloat(product.BaseMinSize, 64)
+				pm.CoinDict[coin].MinQuoteOrder, _ = strconv.ParseFloat(product.MinMarketFunds, 64)
 			}
 		}
 	}
@@ -677,7 +680,7 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 
 	// grab the coin info object for the coin we entered a position in
 	info := pm.CoinDict[coin]
-
+	cashAllocated = math.Max(cashAllocated, info.MinQuoteOrder)
 	// create a market buy order for the given coin
 	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true, info.QuoteSigDigits, false)
 
@@ -728,7 +731,8 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 
 	// grab the coin info object for the coin we exited our position in
 	info := pm.CoinDict[coin]
-
+	minBaseOrderDecimal := decimal.NewFromFloat(info.MinBaseOrder)
+	portionToSell = decimal.Max(minBaseOrderDecimal, portionToSell)
 	// create a market sell order for the given coin
 	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.BaseSigDigits, portionToSell != info.AmntOwned)
 
