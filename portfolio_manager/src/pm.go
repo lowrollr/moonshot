@@ -503,6 +503,7 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 					zeroes := strings.Split(afterDecimals, "1")[0]
 					if info, ok := pm.CoinDict[coin]; ok {
 						info.BaseSigDigits = len(zeroes) + 1
+						log.Println(coin, info.QuoteSigDigits, info.BaseSigDigits, quoteIncrement, baseIncrement)
 					}
 				}
 				
