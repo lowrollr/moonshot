@@ -67,7 +67,7 @@ func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, 
 
 	// if there was an error, log it
 	if err != nil {
-		log.Println(coin, err)
+		log.Println(coin, amntFlt, err)
 	} else {
 		// if no errors, wait until the order is filled
 		log.Println("Waiting for order to fill...")
@@ -80,7 +80,7 @@ func marketOrder(client *coinbasepro.Client, coin string, amnt decimal.Decimal, 
 				// check if the order is filled
 				placedOrder, err = client.GetOrder(orderID)
 				if err != nil {
-					log.Println(coin, err)
+					log.Println(coin, amntFlt, err)
 				}
 				// wait 1 ms (to not overload on requests to Coinbase)
 				log.Println("Waiting...")
