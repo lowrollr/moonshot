@@ -51,6 +51,7 @@ type CoinInfo struct {
 	CoinOrderBook    *OrderBook      // the current live order book for this asset
 	BidLiquidity     *SMA            // a moving average of liquidity snapshots for bids
 	AskLiquidity     *SMA            // a moving average of liquidity snapshots for asks
+	QuoteSigDigits   int
 }
 
 // holds information concerning the state of the Portfolio Manager
@@ -126,6 +127,7 @@ func initPM() *PortfolioManager {
 			AvgLoss:          0.0,
 			IntermediateCash: 0.0,
 			CoinOrderBook:    nil,
+			QuoteSigDigits: 0,
 			AskLiquidity: &SMA{
 				Values: deque.New(),
 				MaxLen: 60,
@@ -478,6 +480,18 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 				break
 			}
 		}
+		products, _  := pm.CoinbaseClient.GetProducts()
+		for _, product := range products {
+			if product.QuoteCurrency == "USD" {
+				coin := product.BaseCurrency
+				quoteIncrement := product.QuoteIncrement
+				decimals := strings.Split(quoteIncrement, ".")[1]
+				zeroes := strings.Split(decimals, "1")[0]
+				if info, ok := pm.CoinDict[coin]; ok {
+					info.QuoteSigDigits = len(zeroes)
+				}
+			}
+		}
 	}
 	// (if we are paper trading, then FreeCash will be up to date)
 	// (it technically should be up to date for real trading as well, but good to sync up with coinbase's records just in case)
@@ -630,11 +644,13 @@ func CalcKellyPercent(info *CoinInfo, minTrades int) float64 {
 		-> sends trade message to frontend
 */
 func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) float64 {
-	// create a market buy order for the given coin
-	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true)
+	
 
 	// grab the coin info object for the coin we entered a position in
 	info := pm.CoinDict[coin]
+
+	// create a market buy order for the given coin
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true, info.QuoteSigDigits)
 
 	// if the order settles, updated the coin's CoinInfo object
 	if filledOrder.Settled {
@@ -679,11 +695,13 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 		-> sends trade message to frontend
 */
 func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Decimal) float64 {
-	// create a market sell order for the given coin
-	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false)
+	
 
 	// grab the coin info object for the coin we exited our position in
 	info := pm.CoinDict[coin]
+
+	// create a market sell order for the given coin
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.QuoteSigDigits)
 
 	// if the order settles, updated the coin's CoinInfo object
 	if filledOrder.Settled {
