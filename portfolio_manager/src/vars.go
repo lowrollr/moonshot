@@ -174,6 +174,17 @@ type Trade struct {
 	Timestamp     int64   `gorm:"Type:bigint;not null"` // time this trade occured
 }
 
+type ExactTrade struct {
+	TypeId     int   `gorm:"not null;"`  // id corresponding to type of trade, 0 = enter, 1 = partial exit, 2 = exit
+	coinName      string  `gorm:"-"` // coin traded
+	Units     string `gorm:"Type:real;not null;"` // units of coin traded
+	ExecutedValue string `gorm:"Type:real;not null;"` // cash we spent or receieved purshasing/selling the asset (excl. fees)
+	Fees          float64 `gorm:"Type:real;not null;"` // cash we spent on paying transaction fees
+	Profit        float64 `gorm:"Type:real;"` // percentage profit made on trade (only on full exits)
+	Slippage      float64 `gorm:"Type:real; not null;"` // percent difference between desired price and actual average fill price
+	Timestamp     int64   `gorm:"Type:bigint;not null"` // time this trade occured
+}
+
 type PortfolioBalance struct { // stores the balance of the portfolio at a given timestamp
 	Balance float64 `gorm:"Type:real;not null;"` // portfolio balance
 	Timestamp     int64   `gorm:"Type:bigint;not null"` // timestamp of balance

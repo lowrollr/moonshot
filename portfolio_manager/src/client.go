@@ -3,7 +3,6 @@ package main
 import (
 	"time"
 	"encoding/json"
-	"strconv"
 
 	ws "github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -151,7 +150,7 @@ func (client *Client) GetPreviousData(dest string, numTrades int) (*[]string, *m
 		log.Panic("Error unmarshaling coins message content")
 	}
 
-	var tempTrades map[string][]map[string]string
+	var tempTrades map[string][]ExactTrade
 	err = json.Unmarshal(responseContent["open_trades"], &tempTrades)
 	if err != nil {
 		log.Panic("Error unmarshaling open_trades message content")
@@ -160,24 +159,19 @@ func (client *Client) GetPreviousData(dest string, numTrades int) (*[]string, *m
 	for key, trades := range tempTrades {
 		openTrades[key] = make([]Trade, len(trades))
 		for index, trade := range trades{
-			decUnits, _ := decimal.NewFromString(trade["Units"])
-			decEV, _ := decimal.NewFromString(trade["ExecutedValue"])
-			flFees, _ := strconv.ParseFloat(trade["Fees"], 64)
-			flProfit, _ := strconv.ParseFloat(trade["Profit"], 64)
-			flSlippage, _ := strconv.ParseFloat(trade["Slippage"], 64)
-			intTimestamp, _ := strconv.ParseInt(trade["Timestamp"], 10, 64)
-			intTypeId, _ := strconv.ParseInt(trade["TypeId"], 10, 0)
+			decUnits, _ := decimal.NewFromString(trade.Units)
+			decEV, _ := decimal.NewFromString(trade.ExecutedValue)
 			flUnits, _ := decUnits.Float64()
 			flEV, _ := decEV.Float64()
 			openTrades[key][index] = Trade{
-				TypeId: int(intTypeId),
+				TypeId: trade.TypeId,
 				coinName: key,
 				Units: flUnits,
 				ExecutedValue: flEV,
-				Fees: flFees,
-				Profit: flProfit,
-				Slippage: flSlippage,
-				Timestamp: intTimestamp,
+				Fees: trade.Fees,
+				Profit: trade.Profit,
+				Slippage: trade.Slippage,
+				Timestamp: trade.Timestamp,
 			}
 		}
 	}
