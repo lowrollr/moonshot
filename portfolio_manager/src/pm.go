@@ -132,6 +132,8 @@ func initPM() *PortfolioManager {
 			CoinOrderBook:    nil,
 			QuoteSigDigits: 0,
 			BaseSigDigits:  0,
+			MinBaseOrder: 0.0,
+			MinQuoteOrder: 0.0,
 			AskLiquidity: &SMA{
 				Values: deque.New(),
 				MaxLen: 60,
