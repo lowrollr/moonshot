@@ -493,7 +493,7 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 					afterDecimals := decimals[1]
 					zeroes := strings.Split(afterDecimals, "1")[0]
 					if info, ok := pm.CoinDict[coin]; ok {
-						info.QuoteSigDigits = len(zeroes)
+						info.QuoteSigDigits = len(zeroes) + 1
 					}
 				}
 				baseIncrement := product.BaseIncrement
@@ -502,8 +502,7 @@ func (pm *PortfolioManager) CalcPortfolioValue() float64 {
 					afterDecimals := decimals[1]
 					zeroes := strings.Split(afterDecimals, "1")[0]
 					if info, ok := pm.CoinDict[coin]; ok {
-						info.BaseSigDigits = len(zeroes)
-						log.Println(coin, quoteIncrement, baseIncrement, info.QuoteSigDigits, info.BaseSigDigits)
+						info.BaseSigDigits = len(zeroes) + 1
 					}
 				}
 				
