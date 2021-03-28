@@ -22,7 +22,7 @@ import (
 		-> pm (*PortfolioManager): PortfolioManager object to update
 	ARGS:
 		-> coin (string): coin to enter a position in
-		-> cashAllocaetd (float64): cash allocated to entering this position
+		-> cashAllocated (float64): cash allocated to entering this position
 		
     RETURN:
         -> cashAllocated (float64): the amount of cash spent to open the resultant position

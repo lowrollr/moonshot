@@ -683,7 +683,11 @@ func (pm *PortfolioManager) enterPosition(coin string, cashAllocated float64) fl
 
 	// grab the coin info object for the coin we entered a position in
 	info := pm.CoinDict[coin]
+	// make sure we are allocating enough cash to the position
+	// want to make sure its above the minimum quote size (or we literally can't buy)
+	// also want to make sure its theo value is well above the minimum base order size, so we'll be sure we can still sell if it goes down
 	cashAllocated = math.Max(cashAllocated, info.MinQuoteOrder)
+	cashAllocated = math.Max(cashAllocated, info.MinBaseOrder * pm.CandleDict[coin].Close * 1.5)
 	// create a market buy order for the given coin
 	filledOrder := marketOrder(pm.CoinbaseClient, coin, decimal.NewFromFloat(cashAllocated), true, info.QuoteSigDigits, false)
 
