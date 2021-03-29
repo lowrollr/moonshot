@@ -137,7 +137,7 @@ func (dc *DataConsumer) GetDWMYClosePrices() *map[string]map[string][]ClosePrice
 		var monthData []ClosePrice
 		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 1800 = 0", howFarToGoBack * 30).Order("timestamp asc").Find(&monthData)
 		var yearData []ClosePrice
-		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 21900 = 0", howFarToGoBack * 30).Order("timestamp asc").Find(&yearData)
+		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 21900 = 0", howFarToGoBack * 365).Order("timestamp asc").Find(&yearData)
 		timespanMap := make(map[string][]ClosePrice)
 		timespanMap["d"] = dayData
 		timespanMap["w"] = weekData
