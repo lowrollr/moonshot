@@ -6,6 +6,7 @@ import cbpro
 import threading
 from websocket import create_connection
 from datetime import datetime
+from collections import deque
 
 from data import (
     DataStream,
@@ -86,17 +87,18 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
     for coin in coins:
         coin_datastreams[coin] = DataStream(name=coin)
         if candles[coin]["d"]:
+            coin_datastreams[coin].day_data = deque(maxlen=1440)
+            coin_datastreams[coin].initialized = True
             for candle in candles[coin]["d"]:
                 close_price = candle['close']
                 timestamp  = int(candle['timestamp'] / 60)
                 timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
-                if coin_datastreams[coin].initialized:
-                    coin_datastreams[coin].day_data.append((close_price, timestamp, timestamp_str))
-                    coin_datastreams[coin].last_updated_day = timestamp
-                else:
-                    coin_datastreams[coin].initialize(close_price, timestamp)
-                glob_status.lastTimestampReceived = timestamp
+                coin_datastreams[coin].day_data.append((close_price, timestamp, timestamp_str))
+                coin_datastreams[coin].last_updated_day = timestamp
+                
+            glob_status.lastTimestampReceived = timestamp
         if candles[coin]["w"]:
+            coin_datastreams[coin].week_data = deque(maxlen=1440)
             for candle in candles[coin]["w"]:
                 close_price = candle['close']
                 timestamp  = int(candle['timestamp'] / 60)
@@ -104,6 +106,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 coin_datastreams[coin].week_data.append((close_price, timestamp, timestamp_str))
                 coin_datastreams[coin].last_updated_week = timestamp
         if candles[coin]["m"]:
+            coin_datastreams[coin].month_data = deque(maxlen=1440)
             for candle in candles[coin]["m"]:
                 close_price = candle['close']
                 timestamp  = int(candle['timestamp'] / 60)
@@ -111,6 +114,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 coin_datastreams[coin].month_data.append((close_price, timestamp, timestamp_str))
                 coin_datastreams[coin].last_updated_month = timestamp
         if candles[coin]["y"]:
+            coin_datastreams[coin].year_data = deque(maxlen=1440)
             for candle in candles[coin]["y"]:
                 close_price = candle['close']
                 timestamp  = int(candle['timestamp'] / 60)
@@ -119,16 +123,16 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 coin_datastreams[coin].last_updated_year = timestamp
                 
     if balance_history["d"]:
+        portfolio_datastream.day_data = deque(maxlen=1440)
+        portfolio_datastream.initialized = True
         for balance in balance_history["d"]:
             value = balance['Balance']
             timestamp = int(balance['Timestamp'] / 60)
             timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
-            if not portfolio_datastream.initialized:
-                portfolio_datastream.initialize(value, timestamp)
-            else:
-                portfolio_datastream.day_data.append((value, timestamp, timestamp_str))
-                portfolio_datastream.last_updated_day = timestamp
+            portfolio_datastream.day_data.append((value, timestamp, timestamp_str))
+            portfolio_datastream.last_updated_day = timestamp
     if balance_history["w"]:
+        portfolio_datastream.week_data = deque(maxlen=1440)
         for balance in balance_history["w"]:
             value = balance['Balance']
             timestamp = int(balance['Timestamp'] / 60)
@@ -136,6 +140,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             portfolio_datastream.week_data.append((value, timestamp, timestamp_str))
             portfolio_datastream.last_updated_week = timestamp
     if balance_history["m"]:
+        portfolio_datastream.month_data = deque(maxlen=1440)
         for balance in balance_history["m"]:
             value = balance['Balance']
             timestamp = int(balance['Timestamp'] / 60)
@@ -143,6 +148,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
             portfolio_datastream.month_data.append((value, timestamp, timestamp_str))
             portfolio_datastream.last_updated_month = timestamp
     if balance_history["y"]:
+        portfolio_datastream.year_data = deque(maxlen=1440)
         for balance in balance_history["y"]:
             value = balance['Balance']
             timestamp = int(balance['Timestamp'] / 60)
@@ -160,7 +166,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 exit_price = float(trade['ExecutedValue'])/float(trade['Units'])
                 cur_positions.closePosition(coin, float(trade['Units']), exit_price, timestamp)
                 plot_positions.addNewPosition(coin, exit_price, 'partial_exit', timestamp)
-                
+
     all_past_positions = []
     for coin in coins:
         enter_price = 0.0
