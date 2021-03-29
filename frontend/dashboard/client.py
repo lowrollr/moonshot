@@ -5,6 +5,7 @@ import json
 import cbpro
 import threading
 from websocket import create_connection
+from datetime import datetime
 
 from data import (
     DataStream,
@@ -72,9 +73,9 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
     coins = []
     
     content = json.loads(coinMsg)["content"]
-    candles = content['candles']
+    candles = content['dwmy_prices']
     coins = content['coins']
-    balance_history = content['balance_history']
+    balance_history = content['dwmy_balance_history']
     open_position_trades = content['open_trades']
     past_trades = content['trade_history']
 
@@ -84,21 +85,70 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
 
     for coin in coins:
         coin_datastreams[coin] = DataStream(name=coin)
-        for candle in candles[coin]:
-            close_price = candle['close']
-            timestamp  = int(candle['time'] / 60)
-            if coin_datastreams[coin].initialized:
-                coin_datastreams[coin].update(close_price, timestamp)
+        if candles[coin]["d"]:
+            for candle in candles[coin]["d"]:
+                close_price = candle['close']
+                timestamp  = int(candle['timestamp'] / 60)
+                timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+                if coin_datastreams[coin].initialized:
+                    coin_datastreams[coin].day_data.append((close_price, timestamp, timestamp_str))
+                    coin_datastreams[coin].last_updated_day = timestamp
+                else:
+                    coin_datastreams[coin].initialize(close_price, timestamp)
+                glob_status.lastTimestampReceived = timestamp
+        if candles[coin]["w"]:
+            for candle in candles[coin]["w"]:
+                close_price = candle['close']
+                timestamp  = int(candle['timestamp'] / 60)
+                timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+                coin_datastreams[coin].week_data.append((close_price, timestamp, timestamp_str))
+                coin_datastreams[coin].last_updated_week = timestamp
+        if candles[coin]["m"]:
+            for candle in candles[coin]["m"]:
+                close_price = candle['close']
+                timestamp  = int(candle['timestamp'] / 60)
+                timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+                coin_datastreams[coin].month_data.append((close_price, timestamp, timestamp_str))
+                coin_datastreams[coin].last_updated_month = timestamp
+        if candles[coin]["y"]:
+            for candle in candles[coin]["y"]:
+                close_price = candle['close']
+                timestamp  = int(candle['timestamp'] / 60)
+                timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+                coin_datastreams[coin].year_data.append((close_price, timestamp, timestamp_str))
+                coin_datastreams[coin].last_updated_year = timestamp
+                
+    if balance_history["d"]:
+        for balance in balance_history["d"]:
+            value = balance['Balance']
+            timestamp = int(balance['Timestamp'] / 60)
+            timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+            if not portfolio_datastream.initialized:
+                portfolio_datastream.initialize(value, timestamp)
             else:
-                coin_datastreams[coin].initialize(close_price, timestamp)
-            glob_status.lastTimestampReceived = timestamp
-    for balance in balance_history:
-        value = balance['Balance']
-        timestamp = int(balance['Timestamp'] / 60)
-        if portfolio_datastream.initialized:
-            portfolio_datastream.update(value, timestamp)
-        else:
-            portfolio_datastream.initialize(value, timestamp)
+                portfolio_datastream.day_data.append((value, timestamp, timestamp_str))
+                portfolio_datastream.last_updated_day = timestamp
+    if balance_history["w"]:
+        for balance in balance_history["w"]:
+            value = balance['Balance']
+            timestamp = int(balance['Timestamp'] / 60)
+            timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+            portfolio_datastream.week_data.append((value, timestamp, timestamp_str))
+            portfolio_datastream.last_updated_week = timestamp
+    if balance_history["m"]:
+        for balance in balance_history["m"]:
+            value = balance['Balance']
+            timestamp = int(balance['Timestamp'] / 60)
+            timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+            portfolio_datastream.month_data.append((value, timestamp, timestamp_str))
+            portfolio_datastream.last_updated_month = timestamp
+    if balance_history["y"]:
+        for balance in balance_history["y"]:
+            value = balance['Balance']
+            timestamp = int(balance['Timestamp'] / 60)
+            timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+            portfolio_datastream.year_data.append((value, timestamp, timestamp_str))
+            portfolio_datastream.last_updated_year = timestamp
     for coin in coins:
         for trade in open_position_trades[coin]:
             timestamp = int(trade['Timestamp'] / 60)
@@ -110,6 +160,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 exit_price = float(trade['ExecutedValue'])/float(trade['Units'])
                 cur_positions.closePosition(coin, float(trade['Units']), exit_price, timestamp)
                 plot_positions.addNewPosition(coin, exit_price, 'partial_exit', timestamp)
+                
     all_past_positions = []
     for coin in coins:
         enter_price = 0.0
@@ -155,7 +206,7 @@ def BHConnect():
 
 def DCConnect():
     dc_conn = startClient('main_data_consumer', os.environ['DC_PORT'])
-    rawMessage = {'content': {'candles': 1440, 'coins': True, 'balance_history':1440, 'open_trades': True, 'trade_history': 20}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
+    rawMessage = {'content': {'dwmy_prices': True, 'coins': True, 'dwmy_balance_history':True, 'open_trades': True, 'trade_history': 20}, 'src':containersToId["frontend"], 'dest':containersToId['main_data_consumer']}
     dc_conn.send(json.dumps(rawMessage).encode('utf-8'))
     return dc_conn
 
