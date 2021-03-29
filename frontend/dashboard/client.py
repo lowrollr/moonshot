@@ -103,12 +103,12 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
         for trade in open_position_trades[coin]:
             timestamp = int(trade['Timestamp'] / 60)
             if int(trade['TypeId']) == 0:
-                enter_price = trade['ExecutedValue']/trade['Units']
-                cur_positions.openPosition(coin, trade['Units'], enter_price, timestamp)
+                enter_price = float(trade['ExecutedValue'])/float(trade['Units'])
+                cur_positions.openPosition(coin, float(trade['Units']), enter_price, timestamp)
                 plot_positions.addNewPosition(coin, enter_price, 'enter', timestamp)
             elif int(trade['TypeId']) == 1:
-                exit_price = trade['ExecutedValue']/trade['Units']
-                cur_positions.closePosition(coin, trade['Units'], exit_price, timestamp)
+                exit_price = float(trade['ExecutedValue'])/float(trade['Units'])
+                cur_positions.closePosition(coin, float(trade['Units']), exit_price, timestamp)
                 plot_positions.addNewPosition(coin, exit_price, 'partial_exit', timestamp)
     all_past_positions = []
     for coin in coins:
@@ -117,13 +117,13 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
         amnt = 0
         alloc = 0
         for trade in past_trades[coin]:
-            price = trade['ExecutedValue']/trade['Units']
+            price = float(trade['ExecutedValue'])/float(trade['Units'])
             timestamp = int(trade['Timestamp'] / 60)
             if trade['TypeId'] == 0:
                 plot_positions.addNewPosition(coin, price, 'enter', timestamp)
                 enter_price = price
                 time_entered = timestamp
-                amnt = trade['Units']
+                amnt = float(trade['Units'])
             elif trade['TypeId'] == 1:
                 plot_positions.addNewPosition(coin, price, 'partial_exit', timestamp)
             else:
