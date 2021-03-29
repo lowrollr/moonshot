@@ -130,13 +130,13 @@ func (dc *DataConsumer) GetDWMYClosePrices() *map[string]map[string][]ClosePrice
 	for _, coin := range *dc.Coins {
 		// get last day's worth of data 
 		howFarToGoBack := time.Now().Add(-1 * time.Minute * time.Duration(1440)).Unix()
-		var dayData []ClosePrice
+		dayData := []ClosePrice{}
 		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ?", howFarToGoBack).Order("timestamp asc").Find(&dayData)
-		var weekData []ClosePrice
+		weekData := []ClosePrice{}
 		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 420 = 0", howFarToGoBack * 7).Order("timestamp asc").Find(&weekData)
-		var monthData []ClosePrice
+		monthData := []ClosePrice{}
 		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 1800 = 0", howFarToGoBack * 30).Order("timestamp asc").Find(&monthData)
-		var yearData []ClosePrice
+		yearData := []ClosePrice{}
 		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 21900 = 0", howFarToGoBack * 365).Order("timestamp asc").Find(&yearData)
 		timespanMap := make(map[string][]ClosePrice)
 		timespanMap["d"] = dayData
@@ -152,13 +152,13 @@ func (dc *DataConsumer) GetDWMYPortfolioBalances() *map[string][]PortfolioBalanc
 
 	// get last day's worth of data 
 	howFarToGoBack := time.Now().Add(-1 * time.Minute * time.Duration(1440)).Unix()
-	var dayData []PortfolioBalance
+	dayData := []PortfolioBalance{}
 	dc.Database.Table("portfolio_balances").Where("timestamp >= ?", howFarToGoBack).Order("timestamp asc").Find(&dayData)
-	var weekData []PortfolioBalance
+	weekData := []PortfolioBalance{}
 	dc.Database.Table("portfolio_balances").Where("timestamp >= ? AND timestamp % 420 = 0", howFarToGoBack * 7).Order("timestamp asc").Find(&weekData)
-	var monthData []PortfolioBalance
+	monthData := []PortfolioBalance{}
 	dc.Database.Table("portfolio_balances").Where("timestamp >= ? AND timestamp % 1800 = 0", howFarToGoBack * 30).Order("timestamp asc").Find(&monthData)
-	var yearData []PortfolioBalance
+	yearData := []PortfolioBalance{}
 	dc.Database.Table("portfolio_balances").Where("timestamp >= ? AND timestamp % 21900 = 0", howFarToGoBack * 365).Order("timestamp asc").Find(&yearData)
 	timespanMap := make(map[string][]PortfolioBalance)
 	timespanMap["d"] = dayData
