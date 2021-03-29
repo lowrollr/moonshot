@@ -121,21 +121,54 @@ func (dc *DataConsumer) StoreCandles(event *map[string]*Candlestick) {
 func (dc *DataConsumer) GetBalanceHistory(prevMinutes int64) *[]PortfolioBalance {
 	balances := []PortfolioBalance{}
 	howFarToGoBack := time.Now().Add(-1 * time.Minute * time.Duration(prevMinutes)).Unix()
-	dc.Database.Table("portfolio_balances").Where("timestamp >= ?", howFarToGoBack).Order("timestamp desc").Find(&balances)
-	for i := 0; i < len(balances) / 2; i++ {
-		temp := balances[i]
-		balances[i] = balances[len(balances) - i - 1]
-		balances[len(balances) - i - 1] = temp
-	}
+	dc.Database.Table("portfolio_balances").Where("timestamp >= ?", howFarToGoBack).Order("timestamp asc").Find(&balances)
 	return &balances
 }
 
-// func (dc *DataConsumer) GetDWMYClosePrices() *map[string][][]ClosePrice {
-// 	allResults := make(map[string][][]ClosePrice)
-// 	for _, coin := range *dc.Coins {
-		
-// 	}
-// }
+func (dc *DataConsumer) GetDWMYClosePrices() *map[string]map[string][]ClosePrice {
+	allResults := make(map[string]map[string][]ClosePrice)
+	for _, coin := range *dc.Coins {
+		// get last day's worth of data 
+		howFarToGoBack := time.Now().Add(-1 * time.Minute * time.Duration(1440)).Unix()
+		var dayData []ClosePrice
+		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ?", howFarToGoBack).Order("timestamp asc").Find(&dayData)
+		var weekData []ClosePrice
+		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 420 = 0", howFarToGoBack * 7).Order("timestamp asc").Find(&weekData)
+		var monthData []ClosePrice
+		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 1800 = 0", howFarToGoBack * 30).Order("timestamp asc").Find(&monthData)
+		var yearData []ClosePrice
+		dc.Database.Table(strings.ToLower(coin) + "_1m_candles").Where("timestamp >= ? AND timestamp % 21900 = 0", howFarToGoBack * 30).Order("timestamp asc").Find(&yearData)
+		timespanMap := make(map[string][]ClosePrice)
+		timespanMap["d"] = dayData
+		timespanMap["w"] = weekData
+		timespanMap["m"] = monthData
+		timespanMap["y"] = yearData
+		allResults[coin] = timespanMap
+	}
+	return &allResults
+}
+
+func (dc *DataConsumer) GetDWMYPortfolioBalances() *map[string][]PortfolioBalance {
+
+	// get last day's worth of data 
+	howFarToGoBack := time.Now().Add(-1 * time.Minute * time.Duration(1440)).Unix()
+	var dayData []PortfolioBalance
+	dc.Database.Table("portfolio_balances").Where("timestamp >= ?", howFarToGoBack).Order("timestamp asc").Find(&dayData)
+	var weekData []PortfolioBalance
+	dc.Database.Table("portfolio_balances").Where("timestamp >= ? AND timestamp % 420 = 0", howFarToGoBack * 7).Order("timestamp asc").Find(&weekData)
+	var monthData []PortfolioBalance
+	dc.Database.Table("portfolio_balances").Where("timestamp >= ? AND timestamp % 1800 = 0", howFarToGoBack * 30).Order("timestamp asc").Find(&monthData)
+	var yearData []PortfolioBalance
+	dc.Database.Table("portfolio_balances").Where("timestamp >= ? AND timestamp % 21900 = 0", howFarToGoBack * 365).Order("timestamp asc").Find(&yearData)
+	timespanMap := make(map[string][]PortfolioBalance)
+	timespanMap["d"] = dayData
+	timespanMap["w"] = weekData
+	timespanMap["m"] = monthData
+	timespanMap["y"] = yearData
+	return &timespanMap
+	
+}
+
 
 
 func (dc *DataConsumer) GetTradeHistory(numTrades int64) *map[string][]Trade {
