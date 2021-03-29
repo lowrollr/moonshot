@@ -113,3 +113,8 @@ type SnapshotEntry struct {
 	Price string
 	Size  string
 }
+
+type ClosePrice struct {
+	Close float64 `json:"close"`
+	Timestamp int64 `json:"timestamp"`
+}

@@ -155,6 +155,8 @@ func (dc *DataConsumer) HandleConnections(w http.ResponseWriter, r *http.Request
 		case "trade_history":
 			// val -> maximum number of completed trades to retrieve
 			responseContent[key] = dc.GetTradeHistory(int64(val.(float64)))
+		// case "dwmy_close_prices":
+		// 	responseContent[key] = dc.GetDWMYClosePrices()
 		default:
 			// the default case means that this key is not a recognized type of data request
 			// meaning the received message was not valid

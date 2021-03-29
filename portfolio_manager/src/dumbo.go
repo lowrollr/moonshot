@@ -86,10 +86,10 @@ func (Local_Dumbo *dumbo) StoreTrade(typeId int, coin string, units decimal.Deci
 	Local_Dumbo.Lock()
 	defer Local_Dumbo.Unlock()
 
-	unitsFl, _ := units.Float64()
-	execValueFl, _ := execValue.Float64()
+	unitsStr := units.String()
+	execValueStr := execValue.String()
 	avgFillPriceFl, _ := (execValue.Div(units)).Float64()
-	feesFl, _ := fees.Float64()
+	feesStr := fees.String()
 
 	slipCoef := 100.0
 	if typeId == 0 {
@@ -102,9 +102,9 @@ func (Local_Dumbo *dumbo) StoreTrade(typeId int, coin string, units decimal.Deci
 	temp_trade_entry := Trade{
 		TypeId:			typeId,
 		coinName:      	coin,
-		Units:     		unitsFl,
-		ExecutedValue: 	execValueFl,
-		Fees:          	feesFl,
+		Units:     		unitsStr,
+		ExecutedValue: 	execValueStr,
+		Fees:          	feesStr,
 		Slippage:      	slippage,
 		Timestamp:     	curTime,
 		Profit: 	   	profit,

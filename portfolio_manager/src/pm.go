@@ -208,18 +208,24 @@ func initPM() *PortfolioManager {
 					entry_trade := open_trades[0]
 					log.Println(currency, " entry: ", entry_trade)
 					pm.CoinDict[currency].InPosition = true
-					pm.CoinDict[currency].CashInvested = entry_trade.ExecutedValue + entry_trade.Fees
-					pm.CoinDict[currency].EnterPrice = decimal.NewFromFloat(entry_trade.ExecutedValue).Div(decimal.NewFromFloat(entry_trade.Units))
+					decEV, _ := decimal.NewFromString(entry_trade.ExecutedValue)
+					decUnits, _ := decimal.NewFromString(entry_trade.Units)
+					decFees, _ := decimal.NewFromString(entry_trade.Fees)
+					pm.CoinDict[currency].CashInvested, _ = (decEV.Add(decFees)).Float64()
+					pm.CoinDict[currency].EnterPrice = decEV.Div(decUnits)
 					pm.CoinDict[currency].EnterPriceFl, _ = pm.CoinDict[currency].EnterPrice.Float64()
 					
 					
-					pm.CoinDict[currency].AmntOwned = decimal.NewFromFloat(entry_trade.Units)
+					pm.CoinDict[currency].AmntOwned, _ = decimal.NewFromString(entry_trade.Units)
 				}
 				for i := 1; i < len(open_trades); i++ {
 					
 					log.Println(currency, " partial exit: ", open_trades[i])
-					pm.CoinDict[currency].IntermediateCash += open_trades[i].ExecutedValue
-					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decimal.NewFromFloat(open_trades[i].Units))
+					decEV, _ := decimal.NewFromString(open_trades[i].ExecutedValue)
+					decUnits, _ := decimal.NewFromString(open_trades[i].Units)
+					newIntermediateCash, _ := decEV.Float64()
+					pm.CoinDict[currency].IntermediateCash += newIntermediateCash
+					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decUnits)
 				}
 			}
 		}

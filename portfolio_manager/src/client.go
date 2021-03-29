@@ -6,7 +6,6 @@ import (
 
 	ws "github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	decimal "github.com/shopspring/decimal"
 )
 
 func (client *Client) Receive() *map[string]json.RawMessage {
@@ -150,30 +149,10 @@ func (client *Client) GetPreviousData(dest string, numTrades int) (*[]string, *m
 		log.Panic("Error unmarshaling coins message content")
 	}
 
-	var tempTrades map[string][]ExactTrade
-	err = json.Unmarshal(responseContent["open_trades"], &tempTrades)
+	var openTrades map[string][]Trade
+	err = json.Unmarshal(responseContent["open_trades"], &openTrades)
 	if err != nil {
 		log.Panic("Error unmarshaling open_trades message content")
-	}
-	var openTrades map[string][]Trade
-	for key, trades := range tempTrades {
-		openTrades[key] = make([]Trade, len(trades))
-		for index, trade := range trades{
-			decUnits, _ := decimal.NewFromString(trade.Units)
-			decEV, _ := decimal.NewFromString(trade.ExecutedValue)
-			flUnits, _ := decUnits.Float64()
-			flEV, _ := decEV.Float64()
-			openTrades[key][index] = Trade{
-				TypeId: trade.TypeId,
-				coinName: key,
-				Units: flUnits,
-				ExecutedValue: flEV,
-				Fees: trade.Fees,
-				Profit: trade.Profit,
-				Slippage: trade.Slippage,
-				Timestamp: trade.Timestamp,
-			}
-		}
 	}
 
 	var candles map[string][]Candlestick
