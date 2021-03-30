@@ -247,7 +247,10 @@ func initPM() *PortfolioManager {
 
 	// store websocket connections
 	pm.ClientConnections = mapDomainConnection
-
+	for _, coin := range *pm.Coins{
+		log.Println(coin, pm.CoinDict[coin].AvgWin, pm.CoinDict[coin].AvgLoss, pm.CoinDict[coin].WinRate)
+	}
+	
 	// return initialized pm object
 	return pm
 }
