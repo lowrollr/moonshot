@@ -336,19 +336,23 @@ def CBSocket(glob_status, portfolio_datastream, coin_datastreams, cur_positions,
     accounts = auth_client.get_accounts()
     coins = set(coins)
     while True:
-        if not glob_status.isPaperTrading:
-            accounts = auth_client.get_accounts()
-            account_value = 0.0
-            for x in accounts:
-                if x['currency'] in coins:
-                    account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1][0]
-                elif x['currency'] == 'USD':
-                    account_value += float(x['balance'])
-            if portfolio_datastream.initialized:
-                portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
-            else:
-                portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
-            cur_positions.p_value = account_value
-        cb_status.ping()
-        time.sleep(0.2)
+        try:
+            if not glob_status.isPaperTrading:
+                accounts = auth_client.get_accounts()
+                account_value = 0.0
+                for x in accounts:
+                    if x['currency'] in coins:
+                        account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1][0]
+                    elif x['currency'] == 'USD':
+                        account_value += float(x['balance'])
+                if portfolio_datastream.initialized:
+                    portfolio_datastream.update(account_value, glob_status.lastTimestampReceived)
+                else:
+                    portfolio_datastream.initialize(account_value, glob_status.lastTimestampReceived)
+                cur_positions.p_value = account_value
+            cb_status.ping()
+            time.sleep(0.2)
+        except Exception as exception:
+            print("Exception occured in CB socket thread: " + exception + ", Resetting connection!")
+            auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url=coinbase_url)
 

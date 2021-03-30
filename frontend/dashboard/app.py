@@ -160,8 +160,10 @@ def intervalUpdate(n, value, d_clicks, w_clicks, m_clicks, y_clicks, data):
             data['timespan'] = 'm'
         elif trig['prop_id'] == 'y_button.n_clicks':
             data['timespan'] = 'y'
-
-    asset = data['asset'].upper()
+    if data['asset']:
+        asset = data['asset'].upper()
+    else:
+        asset = 'PORTFOLIO'
     timespan = data['timespan']
             
     if asset == 'PORTFOLIO':
