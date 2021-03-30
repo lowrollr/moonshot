@@ -203,6 +203,7 @@ func initPM() *PortfolioManager {
 				}
 
 			} else {
+				pm.CoinDict[currency].AmntOwned, _ = decimal.NewFromString(a.Available)
 				open_trades := (*open_position_trades)[currency]
 				if len(open_trades) > 0 {
 					entry_trade := open_trades[0]
@@ -215,17 +216,13 @@ func initPM() *PortfolioManager {
 					pm.CoinDict[currency].EnterPrice = decEV.Div(decUnits)
 					pm.CoinDict[currency].EnterPriceFl, _ = pm.CoinDict[currency].EnterPrice.Float64()
 					
-					
-					pm.CoinDict[currency].AmntOwned, _ = decimal.NewFromString(entry_trade.Units)
 				}
 				for i := 1; i < len(open_trades); i++ {
 					
 					log.Println(currency, " partial exit: ", open_trades[i])
 					decEV, _ := decimal.NewFromString(open_trades[i].ExecutedValue)
-					decUnits, _ := decimal.NewFromString(open_trades[i].Units)
 					newIntermediateCash, _ := decEV.Float64()
 					pm.CoinDict[currency].IntermediateCash += newIntermediateCash
-					pm.CoinDict[currency].AmntOwned = pm.CoinDict[currency].AmntOwned.Sub(decUnits)
 				}
 			}
 		}
