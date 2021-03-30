@@ -42,7 +42,7 @@ class Positions:
             self.positions[coin]['amnt'] = amnt
             self.positions[coin]['original_price'] = price
             self.positions[coin]['price'] = price
-            self.positions[coin]['original_alloc'] = amnt*price / self.p_value
+            self.positions[coin]['original_alloc'] = amnt*price
             self.positions[coin]['profit'] = 0.0
             self.positions[coin]['alloc'] = self.positions[coin]['original_alloc']
             self.positions[coin]['enter_time'] = now
@@ -70,7 +70,7 @@ class Positions:
         
         if self.positions[coin]:
             self.positions[coin]['price'] = coin_price
-            self.positions[coin]['alloc'] = (self.positions[coin]['amnt']*coin_price) / self.p_value
+            self.positions[coin]['alloc'] = self.positions[coin]['amnt']*coin_price
             self.positions[coin]['profit'] = (coin_price / self.positions[coin]['original_price'] - 1) * 100
 
 

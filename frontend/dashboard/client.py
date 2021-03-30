@@ -185,7 +185,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 plot_positions.addNewPosition(coin, price, 'partial_exit', timestamp)
             else:
                 plot_positions.addNewPosition(coin, price, 'exit', timestamp)
-                past_position = Position(coin, time_entered, enter_price, price, amnt, alloc, timestamp)
+                past_position = Position(coin, time_entered, enter_price, price, amnt, enter_price*amnt, timestamp)
                 all_past_positions.append(past_position)
                 position_history.coin_positions[coin].append(past_position)
     all_past_positions.sort(key=lambda x: x.exit_time, reverse=False)

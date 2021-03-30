@@ -242,16 +242,16 @@ def getPortfolioPositions(positions, past_positions):
                 profit = '+' + str(profit) + '%'
             else:
                 profit = str(profit) + '%'
-            alloc = round(positions[coin]['alloc'], 3)
+            alloc = round(positions[coin]['alloc'], 2)
             
             element = html.Li(
                 className='position',
                 children=[
                     html.Span(className="statCoin", children=coin),
-                    html.Span(className="statAmntOwned", children=cur_amnt),
+                    html.Span(className="statAmntOwned", children=["Amnt: ", html.Span(className="statAmntOwnedValue", children=cur_amnt)]),
                     html.Span(className="statCurPrice", children=f'${cur_price}'),
-                    html.Span(className="statCurProfit", children=profit),
-                    html.Span(className="statCurAlloc", children=alloc),
+                    html.Span(className="statCurProfit", children=["P/L: ", html.Span(className="statCurProfitValue", children=profit)]),
+                    html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${alloc}')]),
                  ],
                  style=style,
             )
@@ -270,10 +270,10 @@ def getPortfolioPositions(positions, past_positions):
             className='position',
             children=[
                 html.Span(className="statCoin", children=position.coin),
-                html.Span(className="statAmntOwned", children=amnt),
+                html.Span(className="statAmntOwned", children=["Amnt: ", html.Span(className="statAmntOwnedValue", children=amnt)]),
                 html.Span(className="statCurPrice", children='CLOSED'),
-                html.Span(className="statCurProfit", children=profit),
-                html.Span(className="statCurAlloc", children=''),
+                html.Span(className="statCurProfit", children=["P/L: ", html.Span(className="statCurProfitValue", children=profit)]),
+                html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${position.alloc}')]),
                 ],
                 style=style,
         )
@@ -300,17 +300,15 @@ def getCoinPositions(coin, cur_position, past_positions):
         else:
             profit = str(profit) + '%'
 
-        
-
-        alloc = round(cur_position['alloc'], 3)
+        alloc = round(cur_position['alloc'], 2)
         element = html.Li(
                 className='position',
                 children=[
                     html.Span(className="statCoin", children=coin),
-                    html.Span(className="statAmntOwned", children=cur_amnt),
+                    html.Span(className="statAmntOwned", children=["Amnt: ", html.Span(className="statAmntOwnedValue", children=cur_amnt)]),
                     html.Span(className="statCurPrice", children=f'${cur_price}'),
-                    html.Span(className="statCurProfit", children=profit),
-                    html.Span(className="statCurAlloc", children=alloc),
+                    html.Span(className="statCurProfit", children=["P/L: ", html.Span(className="statCurProfitValue", children=profit)]),
+                    html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${alloc}')]),
                  ],
                 style=style,
             )
@@ -329,10 +327,10 @@ def getCoinPositions(coin, cur_position, past_positions):
             className='position',
             children=[
                 html.Span(className="statCoin", children=coin),
-                html.Span(className="statAmntOwned", children=amnt),
+                html.Span(className="statAmntOwned", children=["Amnt: ", html.Span(className="statAmntOwnedValue", children=amnt)]),
                 html.Span(className="statCurPrice", children='CLOSED'),
-                html.Span(className="statCurProfit", children=profit),
-                html.Span(className="statCurAlloc", children=''),
+                html.Span(className="statCurProfit", children=["P/L: ", html.Span(className="statCurProfitValue", children=profit)]),
+                html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${position.alloc}')]),
                 ],
                 style=style,
         )
