@@ -203,27 +203,30 @@ func initPM() *PortfolioManager {
 				}
 
 			} else {
-				pm.CoinDict[currency].AmntOwned, _ = decimal.NewFromString(a.Available)
-				open_trades := (*open_position_trades)[currency]
-				if len(open_trades) > 0 {
-					entry_trade := open_trades[0]
-					log.Println(currency, " entry: ", entry_trade)
-					pm.CoinDict[currency].InPosition = true
-					decEV, _ := decimal.NewFromString(entry_trade.ExecutedValue)
-					decUnits, _ := decimal.NewFromString(entry_trade.Units)
-					decFees, _ := decimal.NewFromString(entry_trade.Fees)
-					pm.CoinDict[currency].CashInvested, _ = (decEV.Add(decFees)).Float64()
-					pm.CoinDict[currency].EnterPrice = decEV.Div(decUnits)
-					pm.CoinDict[currency].EnterPriceFl, _ = pm.CoinDict[currency].EnterPrice.Float64()
-					
+				if coinInfo, ok := pm.CoinDict[currency]; ok {
+					coinInfo.AmntOwned, _ = decimal.NewFromString(a.Available)
+					open_trades := (*open_position_trades)[currency]
+					if len(open_trades) > 0 {
+						entry_trade := open_trades[0]
+						log.Println(currency, " entry: ", entry_trade)
+						coinInfo.InPosition = true
+						decEV, _ := decimal.NewFromString(entry_trade.ExecutedValue)
+						decUnits, _ := decimal.NewFromString(entry_trade.Units)
+						decFees, _ := decimal.NewFromString(entry_trade.Fees)
+						coinInfo.CashInvested, _ = (decEV.Add(decFees)).Float64()
+						coinInfo.EnterPrice = decEV.Div(decUnits)
+						coinInfo.EnterPriceFl, _ = coinInfo.EnterPrice.Float64()
+						
+					}
+					for i := 1; i < len(open_trades); i++ {
+						
+						log.Println(currency, " partial exit: ", open_trades[i])
+						decEV, _ := decimal.NewFromString(open_trades[i].ExecutedValue)
+						newIntermediateCash, _ := decEV.Float64()
+						coinInfo.IntermediateCash += newIntermediateCash
+					}
 				}
-				for i := 1; i < len(open_trades); i++ {
-					
-					log.Println(currency, " partial exit: ", open_trades[i])
-					decEV, _ := decimal.NewFromString(open_trades[i].ExecutedValue)
-					newIntermediateCash, _ := decEV.Float64()
-					pm.CoinDict[currency].IntermediateCash += newIntermediateCash
-				}
+				
 			}
 		}
 		// otherwise initialize the porfolio cash
