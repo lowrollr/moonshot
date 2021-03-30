@@ -250,14 +250,13 @@ func (dc *DataConsumer) GetTradeProfits(numTrades int64) *map[string][]float64 {
 		trades := []Trade{}
 
 		// query the database for the <numTrades> most recent trades
-		dc.Database.Table(strings.ToLower(coin) + "_trades").Where("type_id = ?", "2").Limit(int(numTrades)).Order("timestamp desc").Find(&trades)
+		dc.Database.Table(strings.ToLower(coin) + "_trades").Where("type_id = ?", "2").Limit(int(numTrades)).Order("timestamp asc").Find(&trades)
 
 		// create an array to store the profit percentages in
-		profits := make([]float64, numTrades)
+		profits := []float64{}
 		// grab each profit percentage from the trades we received
-		for index, trade := range trades{
-			// note that the trades we receive will be in reverse order (see query), we want to store them chronologically
-			profits[numTrades - 1 - int64(index)] = trade.Profit
+		for _, trade := range trades{
+			profits = append(profits, trade.Profit)
 		}
 
 		// store our profit array in the map for this coin
