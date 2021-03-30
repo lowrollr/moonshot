@@ -148,6 +148,7 @@ func initPM() *PortfolioManager {
 		// store profit history retrieved from database
 		for _, profit := range (*prev_profits)[coin] {
 			coinInfoDict[coin].updateProfitInfo(profit)
+			log.Println(coin, coinInfoDict[coin].ProfitHistory, coinInfoDict[coin].AvgProfit, coinInfoDict[coin].WinRate, coinInfoDict[coin].AvgWin, coinInfoDict[coin].AvgLoss)
 		}
 	}
 
