@@ -273,7 +273,7 @@ def getPortfolioPositions(positions, past_positions):
                 html.Span(className="statAmntOwned", children=["Amnt: ", html.Span(className="statAmntOwnedValue", children=amnt)]),
                 html.Span(className="statCurPrice", children='CLOSED'),
                 html.Span(className="statCurProfit", children=["P/L: ", html.Span(className="statCurProfitValue", children=profit)]),
-                html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${position.alloc}')]),
+                html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${round(position.alloc, 2)}')]),
                 ],
                 style=style,
         )
@@ -330,7 +330,7 @@ def getCoinPositions(coin, cur_position, past_positions):
                 html.Span(className="statAmntOwned", children=["Amnt: ", html.Span(className="statAmntOwnedValue", children=amnt)]),
                 html.Span(className="statCurPrice", children='CLOSED'),
                 html.Span(className="statCurProfit", children=["P/L: ", html.Span(className="statCurProfitValue", children=profit)]),
-                html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${position.alloc}')]),
+                html.Span(className="statCurAlloc", children=["Value: ", html.Span(className="statCurAllocValue", children=f'${round(position.alloc, 2)}')]),
                 ],
                 style=style,
         )
