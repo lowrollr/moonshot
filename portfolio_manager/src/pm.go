@@ -148,7 +148,6 @@ func initPM() *PortfolioManager {
 		// store profit history retrieved from database
 		for _, profit := range (*prev_profits)[coin] {
 			coinInfoDict[coin].updateProfitInfo(profit)
-			log.Println(coin, coinInfoDict[coin].ProfitHistory, coinInfoDict[coin].AvgProfit, coinInfoDict[coin].WinRate, coinInfoDict[coin].AvgWin, coinInfoDict[coin].AvgLoss)
 		}
 	}
 
@@ -248,9 +247,6 @@ func initPM() *PortfolioManager {
 
 	// store websocket connections
 	pm.ClientConnections = mapDomainConnection
-	for _, coin := range *pm.Coins{
-		log.Println(coin, pm.CoinDict[coin].AvgWin, pm.CoinDict[coin].AvgLoss, pm.CoinDict[coin].WinRate)
-	}
 	
 	// return initialized pm object
 	return pm
@@ -653,12 +649,12 @@ func CalcKellyPercent(info *CoinInfo, minTrades int) float64 {
 			// use Kelly criterion equation to obtain optimal bet size
 			kelly := info.WinRate - ((1 - info.WinRate) / (info.AvgWin / math.Abs(info.AvgLoss)))
 			if kelly > 0 {
-				return kelly
+				return math.Max(kelly, 0.5)
 			} else {
 				return low_amnt
 			}
 		} else if info.AvgWin > 0 {
-			return 0.8
+			return 0.5
 		} else if info.AvgLoss < 0 {
 			return 0.001
 		}
