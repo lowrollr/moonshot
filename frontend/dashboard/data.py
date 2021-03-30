@@ -56,7 +56,7 @@ class Positions:
                 enter_price = self.positions[coin]['original_price'],
                 exit_price = price,
                 amnt = self.positions[coin]['original_amnt'],
-                alloc = self.positions[coin]['original_alloc'],
+                alloc = self.positions[coin]['alloc'],
                 now= now
             )
             
