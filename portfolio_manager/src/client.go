@@ -126,7 +126,7 @@ func (client *Client) GetPreviousData(dest string, numTrades int) (*[]string, *m
 	msgContent := make(map[string]interface{})
 	msgContent["coins"] = true
 	msgContent["trade_profits"] = numTrades
-	msgContent["candles"] = 150
+	msgContent["candles"] = 300
 	msgContent["open_trades"] = true
 
 	msg := WebsocketMessage{

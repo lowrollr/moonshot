@@ -90,7 +90,7 @@ func initAtlas(coins *[]string) *Atlas {
 		// map to new RateOfChange object with appropriate period
 		atlas.RateOfChangeShort[coin] = &RateOfChange{
 			Values:   deque.New(),
-			MaxLen:   45,
+			MaxLen:   300,
 			LeftVal:  1,
 			RightVal: 1,
 		}
