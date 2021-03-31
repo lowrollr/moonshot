@@ -739,8 +739,13 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 	info := pm.CoinDict[coin]
 	minBaseOrderDecimal := decimal.NewFromFloat(info.MinBaseOrder)
 	portionToSell = decimal.Max(minBaseOrderDecimal, portionToSell)
+	portionRemaining := info.AmntOwned.Sub(portionToSell)
+	
+	if portionRemaining.LessThan(minBaseOrderDecimal.Mul(decimal.NewFromFloat(1.5))){
+		portionToSell = info.AmntOwned
+	}
 	// create a market sell order for the given coin
-	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.BaseSigDigits, portionToSell != info.AmntOwned)
+	filledOrder := marketOrder(pm.CoinbaseClient, coin, portionToSell, false, info.BaseSigDigits, !(portionToSell.Equal(info.AmntOwned)))
 
 	// if the order settles, updated the coin's CoinInfo object
 	if filledOrder.Settled {
@@ -751,7 +756,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 		newCash, _ := strconv.ParseFloat(execValue.Sub(fees).String(), 64)
 
 		// if we did not sell all of our position, updated IntermediateCash (used for calculating total profit when we do completely close later)
-		if portionToSell != info.AmntOwned {
+		if !(portionToSell.Equal(info.AmntOwned)) {
 			info.IntermediateCash += newCash
 			info.AmntOwned = info.AmntOwned.Sub(portionToSell)
 			// store the trade in the database
