@@ -9,7 +9,7 @@ def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin):
     return html.Div(children=[
         dcc.Interval(
             id='auto_update',
-            interval=1000,
+            interval=3000,
             n_intervals=0
         ),
         dcc.Location(id='url', refresh=False),
