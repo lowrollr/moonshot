@@ -136,7 +136,8 @@ app.layout = createPage(
 
 @app.callback(Output('toptext_update', 'children'),
               Output('main_plot', 'figure'),
-              Output('side_update', 'children'),
+              Output('positions_update', 'children'),
+              Output('status_update', 'children'),
               Input('auto_update', 'n_intervals'),
               State('session_data', 'data'))
 def intervalUpdate(n, data):
@@ -155,7 +156,7 @@ def intervalUpdate(n, data):
         elif timespan == 'm':
             portfolio_data = portfolio_datastream.month_data
 
-        return getTopText(portfolio_data, asset), getFig(portfolio_data), [getPortfolioPositions(cur_positions.positions, position_history.all_positions), getStatusElems(container_statuses)]
+        return getTopText(portfolio_data, asset), getFig(portfolio_data), getPortfolioPositions(cur_positions.positions, position_history.all_positions), getStatusElems(container_statuses)
     else:
         coin_data = coin_datastreams[asset].year_data
         coin_positions = plot_positions.positions_to_plot_year[asset]
@@ -168,7 +169,7 @@ def intervalUpdate(n, data):
         elif timespan == 'm':
             coin_data = coin_datastreams[asset].month_data
             coin_positions = plot_positions.positions_to_plot_month[asset]
-        return getTopText(coin_data, asset), getFig(coin_data, coin_positions), [getCoinPositions(asset, cur_positions.positions[asset], position_history.coin_positions[asset]), getStatusElems(container_statuses)]
+        return getTopText(coin_data, asset), getFig(coin_data, coin_positions), getCoinPositions(asset, cur_positions.positions[asset], position_history.coin_positions[asset]), getStatusElems(container_statuses)
 
 
 @app.callback(Output('session_data', 'data'),

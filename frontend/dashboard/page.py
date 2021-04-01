@@ -51,9 +51,8 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
             className='sidebar',
             children=[
                 getDropdown(coins, cur_coin),
-                html.Div(id='side_update', children=[
-                position_elems,
-                status_elems])
+                html.Div(id='positions_update', children=position_elems),
+                html.Div(id='status_update', children=status_elems)
             ]
         ),
         html.Div(
