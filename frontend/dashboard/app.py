@@ -116,7 +116,8 @@ cb_socket_thread.start()
 
 
 # Initialize Dash App
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, title = "Trading Dashboard", update_title=None)
+
 flask_server = app.server
 
 app.layout = createPage(
@@ -133,33 +134,12 @@ app.layout = createPage(
 #     auth_pair
 # )
 
-@app.callback(Output('page-content', 'children'),
-              Output('session_data', 'data'),
+@app.callback(Output('toptext_update', 'children'),
+              Output('main_plot', 'figure'),
+              Output('side_update', 'children'),
               Input('auto_update', 'n_intervals'),
-              Input('dropdown', 'value'),
-              Input('d_button', 'n_clicks'),
-              Input('w_button', 'n_clicks'),
-              Input('m_button', 'n_clicks'),
-              Input('y_button', 'n_clicks'),
               State('session_data', 'data'))
-def intervalUpdate(n, value, d_clicks, w_clicks, m_clicks, y_clicks, data):
-    
-    ctx = dash.callback_context
-    if not data:
-        data = dict()
-        data['asset'] = 'PORTFOLIO'
-        data['timespan'] = 'd'
-    for trig in ctx.triggered:
-        if trig['prop_id'] == 'dropdown.value':
-            data['asset'] = trig['value']
-        if trig['prop_id'] == 'd_button.n_clicks':
-            data['timespan'] = 'd'
-        elif trig['prop_id'] == 'w_button.n_clicks':
-            data['timespan'] = 'w'
-        elif trig['prop_id'] == 'm_button.n_clicks':
-            data['timespan'] = 'm'
-        elif trig['prop_id'] == 'y_button.n_clicks':
-            data['timespan'] = 'y'
+def intervalUpdate(n, data):
     if data['asset']:
         asset = data['asset'].upper()
     else:
@@ -175,15 +155,7 @@ def intervalUpdate(n, value, d_clicks, w_clicks, m_clicks, y_clicks, data):
         elif timespan == 'm':
             portfolio_data = portfolio_datastream.month_data
 
-        return createPageContent(
-            toptext = getTopText(portfolio_data, asset),
-            status_elems = getStatusElems(container_statuses), 
-            position_elems = getPortfolioPositions(cur_positions.positions, position_history.all_positions),
-            plot = getFig(portfolio_data),
-            coins=coins,
-            cur_coin=asset,
-            timespan=timespan,
-        ), data
+        return getTopText(portfolio_data, asset), getFig(portfolio_data), [getPortfolioPositions(cur_positions.positions, position_history.all_positions), getStatusElems(container_statuses)]
     else:
         coin_data = coin_datastreams[asset].year_data
         coin_positions = plot_positions.positions_to_plot_year[asset]
@@ -196,19 +168,48 @@ def intervalUpdate(n, value, d_clicks, w_clicks, m_clicks, y_clicks, data):
         elif timespan == 'm':
             coin_data = coin_datastreams[asset].month_data
             coin_positions = plot_positions.positions_to_plot_month[asset]
-        return createPageContent(
-                toptext = getTopText(coin_data, asset),
-                status_elems = getStatusElems(container_statuses), 
-                position_elems = getCoinPositions(asset, cur_positions.positions[asset], position_history.coin_positions[asset]),
-                plot = getFig(coin_data, coin_positions),
-                coins=coins,
-                cur_coin=asset,
-                timespan=timespan,
-            ), data
+        return getTopText(coin_data, asset), getFig(coin_data, coin_positions), [getCoinPositions(asset, cur_positions.positions[asset], position_history.coin_positions[asset]), getStatusElems(container_statuses)]
 
 
-
-
+@app.callback(Output('session_data', 'data'),
+              Output('d_button', 'style'),
+              Output('w_button', 'style'),
+              Output('m_button', 'style'),
+              Output('y_button', 'style'),
+              Input('dropdown', 'value'),
+              Input('d_button', 'n_clicks'),
+              Input('w_button', 'n_clicks'),
+              Input('m_button', 'n_clicks'),
+              Input('y_button', 'n_clicks'),
+              Input('d_button', 'style'),
+              Input('w_button', 'style'),
+              Input('m_button', 'style'),
+              Input('y_button', 'style'),
+              State('session_data', 'data'))
+def onEvent(value, d_clicks, w_clicks, m_clicks, y_clicks, d_style, w_style, m_style, y_style, data):
+    ctx = dash.callback_context
+    if len(ctx.triggered) > 1:
+        return dash.no_update
+    else:
+        for trig in ctx.triggered:
+            if trig['prop_id'] == 'dropdown.value':
+                data['asset'] = trig['value']
+            else:
+                d_style, w_style, m_style, y_style = [{'font-weight': 'Normal', 'color': '#636567'}] * 4
+                bold_style = {'font-weight': 'Bold', 'color': '#ebf5ff'}
+                if trig['prop_id'] == 'd_button.n_clicks':
+                    data['timespan'] = 'd'
+                    d_style = bold_style
+                elif trig['prop_id'] == 'w_button.n_clicks':
+                    data['timespan'] = 'w'
+                    w_style = bold_style
+                elif trig['prop_id'] == 'm_button.n_clicks':
+                    data['timespan'] = 'm'
+                    m_style = bold_style
+                elif trig['prop_id'] == 'y_button.n_clicks':
+                    data['timespan'] = 'y'
+                    y_style = bold_style
+        return data, d_style, w_style, m_style, y_style
 # @app.callback(Output('container_statuses', 'children'),
 #               Input('auto_update', 'n_intervals'))
 # def updateStatus(n):
