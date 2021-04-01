@@ -250,7 +250,7 @@ def getStatusDiv(status):
 # TODO: sort positions by amnt of time held?
 def getPortfolioPositions(positions, past_positions):
     elements = []
-    for coin in positions:
+    for ind, coin in enumerate(positions):
         if positions[coin]:
             cur_amnt = round(positions[coin]['amnt'],  4)
             cur_price = positions[coin]['price']
@@ -265,7 +265,7 @@ def getPortfolioPositions(positions, past_positions):
             alloc = round(positions[coin]['alloc'], 2)
             
             element = html.Li(
-                id={'type': 'position_elem', 'index': coin},
+                id={'type': 'position_elem', 'index': coin, 'val': ind},
                 className='position',
                 children=[
                     html.Span(className="statCoin", children=coin),
@@ -277,7 +277,7 @@ def getPortfolioPositions(positions, past_positions):
                  style=style,
             )
             elements.append(element)
-    for position in reversed(past_positions):
+    for ind, position in enumerate(reversed(past_positions)):
         amnt = round(position.amnt, 4)
         profit = round(((position.exit_price / position.enter_price) - 1) * 100, 2)
         style = {'background': 'rgba(239,102,102,0.15)'}
@@ -288,7 +288,7 @@ def getPortfolioPositions(positions, past_positions):
         else:
             profit = str(profit) + '%'
         element = html.Li(
-            id={'type': 'position_elem', 'index': position.coin},
+            id={'type': 'position_elem', 'index': position.coin, 'val': ind},
             className='position',
             children=[
                 html.Span(className="statCoin", children=position.coin),
@@ -324,7 +324,7 @@ def getCoinPositions(coin, cur_position, past_positions):
 
         alloc = round(cur_position['alloc'], 2)
         element = html.Li(
-                id={'type': 'position_elem', 'index': coin},
+                id={'type': 'position_elem', 'index': coin, 'val': -1},
                 className='position',
                 children=[
                     html.Span(className="statCoin", children=coin),
@@ -336,7 +336,7 @@ def getCoinPositions(coin, cur_position, past_positions):
                 style=style,
             )
         elements.append(element)
-    for position in reversed(past_positions):
+    for ind, position in enumerate(reversed(past_positions)):
         amnt = round(position.amnt, 4)
         profit = round(((position.exit_price / position.enter_price) - 1) * 100, 2)
         style = {'background': 'rgba(239,102,102,0.15)'}
@@ -347,7 +347,7 @@ def getCoinPositions(coin, cur_position, past_positions):
         else:
             profit = str(profit) + '%'
         element = html.Li(
-            id={'type': 'position_elem', 'index': position.coin},
+            id={'type': 'position_elem', 'index': position.coin, 'val': ind},
             className='position',
             children=[
                 html.Span(className="statCoin", children=coin),
