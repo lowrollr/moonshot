@@ -20,11 +20,18 @@
   background: #555; 
 }
 
-.position_list {
-  padding-left: 0;
-  list-style: none;
-  height:70%;
+
+
+#positions_update {
   overflow-y:scroll;
+  height:70%;
+}
+
+.position_list{
+  padding: 0;
+  list-style-type: none;
+  margin:1px;
+  
 }
 
 .position{
@@ -34,7 +41,6 @@
   font-size: 0.9vw;
   position:relative;
   height:3.5vw;
-  width:100%
 }
 
 #dropdown {
@@ -131,7 +137,6 @@
   top: 0px;
   right: 0px;
   overflow-x: hidden;
-  color:
 
 }
 .asset_plot {
