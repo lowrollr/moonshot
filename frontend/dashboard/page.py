@@ -9,11 +9,11 @@ def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin):
     return html.Div(children=[
         dcc.Interval(
             id='auto_update',
-            interval=3000,
+            interval=500,
             n_intervals=0
         ),
         dcc.Location(id='url', refresh=False),
-        dcc.Store(id='session_data', storage_type='session'),
+        dcc.Store(id='session_data', storage_type='session', data={'asset': 'PORTFOLIO', 'timespan': 'd'}),
         html.Div(
             id='page-content', 
             children=createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, 'd'))
@@ -21,7 +21,7 @@ def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin):
         
 
 def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, timespan):
-    main_div_children = [toptext, dcc.Graph(
+    main_div_children = [html.Div(id='toptext_update', children=[toptext]), dcc.Graph(
                     id='main_plot', 
                     className='asset_plot',
                     figure=plot,
@@ -29,7 +29,7 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
                             'displaylogo': False,
                             'watermark': False,
                             'staticPlot': True,}
-                    ),]
+                )]
     for timeformat in {'d', 'w', 'm', 'y'}:
         if timeformat == timespan:
             main_div_children.append(html.Span(
@@ -51,8 +51,9 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
             className='sidebar',
             children=[
                 getDropdown(coins, cur_coin),
+                html.Div(id='side_update', children=[
                 position_elems,
-                status_elems
+                status_elems])
             ]
         ),
         html.Div(
@@ -60,6 +61,7 @@ def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_co
             children=main_div_children
         )
     ]
+
 
 def getTopText(data, asset):
     
