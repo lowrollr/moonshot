@@ -356,6 +356,6 @@ def CBSocket(glob_status, portfolio_datastream, coin_datastreams, cur_positions,
             cb_status.ping()
             time.sleep(0.2)
         except Exception as exception:
-            print("Exception occured in CB socket thread: " + exception + ", Resetting connection!")
+            print("Exception occured in CB socket thread: ", exception, ", Resetting connection!")
             auth_client = cbpro.AuthenticatedClient(os.environ['COINBASE_PRO_KEY'], os.environ['COINBASE_PRO_SECRET'], os.environ['COINBASE_PRO_PASSPHRASE'], api_url=coinbase_url)
 
