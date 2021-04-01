@@ -183,7 +183,7 @@ def intervalUpdate(n, data):
               Output('m_button', 'style'),
               Output('y_button', 'style'),
               Output('dropdown', 'value'),
-              Input({'type': 'position_elem', 'index': ALL}, 'n_clicks'),
+              Input({'type': 'position_elem', 'index': ALL, 'val': ALL}, 'n_clicks'),
               Input('dropdown', 'value'),
               Input('d_button', 'n_clicks'),
               Input('w_button', 'n_clicks'),
