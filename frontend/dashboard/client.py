@@ -341,7 +341,7 @@ def CBSocket(glob_status, portfolio_datastream, coin_datastreams, cur_positions,
                 accounts = auth_client.get_accounts()
                 account_value = 0.0
                 fee_info = auth_client._send_message('get', '/fees')
-                glob_status.fees = float(fee_info['taker_fee_rate'])*100
+                glob_status.fees = round(float(fee_info['taker_fee_rate'])*100, 2)
                 glob_status.volume = fee_info['usd_volume']
                 for x in accounts:
                     if x['currency'] in coins:
