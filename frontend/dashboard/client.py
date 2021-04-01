@@ -340,6 +340,9 @@ def CBSocket(glob_status, portfolio_datastream, coin_datastreams, cur_positions,
             if not glob_status.isPaperTrading:
                 accounts = auth_client.get_accounts()
                 account_value = 0.0
+                fee_info = auth_client.get_fees()
+                glob_status.fees = fee_info['taker_fee_rate']
+                glob_status.volume = fee_info['usd_volume']
                 for x in accounts:
                     if x['currency'] in coins:
                         account_value += float(x['balance']) * coin_datastreams[x['currency']].day_data[-1][0]

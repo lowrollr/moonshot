@@ -5,7 +5,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
-def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin):
+def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin, volume, fees):
     return html.Div(children=[
         dcc.Interval(
             id='auto_update',
@@ -16,20 +16,39 @@ def createPage(toptext, plot, position_elems, status_elems, coins, cur_coin):
         dcc.Store(id='session_data', storage_type='session', data={'asset': 'PORTFOLIO', 'timespan': 'd'}),
         html.Div(
             id='page-content', 
-            children=createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, 'd'))
+            children=createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, 'd', volume, fees))
     ])
         
 
-def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, timespan):
-    main_div_children = [html.Div(id='toptext_update', children=[toptext]), dcc.Graph(
-                    id='main_plot', 
-                    className='asset_plot',
-                    figure=plot,
-                    config={'showTips': False, 
-                            'displaylogo': False,
-                            'watermark': False,
-                            'staticPlot': True,}
-                )]
+def createPageContent(toptext, plot, position_elems, status_elems, coins, cur_coin, timespan, volume, fees):
+    main_div_children = [html.Div(id='toptext_update', children=[toptext]), 
+                        dcc.Graph(
+                            id='main_plot', 
+                            className='asset_plot',
+                            figure=plot,
+                            config={'showTips': False, 
+                                    'displaylogo': False,
+                                    'watermark': False,
+                                    'staticPlot': True,}
+                        ),
+                        html.Div(
+                            className='volume_fee_stats',
+                            children=[html.Div(
+                                className='volume_stat',
+                                children=['30d Volume: ', html.Span(
+                                            id='volume',
+                                            children=volume,
+                                        )]
+                            ),
+                            html.Div(
+                                className='fee_stat',
+                                children=['Fee Tier: ', html.Span(
+                                            id='fees',
+                                            children=f'{fees}%',
+                                        )]
+                            )]
+                        )
+                    ]
     for timeformat in {'d', 'w', 'm', 'y'}:
         if timeformat == timespan:
             main_div_children.append(html.Span(
