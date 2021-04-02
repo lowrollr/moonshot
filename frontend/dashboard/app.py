@@ -183,7 +183,6 @@ def intervalUpdate(n, data):
               Output('m_button', 'style'),
               Output('y_button', 'style'),
               Output('dropdown', 'value'),
-              Input({'type': 'position_elem', 'index': ALL, 'val': ALL}, 'n_clicks'),
               Input('dropdown', 'value'),
               Input('d_button', 'n_clicks'),
               Input('w_button', 'n_clicks'),
@@ -195,7 +194,7 @@ def intervalUpdate(n, data):
               Input('y_button', 'style'),
               State('session_data', 'data'),
               )
-def onEvent(p_clicks, value, d_clicks, w_clicks, m_clicks, y_clicks, d_style, w_style, m_style, y_style, data):
+def onEvent(value, d_clicks, w_clicks, m_clicks, y_clicks, d_style, w_style, m_style, y_style, data):
     ctx = dash.callback_context
     if len(ctx.triggered) > 1:
         return dash.no_update
@@ -218,9 +217,6 @@ def onEvent(p_clicks, value, d_clicks, w_clicks, m_clicks, y_clicks, d_style, w_
                 elif trig['prop_id'] == 'y_button.n_clicks':
                     data['timespan'] = 'y'
                     y_style = bold_style
-                else:
-                    if trig['value']:
-                        data['asset'] = json.loads(trig['prop_id'].split('.n_clicks')[0])['index']
         return data, d_style, w_style, m_style, y_style, data['asset']
 # @app.callback(Output('container_statuses', 'children'),
 #               Input('auto_update', 'n_intervals'))
