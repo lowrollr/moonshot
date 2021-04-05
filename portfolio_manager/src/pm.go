@@ -184,7 +184,7 @@ func initPM() *PortfolioManager {
 		}
 		fees, err := client.GetFees()
 		if err != nil {
-			log.Println("Error fetching account fees!")
+			log.Println("Error fetching account fees!", err)
 		} else {
 			pm.MakerFee, _ = strconv.ParseFloat(fees.MakerFeeRate, 64)
 			pm.TakerFee, _ = strconv.ParseFloat(fees.TakerFeeRate, 64)
@@ -269,7 +269,6 @@ func (pm *PortfolioManager) StartTrading() {
 	//send ready message to data consumer
 	pm.ClientConnections[domainToUrl["main_data_consumer"]].SendReadyMsg("main_data_consumer")
 	// get initial unrealized portfolio value & liqudity
-	
 	pm.UpdateLiquidity()
 	
 	// loop forever
@@ -753,7 +752,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 		fillSize, _ := decimal.NewFromString(filledOrder.FilledSize)
 		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fees, _ := decimal.NewFromString(filledOrder.FillFees)
-		newCash, _ := strconv.ParseFloat(execValue.Sub(fees).String(), 64)
+		newCash, _ := execValue.Float64()
 
 		// if we did not sell all of our position, updated IntermediateCash (used for calculating total profit when we do completely close later)
 		if !(portionToSell.Equal(info.AmntOwned)) {
