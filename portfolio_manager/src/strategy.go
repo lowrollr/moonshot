@@ -173,7 +173,7 @@ func (atlas *Atlas) CalcEnter(data Candlestick, coinName string, bhconn *Client)
 func (atlas *Atlas) CalcExit(data Candlestick, coinName string) bool {
 
 	// calculate how far above the SMA to increase the threshold to given the current rate of change (from RateOfChangeShort)
-	amntAbove := math.Max(-0.01, atlas.RateOfChangeShort[coinName].GetVal())
+	amntAbove := math.Min(math.Max(-0.01, atlas.RateOfChangeShort[coinName].GetVal()), 0.01)
 
 	// if the Close price is <amntAbove>% above (below if negative) the given SMA, set the stop loss to be a tight value (0.5%) below the Close
 	if data.Close > atlas.SMAGoal[coinName].GetVal()*(1+amntAbove) {
