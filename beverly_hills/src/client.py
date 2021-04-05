@@ -63,6 +63,6 @@ def readData(conn, name, port):
             data = conn.recv()
             return data
             
-        except ConnectionResetError:
+        except:
             conn = startClient(name, port)
             continue

@@ -218,10 +218,8 @@ def DCConnect():
 
 
 def PMPing(pm_conn):
-    
+    ping_msg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['portfolio_manager']}
     while True:
-        ping_msg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['portfolio_manager']}
-
         try:
             pm_conn.send(json.dumps(ping_msg).encode('utf-8'))
             
@@ -234,8 +232,20 @@ def PMPing(pm_conn):
             
         time.sleep(2)
 
+
+def BHPing(bh_conn):
+    ping_msg = {'content': {'ping':True}, 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
+    while True:
+        try:
+            bh_conn.send(json.dumps(ping_msg).encode('utf-8'))
+
+        except Exception as e:
+            print("Disconnected from BH, reconnecting... (", e, ")")
+            return
+        time.sleep(2)
+
+
 def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, current_positions, portfolio_datastream, plot_positions, reconnectFn=PMConnect):
-    
     p_value = 0.0
     pm_ping_thread = threading.Thread(target=PMPing, args=(pm_conn,))
     pm_ping_thread.start()
@@ -277,15 +287,21 @@ def PMSocket(glob_status, pm_conn, pm_status, all_positions, coin_positions, cur
                     plot_positions.addNewPosition(coin, price, 'partial_exit', glob_status.lastTimestampReceived)
             
 
-def BHSocket(bh_status, reconnectFn=BHConnect):
-    bh_conn = BHConnect()
+def BHSocket(bh_status, bh_conn, reconnectFn=BHConnect):
+    # bh_conn = BHConnect()
+    bh_ping_thread = threading.Thread(target=BHPing, args=(bh_conn,))
+    bh_ping_thread.start()
+    rawMsg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
     while True:
-        rawMsg = {'content': {'ping': True}, 'src':containersToId['frontend'], 'dest':containersToId['beverly_hills']}
         bh_conn.send(json.dumps(rawMsg).encode('utf-8'))
-        bh_conn, data, _ = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'], reconnectFn)
+        bh_conn, data, reconnected = readData(bh_conn, 'beverly_hills', os.environ['BH_PORT'], reconnectFn)
         if data:
             bh_status.ping()
+        if reconnected:
+            bh_ping_thread = threading.Thread(target=BHPing, args=(bh_conn,))
+            bh_ping_thread.start()
         time.sleep(2)
+
 
 def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_positions, reconnectFn=DCConnect):
     startInit(dc_conn, "main_data_consumer", os.environ["DC_PORT"])
@@ -294,19 +310,27 @@ def DCSocket(glob_status, dc_conn, dc_status, coin_datastreams, current_position
         if reconnected:
             if data:
                 content = json.loads(data)["content"]
-                candles = content['candles']
-                coins = list(candles.keys())
-                
+                candles = content['dwmy_prices']
+                coins = content['coins']
+                balance_history = content['dwmy_balance_history']
+                open_position_trades = content['open_trades']
+                past_trades = content['trade_history']
+
                 for coin in coins:
-                    coin_datastreams[coin] = DataStream(name=coin)
-                    for candle in candles[coin]:
-                        close_price = candle['close']
-                        timestamp  = int(candle['time'] / 60)
-                        if coin_datastreams[coin].initialized:
-                            coin_datastreams[coin].update(close_price, timestamp)
-                        else:
-                            coin_datastreams[coin].initialize(close_price, timestamp)
+                    if not coin in coin_datastreams:
+                        coin_datastreams[coin] = DataStream(name=coin)
+                    if candles[coin]['d']:
+                        for candle in candles[coin]['d']:
+                            close_price = candle['close']
+                            timestamp  = int(candle['timestamp'] / 60)
+                            timestamp_str = datetime.fromtimestamp(timestamp*60).strftime('%Y-%m-%d %H:%M:%S')
+                            if coin_datastreams[coin].initialized:
+                                coin_datastreams[coin].update(close_price, timestamp)
+                            else:
+                                coin_datastreams[coin].initialize(close_price, timestamp)
                         glob_status.lastTimestampReceived = timestamp
+                    # if candles[coin]['w']:
+
                         
                 print("Received coins and previous data from data consumer")
                 startInit(dc_conn, "main_data_consumer", os.environ["DC_PORT"])

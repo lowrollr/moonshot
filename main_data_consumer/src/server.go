@@ -47,8 +47,6 @@ func (client *Client) GetClient() *ws.Conn {
 	return client.Conn
 }
 
-
-
 func (client *Client) WriteMessage(msg *WebsocketMessage, wg *sync.WaitGroup){
 	client.Lock()
 	defer client.Unlock()
