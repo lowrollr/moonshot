@@ -188,6 +188,7 @@ def retrieveDCData(dc_socket, coin_datastreams, portfolio_datastream, glob_statu
                 past_position = Position(coin, time_entered, enter_price, price, amnt, price*amnt, timestamp)
                 all_past_positions.append(past_position)
                 position_history.coin_positions[coin].append(past_position)
+        plot_positions.removeOldPositions(timestamp, coin)
     all_past_positions.sort(key=lambda x: x.exit_time, reverse=False)
     for position in all_past_positions:
         position_history.all_positions.append(position)
