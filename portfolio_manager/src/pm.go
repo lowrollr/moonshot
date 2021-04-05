@@ -753,9 +753,9 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 		execValue, _ := decimal.NewFromString(filledOrder.ExecutedValue)
 		fees, _ := decimal.NewFromString(filledOrder.FillFees)
 		newCash, _ := execValue.Float64()
-
+		isFull := (portionToSell.Equal(info.AmntOwned))
 		// if we did not sell all of our position, updated IntermediateCash (used for calculating total profit when we do completely close later)
-		if !(portionToSell.Equal(info.AmntOwned)) {
+		if !isFull {
 			info.IntermediateCash += newCash
 			info.AmntOwned = info.AmntOwned.Sub(portionToSell)
 			// store the trade in the database
@@ -777,7 +777,7 @@ func (pm *PortfolioManager) exitPosition(coin string, portionToSell decimal.Deci
 		exitPrice := execValue.Div(fillSize)
 		
 		// send a message to frontend with information about the position we exited
-		sendExit(pm.FrontendSocket, coin, filledOrder.FilledSize, exitPrice.String())
+		sendExit(pm.FrontendSocket, coin, filledOrder.FilledSize, exitPrice.String(), isFull)
 
 		// return the amount of cash we received from closing the position
 		return newCash

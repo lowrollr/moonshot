@@ -206,7 +206,7 @@ func (pm *PortfolioManager) paperExit(coin string, portionToSell decimal.Decimal
 		log.Println("Slippage: ", slippage)
 
 		// send a message with the exited position's information to frontend
-		sendExit(pm.FrontendSocket, coin, portionToSell.String(), fmt.Sprintf("%f", averagePrice))
+		sendExit(pm.FrontendSocket, coin, portionToSell.String(), fmt.Sprintf("%f", averagePrice), portionToSell != info.AmntOwned)
 
 		// store the trade in the database
 		go Dumbo.StoreTrade(tradeTypeId, coin, decimal.NewFromFloat(amntAvailable), decimal.NewFromFloat(cashReceived), decimal.NewFromFloat(fees), pm.CandleDict[coin].Close, profitPercentage)

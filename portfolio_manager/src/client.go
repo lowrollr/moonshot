@@ -67,13 +67,14 @@ func sendEnter(frontendConn *ServerClient, coin string, amnt string, price strin
 	frontendConn.RUnlock()
 }
 
-func sendExit(frontendConn *ServerClient, coin string, amnt string, price string) {
+func sendExit(frontendConn *ServerClient, coin string, amnt string, price string, isFull bool) {
 	msgContent := make(map[string]interface{})
 	msgContent["exit"] = make(map[string]interface{})
 	exitContent := msgContent["exit"].(map[string]interface{})
 	exitContent["coin"] = coin
 	exitContent["amnt"] = amnt
 	exitContent["price"] = price
+	exitContent["isFull"] = isFull
 	frontendConn.RLock()
 	
 	msg := WebsocketMessage{
