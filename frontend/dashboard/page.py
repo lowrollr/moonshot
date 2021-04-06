@@ -265,7 +265,6 @@ def getPortfolioPositions(positions, past_positions):
             alloc = round(positions[coin]['alloc'], 2)
             
             element = html.Li(
-                id={'type': 'position_elem', 'index': coin, 'val': ind},
                 className='position',
                 children=[
                     html.Span(className="statCoin", children=coin),
@@ -288,7 +287,6 @@ def getPortfolioPositions(positions, past_positions):
         else:
             profit = str(profit) + '%'
         element = html.Li(
-            id={'type': 'position_elem', 'index': position.coin, 'val': ind},
             className='position',
             children=[
                 html.Span(className="statCoin", children=position.coin),
@@ -324,7 +322,6 @@ def getCoinPositions(coin, cur_position, past_positions):
 
         alloc = round(cur_position['alloc'], 2)
         element = html.Li(
-                id={'type': 'position_elem', 'index': coin, 'val': -1},
                 className='position',
                 children=[
                     html.Span(className="statCoin", children=coin),
@@ -347,7 +344,6 @@ def getCoinPositions(coin, cur_position, past_positions):
         else:
             profit = str(profit) + '%'
         element = html.Li(
-            id={'type': 'position_elem', 'index': position.coin, 'val': ind},
             className='position',
             children=[
                 html.Span(className="statCoin", children=coin),
