@@ -25,7 +25,7 @@ class Position:
 
 class PositionStream:
     def __init__(self, coins):
-        self.all_positions = deque(maxlen=200)
+        self.all_positions = deque(maxlen=20)
         self.coin_positions = dict()
         for c in coins:
             self.coin_positions[c] = deque(maxlen=20)
